@@ -1,4 +1,4 @@
-#include "lbne-artdaq/Overlays/MilliSliceFragment.hh"
+#include "lbne-raw-data/Overlays/MilliSliceFragment.hh"
 
 lbne::MilliSliceFragment::
 MilliSliceFragment(artdaq::Fragment const& frag) :

@@ -15,7 +15,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "artdaq/DAQdata/Fragment.hh"
-#include "lbne-artdaq/Overlays/ToyFragment.hh"
+#include "lbne-raw-data/Overlays/ToyFragment.hh"
 
 #include <iostream>
 

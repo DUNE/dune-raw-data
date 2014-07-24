@@ -1,7 +1,7 @@
 #ifndef lbne_artdaq_Overlays_NanoSliceWriter_hh
 #define lbne_artdaq_Overlays_NanoSliceWriter_hh
 
-#include "lbne-artdaq/Overlays/NanoSlice.hh"
+#include "lbne-raw-data/Overlays/NanoSlice.hh"
 
 namespace lbne {
   class NanoSliceWriter;

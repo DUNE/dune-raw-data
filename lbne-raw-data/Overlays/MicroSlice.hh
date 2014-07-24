@@ -1,7 +1,7 @@
 #ifndef lbne_artdaq_Overlays_MicroSlice_hh
 #define lbne_artdaq_Overlays_MicroSlice_hh
 
-#include "lbne-artdaq/Overlays/NanoSlice.hh"
+#include "lbne-raw-data/Overlays/NanoSlice.hh"
 #include <memory>
 
 namespace lbne {

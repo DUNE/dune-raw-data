@@ -1,4 +1,4 @@
-#include "lbne-artdaq/Overlays/NanoSliceWriter.hh"
+#include "lbne-raw-data/Overlays/NanoSliceWriter.hh"
 
 lbne::NanoSliceWriter::
 NanoSliceWriter(uint8_t* address, uint32_t max_size_bytes,

@@ -1,8 +1,8 @@
 #ifndef lbne_artdaq_Overlays_MicroSliceWriter_hh
 #define lbne_artdaq_Overlays_MicroSliceWriter_hh
 
-#include "lbne-artdaq/Overlays/MicroSlice.hh"
-#include "lbne-artdaq/Overlays/NanoSliceWriter.hh"
+#include "lbne-raw-data/Overlays/MicroSlice.hh"
+#include "lbne-raw-data/Overlays/NanoSliceWriter.hh"
 
 namespace lbne {
   class MicroSliceWriter;

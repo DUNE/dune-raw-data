@@ -1,4 +1,4 @@
-#include "lbne-artdaq/Overlays/MicroSlice.hh"
+#include "lbne-raw-data/Overlays/MicroSlice.hh"
 
 lbne::MicroSlice::MicroSlice(uint8_t* address) : buffer_(address)
 {

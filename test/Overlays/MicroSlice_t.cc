@@ -1,4 +1,4 @@
-#include "lbne-artdaq/Overlays/MicroSliceWriter.hh"
+#include "lbne-raw-data/Overlays/MicroSliceWriter.hh"
 #include <vector>
 #include <stdint.h>
 #include <memory>

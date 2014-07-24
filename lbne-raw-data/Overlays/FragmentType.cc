@@ -1,4 +1,4 @@
-#include "lbne-artdaq/Overlays/FragmentType.hh"
+#include "lbne-raw-data/Overlays/FragmentType.hh"
 
 #include <algorithm>
 #include <cassert>

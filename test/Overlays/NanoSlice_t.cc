@@ -1,4 +1,4 @@
-#include "lbne-artdaq/Overlays/NanoSliceWriter.hh"
+#include "lbne-raw-data/Overlays/NanoSliceWriter.hh"
 #include <vector>
 #include <stdint.h>
 

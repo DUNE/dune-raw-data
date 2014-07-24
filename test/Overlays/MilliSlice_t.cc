@@ -1,4 +1,4 @@
-#include "lbne-artdaq/Overlays/MilliSliceWriter.hh"
+#include "lbne-raw-data/Overlays/MilliSliceWriter.hh"
 #include <vector>
 #include <stdint.h>
 #include <memory>

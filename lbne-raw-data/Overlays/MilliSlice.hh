@@ -1,7 +1,7 @@
 #ifndef lbne_artdaq_Overlays_MilliSlice_hh
 #define lbne_artdaq_Overlays_MilliSlice_hh
 
-#include "lbne-artdaq/Overlays/MicroSlice.hh"
+#include "lbne-raw-data/Overlays/MicroSlice.hh"
 #include "artdaq/DAQdata/Fragment.hh"
 
 namespace lbne {

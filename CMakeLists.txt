@@ -56,7 +56,7 @@ cet_find_library( SIGC    NAMES sigc-2.0  PATHS ENV LIBSIGCPP_LIB NO_DEFAULT_PAT
 
 # macros for art_dictionary and simple_plugin
 #include(ArtDictionary)
-#include(ArtMake)
+include(ArtMake)
 #include(BuildPlugins)
 include(CetTest)
 

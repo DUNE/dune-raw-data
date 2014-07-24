@@ -1,8 +1,8 @@
 #ifndef lbne_artdaq_Overlays_MilliSliceFragmentWriter_hh
 #define lbne_artdaq_Overlays_MilliSliceFragmentWriter_hh
 
-#include "lbne-artdaq/Overlays/MilliSliceFragment.hh"
-#include "lbne-artdaq/Overlays/MicroSliceWriter.hh"
+#include "lbne-raw-data/Overlays/MilliSliceFragment.hh"
+#include "lbne-raw-data/Overlays/MicroSliceWriter.hh"
 
 namespace lbne {
   class MilliSliceFragmentWriter;

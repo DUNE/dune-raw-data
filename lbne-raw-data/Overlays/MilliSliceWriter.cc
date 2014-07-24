@@ -1,4 +1,4 @@
-#include "lbne-artdaq/Overlays/MilliSliceWriter.hh"
+#include "lbne-raw-data/Overlays/MilliSliceWriter.hh"
 
 lbne::MilliSliceWriter::
 MilliSliceWriter(uint8_t* address, uint32_t max_size_bytes) :

@@ -1,4 +1,4 @@
-#include "lbne-artdaq/Overlays/MilliSliceFragmentWriter.hh"
+#include "lbne-raw-data/Overlays/MilliSliceFragmentWriter.hh"
 
 lbne::MilliSliceFragmentWriter::
 MilliSliceFragmentWriter(artdaq::Fragment& frag, uint32_t max_size_bytes) :

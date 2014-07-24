@@ -1,4 +1,4 @@
-#include "lbne-artdaq/Overlays/MicroSliceWriter.hh"
+#include "lbne-raw-data/Overlays/MicroSliceWriter.hh"
 
 lbne::MicroSliceWriter::MicroSliceWriter(uint8_t* address, uint32_t max_size_bytes) :
   MicroSlice(address), max_size_bytes_(max_size_bytes)

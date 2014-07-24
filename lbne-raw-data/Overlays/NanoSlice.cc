@@ -1,4 +1,4 @@
-#include "lbne-artdaq/Overlays/NanoSlice.hh"
+#include "lbne-raw-data/Overlays/NanoSlice.hh"
 
 lbne::NanoSlice::NanoSlice(uint8_t* address) : buffer_(address) { }
 

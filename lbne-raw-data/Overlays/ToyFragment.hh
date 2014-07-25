@@ -1,8 +1,8 @@
 #ifndef lbne_artdaq_Overlays_ToyFragment_hh
 #define lbne_artdaq_Overlays_ToyFragment_hh
 
-#include "artdaq/DAQdata/Fragment.hh"
-#include "artdaq/DAQdata/features.hh"
+#include "artdaq-core/Data/Fragment.hh"
+//#include "artdaq-core/Data/features.hh"
 #include "cetlib/exception.h"
 
 #include <ostream>

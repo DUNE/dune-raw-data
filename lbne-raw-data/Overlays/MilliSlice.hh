@@ -2,7 +2,7 @@
 #define lbne_artdaq_Overlays_MilliSlice_hh
 
 #include "lbne-raw-data/Overlays/MicroSlice.hh"
-#include "artdaq/DAQdata/Fragment.hh"
+#include "artdaq-core/Data/Fragment.hh"
 
 namespace lbne {
   class MilliSlice;

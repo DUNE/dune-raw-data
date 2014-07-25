@@ -1,6 +1,6 @@
 #ifndef lbne_artdaq_Overlays_FragmentType_hh
 #define lbne_artdaq_Overlays_FragmentType_hh
-#include "artdaq/DAQdata/Fragment.hh"
+#include "artdaq-core/Data/Fragment.hh"
 
 namespace lbne {
 

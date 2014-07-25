@@ -1,0 +1,4 @@
+. /products/setup
+export PRODUCTS=/scratch/jcfree/lbne-split-base/products:${PRODUCTS}
+echo "Now cd to your build area, and run"
+echo ". ../lbne-raw-data/ups/setup_for_development -p e5:eth"

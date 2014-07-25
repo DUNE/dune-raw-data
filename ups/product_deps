@@ -18,7 +18,7 @@ bindir      fq_dir      bin
 #
 product		version		optional
 gcc		v4_8_1
-artdaq_core	v1_00_00
+artdaq_core	v1_01_00
 
 
 # list products required ONLY for the build
@@ -30,7 +30,7 @@ only_for_build	cetbuildtools	v3_07_03
 # a "-" here means the dependent product is not required by the parent and will not be setup
 
 qualifier		artdaq_core
-e4:eth:prof		e4:prof
+e5:eth:prof		e5:prof
 
 
 # Preserve tabs and formatting in emacs and vi / vim:

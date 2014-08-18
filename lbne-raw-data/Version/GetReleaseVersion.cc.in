@@ -1,0 +1,14 @@
+#include "lbne-raw-data/Version/GetReleaseVersion.h"
+
+namespace lbnerawdata {
+
+  std::string const & getReleaseVersion() {
+    static std::string const releaseVersion("@version@");
+    return releaseVersion;
+  }
+
+  std::string const & getBuildDateTime() {
+    static std::string const buildDateTime("@utcDateTime@");
+    return buildDateTime;
+  }
+}

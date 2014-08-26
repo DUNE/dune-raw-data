@@ -1,7 +1,7 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
 parent lbne_raw_data	v0_00_03
-defaultqual	e5:eth
+defaultqual	e5
 
 # These optional lines define the installed directories where
 # headers, libraries, and executables will be found
@@ -30,7 +30,8 @@ only_for_build	cetbuildtools	v3_13_00
 # a "-" here means the dependent product is not required by the parent and will not be setup
 
 qualifier		artdaq_core
-e5:eth:prof		e5:prof
+e5:prof			e5:prof
+e5:debug		e5:debug
 
 
 # Preserve tabs and formatting in emacs and vi / vim:

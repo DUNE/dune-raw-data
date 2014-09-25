@@ -19,11 +19,11 @@ bindir      fq_dir      bin
 product		version		optional
 gcc		v4_8_2
 artdaq_core	v1_04_00
+cetbuildtools	v4_01_04	-	only_for_build
+end_product_list
 
 
-# list products required ONLY for the build
-# any products here must NOT have qualifiers
-only_for_build	cetbuildtools	v3_13_00
+
 
 # e5  - with gcc 4.8.2 and -std=c++11
 # -nq- here means there is no qualifier

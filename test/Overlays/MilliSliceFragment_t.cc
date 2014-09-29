@@ -3,6 +3,16 @@
 #include <stdint.h>
 #include <memory>
 
+// JCF, 9/29/14
+
+// A new wrinkle with gcc 4.9.1 is that it gives an error if a signed
+// and unsigned are compared as happens in Boosts's test_tools.hpp
+// file; this error is therefore explicitly disabled for the duration
+// of the file
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
+
 #define BOOST_TEST_MODULE(MilliSliceFragment_t)
 #include "boost/test/auto_unit_test.hpp"
 
@@ -183,3 +193,5 @@ BOOST_AUTO_TEST_CASE(BufferReuseTest)
 #endif
 
 BOOST_AUTO_TEST_SUITE_END()
+
+#pragma GCC diagnostic pop

@@ -18,19 +18,6 @@ namespace {
   // }
 }
 
-void lbne::SSPFragment::checkADCData(int daq_adc_bits) const {
-  lbne::SSPFragment::adc_t const * adcPtr(findBadADC(daq_adc_bits));
-  if (adcPtr != dataEnd()) {
-    throw cet::exception("IllegalADCVal")
-        << "Illegal value of ADC word #"
-        << (adcPtr - dataBegin())
-        << ": 0x"
-        << std::hex
-        << *adcPtr
-        << ".";
-  }
-}
-
 std::ostream & lbne::operator << (std::ostream & os, SSPFragment const & f) {
   os << "SSPFragment event size: "
      << f.hdr_event_size()

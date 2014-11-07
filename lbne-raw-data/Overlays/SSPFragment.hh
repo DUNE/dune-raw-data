@@ -24,11 +24,7 @@ class lbne::SSPFragment {
   public:
 
   // The SSPFragment represents its data through the adc_t type, which
-  // is a typedef of an unsigned 16-bit integer. Note that since there
-  // are two types of SSPFragment ("TOY1" and "TOY2", declared in
-  // FragmentType.hh), the ADC type needs to be large enough to hold
-  // the ADC count with the highest number of bits.
-
+  // is a typedef of an unsigned 32-bit integer.
   typedef unsigned int adc_t;
 
   // The "Metadata" struct is used to store info primarily related to
@@ -40,9 +36,9 @@ class lbne::SSPFragment {
   // SSPFragment::Metadata::size_words )
 
   struct Metadata {
-
-    typedef SSPDAQ::EventHeader data_t;
-    data_t daqHeader;
+    //MillisliceHeader defined in anlTypes.hh
+    typedef SSPDAQ::MillisliceHeader data_t;
+    data_t sliceHeader;
     
     static size_t const size_words = 1ul; // Units of Metadata::data_t
   };
@@ -105,32 +101,6 @@ class lbne::SSPFragment {
   // End of the ADC values, returned as a pointer to the ADC type
   adc_t const * dataEnd() const {
     return dataBegin() + total_adc_values();
-  }
-
-  // Functions to check if any ADC values are corrupt
-
-  // findBadADC() checks to make sure that the ADC type (adc_t) variable
-  // holding the ADC value doesn't contain bits beyond the expected
-  // range, i.e., can't be evaluated to a larger value than the max
-  // permitted ADC value
-
-  adc_t const * findBadADC(int daq_adc_bits) const {
-    return std::find_if(dataBegin(), dataEnd(), 
-			[&](adc_t const adc) -> bool { 
-			  return (adc >> daq_adc_bits); });
-  }
-
-  bool fastVerify(int daq_adc_bits) const {
-    return (findBadADC(daq_adc_bits) == dataEnd());
-  };
-
-  // Defined in SSPFragment.cc, this throws if any ADC appears corrupt
-  void checkADCData(int daq_adc_bits) const; 
-
-
-  // Largest ADC value possible
-  size_t adc_range(int daq_adc_bits) {
-    return (1ul << daq_adc_bits );
   }
 
   protected:

@@ -80,11 +80,12 @@ struct EventHeader {	// NOTE: Group fields are listed from MSB to LSB
 	unsigned short	cfdPoint[4];		// CFD Timestamp Interpolation Points
 	unsigned short	intTimestamp[4];	// Internal Timestamp
 								// Word 0 = Reserved for interpolation
-								// Words 1-2 = 48 bit Timestamp
+								// Words 1-3 = 48 bit Timestamp
 };
 
   //byte-level structure of command header to send to SSP
 struct CtrlHeader {
+        unsigned int length;
 	unsigned int address;
 	unsigned int command;
 	unsigned int size;

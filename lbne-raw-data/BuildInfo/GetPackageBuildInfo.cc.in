@@ -8,7 +8,7 @@ namespace lbnerawdata {
 
     artdaq::PackageBuildInfo pkg;
 
-    pkg.setPackageName("lbne-artdaq");
+    pkg.setPackageName("lbne-raw-data");
     pkg.setPackageVersion("@version@");
     pkg.setBuildTimestamp("@utcDateTime@");
 

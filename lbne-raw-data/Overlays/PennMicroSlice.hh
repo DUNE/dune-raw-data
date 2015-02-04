@@ -46,9 +46,9 @@ public:
   typedef Header::block_size_t microslice_size_t;
 
   //the size of the payloads (neglecting the Payload_Header)
-  microslice_size_t payload_size_counter   = 3 * sizeof(uint32_t); //96-bit payload
-  microslice_size_t payload_size_trigger   = 1 * sizeof(uint32_t); //32-bit payload
-  microslice_size_t payload_size_timestamp = 2 * sizeof(uint32_t); //64-bit payload
+  static microslice_size_t const payload_size_counter   = 3 * sizeof(uint32_t); //96-bit payload
+  static microslice_size_t const payload_size_trigger   = 1 * sizeof(uint32_t); //32-bit payload
+  static microslice_size_t const payload_size_timestamp = 2 * sizeof(uint32_t); //64-bit payload
 
 
   // This constructor accepts a memory buffer that contains an existing

@@ -56,11 +56,19 @@ public:
   PennMicroSlice(uint8_t* address);
 
 
+  // Gets the header information, accounting for necessary byte switches
+  static void get_header_contents(Header* header, Header::format_version_t& version, Header::sequence_id_t& sequence, Header::block_size_t& size);
+
+
+  // Get the contents of a payload
+  uint8_t* get_payload(uint32_t word_id, Payload_Header::data_packet_type_t& data_packet_type, Payload_Header::short_nova_timestamp_t& short_nova_timestamp, size_t& size) const;
+
+
   // Returns the format version field from the header
   Header::format_version_t format_version() const;
 
   // Returns the sequence ID field from the header
-  Header::format_version_t sequence_id() const;
+  Header::sequence_id_t sequence_id() const;
 
   // Returns the block size field from the header
   Header::block_size_t block_size() const;

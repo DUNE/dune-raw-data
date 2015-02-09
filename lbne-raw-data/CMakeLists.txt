@@ -3,4 +3,4 @@
 
 # Subdirectories.
 add_subdirectory(Overlays)
-add_subdirectory(Version)
+add_subdirectory(BuildInfo)

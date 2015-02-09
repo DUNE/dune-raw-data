@@ -40,7 +40,7 @@ public:
   // order to be able to perform writes
 
   Header * header_() {
-    assert(frag_.dataSizeBytes() >= sizeof(Header) );
+    assert(artdaq_Fragment_.dataSizeBytes() >= sizeof(Header) );
     return reinterpret_cast<Header *>( artdaq_Fragment_.dataBeginBytes());
   }
 
@@ -88,7 +88,7 @@ lbne::ToyFragmentWriter::ToyFragmentWriter(artdaq::Fragment& f ) :
 
 
 inline lbne::ToyFragment::adc_t * lbne::ToyFragmentWriter::dataBegin() {
-  assert(frag_.dataSizeBytes() > sizeof(Header) );
+  assert(artdaq_Fragment_.dataSizeBytes() > sizeof(Header) );
   return reinterpret_cast<adc_t *>(header_() + 1);
 }
 

@@ -1,0 +1,18 @@
+#include "lbne-raw-data/BuildInfo/GetPackageBuildInfo.hh"
+
+#include <string>
+
+namespace lbnerawdata {
+
+  artdaq::PackageBuildInfo GetPackageBuildInfo::getPackageBuildInfo() {
+
+    artdaq::PackageBuildInfo pkg;
+
+    pkg.setPackageName("lbne-raw-data");
+    pkg.setPackageVersion("@version@");
+    pkg.setBuildTimestamp("@utcDateTime@");
+
+    return pkg;
+  }
+}
+

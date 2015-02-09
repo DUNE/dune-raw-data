@@ -1,72 +1,22 @@
 #ifndef __ANLTYPES_H__
 #define __ANLTYPES_H__
 
-//==============================================================================
-// Constants
-//==============================================================================
+#include <cstdlib>
 
-#define MAX_BINS			1024	// Maximum bins in histogram
-#define MAX_CHANNELS		12		// Maximum number of channels in digitizer
-#define MAX_DISPLAY_DATA	256		// Maximum size of LabWindows table
-#define MAX_EVENT_DATA		2046	// Maximum size of waveform in an event
-#define MAX_EVENTS			50000	// Maximum events to store from digitizer
-#define MAX_PATHNAME_LEN	260		// Maximum length of path including null byte
-#define MAX_TIMING_MARKS	32		// Maximum number of timing marks to track per event
-
-#define MAX_CTRL_DATA		256
-#define MAX_DEVICES			16
-#define MAX_LENGTH_NAME		16
-#define MAX_LENGTH_DESC		64
+//Maximum size of packet payload on comms channel
+#define MAX_CTRL_DATA 256
 
 namespace SSPDAQ{
 
+  //Readable names for interface types
+enum Comm_t{kUSB, kEthernet, kEmulated};
+
 //==============================================================================
 // Enumerated Constants
+// These are defined by the SSP hardware spec
 //==============================================================================
 
-enum errorConstants {
-	errorNoError			= 0,
-
-	// Device Communication Errors
-	errorCommConnect		= 1,
-	errorCommDisconnect		= 2,
-	errorCommDiscover		= 3,
-	errorCommReceive		= 4,
-	errorCommSend			= 5,
-	errorCommReceiveZero	= 6,
-	errorCommReceiveTimeout	= 7,
-	errorCommSendZero		= 8,
-	errorCommSendTimeout	= 9,
-	errorCommType			= 10,
-	errorCommPurge			= 11,
-	errorCommQueue			= 12,
-	
-	// Device Data Errors
-	errorDataConnect		= 101,
-	errorDataLength			= 102,
-	errorDataPurge			= 103,
-	errorDataQueue			= 104,
-	errorDataReceive		= 105,
-	errorDataTimeout		= 106,
-	
-	// LBNE Errors
-	errorEventTooLarge		= 201,
-	errorEventTooSmall		= 202,
-	errorEventTooMany		= 203,
-	errorEventHeader		= 204
-};
-
-enum retryConstants {
-	retryOff	= 0,
-	retryOn		= 1
-};
-
-enum commConstants {
-	commNone	= 0,
-	commUDP		= 1,
-	commUSB		= 2
-};
-
+//Command to send to SSP
 enum commandConstants {
 	cmdNone			= 0,
 	// Basic Commands
@@ -83,6 +33,7 @@ enum commandConstants {
 	numCommands
 };
 
+//Holder for status returned from SSP
 enum statusConstants {
 	statusNoError		= 0,
 	statusSendError		= 1,
@@ -99,19 +50,18 @@ enum statusConstants {
 // Types
 //==============================================================================
 
-struct EventFlags{
-	unsigned char	pileup			: 1;
-	unsigned char	polarity		: 1;
-	unsigned char	offsetReadout	: 1;
-	unsigned char	cfdValid		: 1;
-	unsigned char	reserved		: 4;
-};
+  //Header to write out at top of millislice (i.e. this is the artdaq "metadata"
+  //for a fragment
+ struct MillisliceHeader {
+   unsigned long startTime;
+   unsigned long endTime;
+   unsigned int	length;				// Packet Length in unsigned ints (including header)
+   unsigned int nTriggers;
+   
+   static const size_t sizeInUInts = 6;
+ };
 
-union EventStatus{
-	unsigned char		flags;
-	EventFlags	flag;
-};
-
+  //Structure defined by hardware, i.e. hardware output can be written straight into this struct
 struct EventHeader {	// NOTE: Group fields are listed from MSB to LSB
 	unsigned int	header;				// 0xAAAAAAAA
 	unsigned short	length;				// Packet Length in unsigned ints (including header)
@@ -130,64 +80,24 @@ struct EventHeader {	// NOTE: Group fields are listed from MSB to LSB
 	unsigned short	cfdPoint[4];		// CFD Timestamp Interpolation Points
 	unsigned short	intTimestamp[4];	// Internal Timestamp
 								// Word 0 = Reserved for interpolation
-								// Words 1-2 = 48 bit Timestamp
+								// Words 1-3 = 48 bit Timestamp
 };
 
-struct Event {
-	unsigned int		header;			// 0xAAAAAAAA
-	unsigned short		packetLength;
-	unsigned short		triggerType;
-	EventStatus	status;
-	unsigned char		headerType;
-	unsigned short		triggerID;
-	unsigned short		moduleID;
-	unsigned short		channelID;
-	unsigned int		syncDelay;
-	unsigned int		syncCount;
-	int			peakSum;
-	char		peakTime;
-	unsigned int		prerise;
-	unsigned int		integratedSum;
-	unsigned short		baseline;
-	short		cfdPoint[4];
-	unsigned short		intTimestamp[4];
-	unsigned short		waveformWords;
-	unsigned short		waveform[MAX_EVENT_DATA];
-};
-
-struct EventInfo {
-	int max;
-	int min;
-	int timingMark[MAX_TIMING_MARKS];
-	int timingMarkColor[MAX_TIMING_MARKS];
-	double intEnergy;
-	double intEnergyB;
-};
-
-struct LBNEVars {
-	unsigned int	commType;
-	unsigned int	connected;
-	unsigned int	useNoComm;
-	unsigned int	useUSBComm;
-	unsigned int	useUDPComm;
-	unsigned int	numDevices;
-	int		currDevice;
-	int		panelMain;
-	int		panelDigitizer;
-	int		panelGeneric;
-	int		panelTest;
-};
-
+  //byte-level structure of command header to send to SSP
 struct CtrlHeader {
+        unsigned int length;
 	unsigned int address;
 	unsigned int command;
 	unsigned int size;
 	unsigned int status;
 };
 
+  //Struct containing header followed by payload.
+  //Since control packets are small, just allocate enough space to accommodate
+  //longest possible message
 struct CtrlPacket {
 	CtrlHeader	header;
-	unsigned int		data[MAX_CTRL_DATA];
+	unsigned int	data[MAX_CTRL_DATA];
 };
 
 }//namespace SSPDAQ

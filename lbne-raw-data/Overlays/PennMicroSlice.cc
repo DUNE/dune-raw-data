@@ -28,16 +28,8 @@ lbne::PennMicroSlice::Header::sequence_id_t lbne::PennMicroSlice::sequence_id() 
 
 lbne::PennMicroSlice::Header::block_size_t lbne::PennMicroSlice::block_size() const
 {
-  return ((header_()->block_size & 0xFF00) >> 8) | ((header_()->block_size & 0x00FF) << 8);
-  //return header_()->block_size;
-}
-
-void lbne::PennMicroSlice::get_header_contents(lbne::PennMicroSlice::Header* header, lbne::PennMicroSlice::Header::format_version_t& version,
-			 lbne::PennMicroSlice::Header::sequence_id_t& sequence, lbne::PennMicroSlice::Header::block_size_t &size)
-{
-  version   = header->format_version;
-  sequence  = header->sequence_id;
-  size      = ((header->block_size & 0xFF00) >> 8) | ((header->block_size & 0x00FF) << 8);
+  //return ((header_()->block_size & 0xFF00) >> 8) | ((header_()->block_size & 0x00FF) << 8);
+  return header_()->block_size;
 }
 
 uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlice::Payload_Header::data_packet_type_t& data_packet_type,
@@ -46,9 +38,14 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
   uint8_t* pl_ptr = buffer_ + sizeof(Header);
   uint32_t i = 0;
   while(pl_ptr < (buffer_ + size())) {
-    uint8_t type = ((*pl_ptr) & 0xF0) >> 4;
+    lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
+    lbne::PennMicroSlice::Payload_Header::data_packet_type_t type = payload_header->data_packet_type;
+    //uint8_t type = ((*pl_ptr) & 0xF0) >> 4;
     if(i == word_id) {
       data_packet_type = type;
+      short_nova_timestamp = payload_header->short_nova_timestamp;
+      pl_ptr += 4;
+      /*
       short_nova_timestamp  = ((*pl_ptr) & 0x0F) << 24;
       pl_ptr++;
       short_nova_timestamp |= ((*pl_ptr) & 0xFF) << 16;
@@ -57,6 +54,7 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
       pl_ptr++;
       short_nova_timestamp |= ((*pl_ptr) & 0xFF);
       pl_ptr++;
+      */
       if(type == 0x01)
 	payload_size = lbne::PennMicroSlice::payload_size_counter;
       else if(type == 0x02)
@@ -87,18 +85,6 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
   return 0;
 }
 
-/*
-lbne::PennMicroSlice::Payload_Header::data_packet_type_t lbne::PennMicroSlice::data_packet_type() const
-{
-  //return header_()->data_packet_type;
-  return (header_()->short_nova_timestamp & 0x
-}
-
-lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t lbne::PennMicroSlice::short_nova_timestamp() const
-{
-  return header_()->short_nova_timestamp;
-}
-*/
 
 // Returns the sample count in the microslice
 lbne::PennMicroSlice::sample_count_t lbne::PennMicroSlice::sampleCount(
@@ -109,7 +95,9 @@ lbne::PennMicroSlice::sample_count_t lbne::PennMicroSlice::sampleCount(
   n_counter_words = n_trigger_words = n_timestamp_words = 0;
   uint8_t* pl_ptr = buffer_ + sizeof(Header);
   while(pl_ptr < (buffer_ + size())) {
-    uint8_t type = ((*pl_ptr) & 0xF0) >> 4;
+    lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
+    lbne::PennMicroSlice::Payload_Header::data_packet_type_t type = payload_header->data_packet_type;
+    //uint8_t type = ((*pl_ptr) & 0xF0) >> 4;
     //lbne::PennMicroSlice::Payload_Header::data_packet_type_t type = reinterpret_cast<Payload_Header const *>(data_()[i])->data_packet_type;
     //lbne::PennMicroSlice::Payload_Header::data_packet_type_t type = (reinterpret_cast<Payload_Header const *>(data_()[i])->short_nova_timestamp) & 0xF;
     if(type == 0x01) {

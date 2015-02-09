@@ -20,9 +20,7 @@ public:
     typedef uint32_t millislice_size_t;  
     typedef uint32_t microslice_count_t;  
 
-    // TODO
-    // this structure is deliberately incomplete - it should be
-    // improved to match what we want for the LBNE 35t detector
+    // TODO finalise millislice header
 
     data_t fixed_pattern : 16;
     data_t version       : 16;

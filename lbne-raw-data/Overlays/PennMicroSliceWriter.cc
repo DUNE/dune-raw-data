@@ -7,7 +7,7 @@ PennMicroSliceWriter(uint8_t* address, uint32_t max_size_bytes) :
 {
   header_()->format_version = 0xF0;
   //header_()->sequence_id    = sequence_id;
-  header_()->block_size     = sizeof(Header); //TODO check if this needs a byte switch
+  header_()->block_size     = sizeof(Header);
 
   if (max_size_bytes_ < size()) {
     max_size_bytes_ = size();
@@ -42,7 +42,7 @@ bool lbne::PennMicroSliceWriter::addData(uint16_t* data, uint16_t data_size)
   for(uint16_t i = 0; i < data_size; i++) {
     uint16_t value = data[i];
     data_()[i] = value;
-    header_()->block_size += sizeof(value); //TODO check if this needs a byte switch
+    header_()->block_size += sizeof(value);
   }
   return true;
 }

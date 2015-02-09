@@ -37,8 +37,8 @@ public:
     typedef uint8_t  data_packet_type_t;
     typedef uint32_t short_nova_timestamp_t;
 
-    uint32_t data_packet_type     : 4;
-    uint32_t short_nova_timestamp : 28;
+    short_nova_timestamp_t short_nova_timestamp : 28;
+    data_packet_type_t     data_packet_type     : 4;
 
     static size_t const size_words = sizeof(data_t);
   };
@@ -56,10 +56,6 @@ public:
   PennMicroSlice(uint8_t* address);
 
 
-  // Gets the header information, accounting for necessary byte switches
-  static void get_header_contents(Header* header, Header::format_version_t& version, Header::sequence_id_t& sequence, Header::block_size_t& size);
-
-
   // Get the contents of a payload
   uint8_t* get_payload(uint32_t word_id, Payload_Header::data_packet_type_t& data_packet_type, Payload_Header::short_nova_timestamp_t& short_nova_timestamp, size_t& size) const;
 
@@ -72,14 +68,6 @@ public:
 
   // Returns the block size field from the header
   Header::block_size_t block_size() const;
-
-  /*
-  // Returns the data packet type from the payload header
-  Payload_Header::data_packet_type_t data_packet_type() const;
-
-  // Returns the short nova timestamp from the payload header
-  Payload_Header::short_nova_timestamp_t short_nova_timestamp() const;
-  */
 
   // Returns the size of the PennMicroSlice
   lbne::PennMicroSlice::microslice_size_t size() const;

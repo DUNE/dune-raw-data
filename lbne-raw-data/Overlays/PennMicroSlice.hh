@@ -55,10 +55,8 @@ public:
   // microSlice and allows the the data inside it to be accessed
   PennMicroSlice(uint8_t* address);
 
-
   // Get the contents of a payload
-  uint8_t* get_payload(uint32_t word_id, Payload_Header::data_packet_type_t& data_packet_type, Payload_Header::short_nova_timestamp_t& short_nova_timestamp, size_t& size) const;
-
+  uint8_t* get_payload(uint32_t word_id, Payload_Header::data_packet_type_t& data_packet_type, Payload_Header::short_nova_timestamp_t& short_nova_timestamp, size_t& size, bool swap_payload_header_bytes) const;
 
   // Returns the format version field from the header
   Header::format_version_t format_version() const;
@@ -74,11 +72,7 @@ public:
 
   // Returns the number of samples in the microslice
   typedef uint32_t sample_count_t;
-  sample_count_t sampleCount(sample_count_t &n_counter_words, sample_count_t &n_trigger_words, sample_count_t &n_timestamp_words) const;
-
-  // Fetches the value for the requested sample.  Returns true if
-  // the requested value was found, false if not.
-  bool sampleValue(uint32_t channel, uint16_t& value) const;
+  sample_count_t sampleCount(sample_count_t &n_counter_words, sample_count_t &n_trigger_words, sample_count_t &n_timestamp_words, bool swap_payload_header_bytes) const;
 
   static uint64_t getMask(int param){
 	uint64_t mask=0;

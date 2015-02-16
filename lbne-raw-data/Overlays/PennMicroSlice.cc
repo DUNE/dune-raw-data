@@ -2,6 +2,9 @@
 #include <iostream>
 #include <iomanip>
 #include <stdio.h>
+#include <boost/asio.hpp>
+
+//#define __DEBUG_sampleCount__
 
 lbne::PennMicroSlice::PennMicroSlice(uint8_t* address) : buffer_(address) 
 {
@@ -33,11 +36,14 @@ lbne::PennMicroSlice::Header::block_size_t lbne::PennMicroSlice::block_size() co
 }
 
 uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlice::Payload_Header::data_packet_type_t& data_packet_type,
-				       lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t& short_nova_timestamp,
-				       size_t& payload_size) const {
+					   lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t& short_nova_timestamp,
+					   size_t& payload_size,
+					   bool swap_payload_header_bytes) const {
   uint8_t* pl_ptr = buffer_ + sizeof(Header);
   uint32_t i = 0;
   while(pl_ptr < (buffer_ + size())) {
+    if(swap_payload_header_bytes)
+      *((uint32_t*)pl_ptr) = ntohl(*((uint32_t*)pl_ptr));
     lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
     lbne::PennMicroSlice::Payload_Header::data_packet_type_t type = payload_header->data_packet_type;
     //uint8_t type = ((*pl_ptr) & 0xF0) >> 4;
@@ -76,7 +82,7 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
       break;
     }
     else {
-      std::cerr << "Unknown data packet type found " << std::hex << type << std::endl;
+      std::cerr << "Unknown data packet type found " << std::hex << (unsigned int)type << std::endl;
       return 0;
     }
     i++;
@@ -90,13 +96,19 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
 lbne::PennMicroSlice::sample_count_t lbne::PennMicroSlice::sampleCount(
 								       lbne::PennMicroSlice::sample_count_t &n_counter_words,
 								       lbne::PennMicroSlice::sample_count_t &n_trigger_words,
-								       lbne::PennMicroSlice::sample_count_t &n_timestamp_words) const
+								       lbne::PennMicroSlice::sample_count_t &n_timestamp_words,
+								       bool swap_payload_header_bytes) const
 {
   n_counter_words = n_trigger_words = n_timestamp_words = 0;
   uint8_t* pl_ptr = buffer_ + sizeof(Header);
   while(pl_ptr < (buffer_ + size())) {
+    if(swap_payload_header_bytes)
+      *((uint32_t*)pl_ptr) = ntohl(*((uint32_t*)pl_ptr));
     lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
     lbne::PennMicroSlice::Payload_Header::data_packet_type_t type = payload_header->data_packet_type;
+#ifdef __DEBUG_sampleCount__
+    std::cout << "type " << std::hex << (unsigned int)type << " timestamp " << std::dec << payload_header->short_nova_timestamp << std::endl;
+#endif
     //uint8_t type = ((*pl_ptr) & 0xF0) >> 4;
     //lbne::PennMicroSlice::Payload_Header::data_packet_type_t type = reinterpret_cast<Payload_Header const *>(data_()[i])->data_packet_type;
     //lbne::PennMicroSlice::Payload_Header::data_packet_type_t type = (reinterpret_cast<Payload_Header const *>(data_()[i])->short_nova_timestamp) & 0xF;
@@ -114,8 +126,8 @@ lbne::PennMicroSlice::sample_count_t lbne::PennMicroSlice::sampleCount(
       break;
     }
     else {
-      std::cerr << "Unknown data packet type found " << std::hex << type << std::endl;
-      return -1;
+      std::cerr << "Unknown data packet type found " << std::hex << (unsigned int)type << std::endl;
+      return 0;
     }
   }
   return n_counter_words + n_trigger_words + n_timestamp_words;

@@ -7,6 +7,10 @@ PennMilliSliceWriter(uint8_t* address, uint32_t max_size_bytes) :
   header_()->version = 1;
   header_()->millislice_size = sizeof(Header);
   header_()->microslice_count = 0;
+  header_()->payload_count           = 0;
+  header_()->payload_count_counter   = 0;
+  header_()->payload_count_trigger   = 0;
+  header_()->payload_count_timestamp = 0;
 }
 
 std::shared_ptr<lbne::PennMicroSliceWriter>
@@ -30,7 +34,9 @@ lbne::PennMilliSliceWriter::reserveMicroSlice(uint32_t ms_max_bytes)
   return latest_microslice_ptr_;
 }
 
-int32_t lbne::PennMilliSliceWriter::finalize(bool override, uint32_t data_size_bytes, uint32_t microslice_count)
+int32_t lbne::PennMilliSliceWriter::finalize(bool override, uint32_t data_size_bytes, uint32_t microslice_count,
+					     uint16_t payload_count, uint16_t payload_count_counter,
+					     uint16_t payload_count_trigger, uint16_t payload_count_timestamp)
 {
   // first, we need to finalize the last MicroSlice, in case that
   // hasn't already been done
@@ -40,6 +46,10 @@ int32_t lbne::PennMilliSliceWriter::finalize(bool override, uint32_t data_size_b
   if(override) {
     header_()->millislice_size = sizeof(Header) + data_size_bytes;
     header_()->microslice_count = microslice_count;
+    header_()->payload_count = payload_count;
+    header_()->payload_count_counter = payload_count_counter;
+    header_()->payload_count_trigger = payload_count_trigger;
+    header_()->payload_count_timestamp = payload_count_timestamp;
   }
 
   // next, we update our maximum size so that no more MicroSlices

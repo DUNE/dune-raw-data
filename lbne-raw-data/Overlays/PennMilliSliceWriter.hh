@@ -31,7 +31,9 @@ public:
   // This method returns the number of bytes that were reclaimed
   // when the maximum size for this PennMilliSlice was reduced to match
   // its actual current size.
-  int32_t finalize(bool override = false, uint32_t data_size_bytes = 0, uint32_t microslice_count = 0);
+  int32_t finalize(bool override = false, uint32_t data_size_bytes = 0, uint32_t microslice_count = 0,
+		   uint16_t payload_count = 0, uint16_t payload_count_counter = 0,
+		   uint16_t payload_count_trigger = 0, uint16_t payload_count_timestamp = 0);
 
 protected:
 

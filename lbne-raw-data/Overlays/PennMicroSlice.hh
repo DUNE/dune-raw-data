@@ -56,7 +56,7 @@ public:
   PennMicroSlice(uint8_t* address);
 
   // Get the contents of a payload
-  uint8_t* get_payload(uint32_t word_id, Payload_Header::data_packet_type_t& data_packet_type, Payload_Header::short_nova_timestamp_t& short_nova_timestamp, size_t& size, bool swap_payload_header_bytes) const;
+  uint8_t* get_payload(uint32_t word_id, Payload_Header::data_packet_type_t& data_packet_type, Payload_Header::short_nova_timestamp_t& short_nova_timestamp, size_t& size, bool swap_payload_header_bytes, size_t override_uslice_size = 0) const;
 
   // Returns the format version field from the header
   Header::format_version_t format_version() const;
@@ -72,7 +72,27 @@ public:
 
   // Returns the number of samples in the microslice
   typedef uint32_t sample_count_t;
-  sample_count_t sampleCount(sample_count_t &n_counter_words, sample_count_t &n_trigger_words, sample_count_t &n_timestamp_words, bool swap_payload_header_bytes) const;
+  sample_count_t sampleCount(sample_count_t &n_counter_words, sample_count_t &n_trigger_words, sample_count_t &n_timestamp_words, bool swap_payload_header_bytes, size_t override_uslice_size = 0) const;
+
+  // Returns a pointer to the first payload_header in data that has a time after boundary_time (returns 0 if that doesn't exist)
+  // also sets remaining_size - the size of data that is after boundary_time
+  uint8_t* sampleTimeSplit(uint64_t boundary_time, size_t& remaining_size, bool swap_payload_header_bytes, size_t override_uslice_size = 0) const;
+
+  // Returns a pointer to the first payload_header in data that has a time after boundary_time (returns 0 if that doesn't exist)
+  // also sets remaining_size - the size of data that is after boundary_time
+  // and counts payloads before & after the time
+  //NOTE this is prefered to calling sampleCount() and sampleTimeSplit() separately, as it loops through the data exactly once (instead of between once & exactly twice)
+  uint8_t* sampleTimeSplitAndCount(uint64_t boundary_time, size_t& remaining_size,
+				   sample_count_t &n_words_b, sample_count_t &n_counter_words_b, sample_count_t &n_trigger_words_b, sample_count_t &n_timestamp_words_b,
+				   sample_count_t &n_words_a, sample_count_t &n_counter_words_a, sample_count_t &n_trigger_words_a, sample_count_t &n_timestamp_words_a,
+				   bool swap_payload_header_bytes, size_t override_uslice_size = 0) const;
+
+  //Values used to handle the rollover.
+  //The width of the millislice should be:
+  // LESS than the ROLLOVER_LOW_VALUE
+  // LESS than (max of a uint28_t - ROLLOVER_HIGH_VALUE)
+  static const uint32_t ROLLOVER_LOW_VALUE  = 1 << 13; //8192 ticks = 0.128ms
+  static const uint32_t ROLLOVER_HIGH_VALUE = 1 << 26;
 
   static uint64_t getMask(int param){
 	uint64_t mask=0;

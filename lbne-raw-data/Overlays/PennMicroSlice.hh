@@ -94,6 +94,11 @@ public:
   static const uint32_t ROLLOVER_LOW_VALUE  = 1 << 13; //8192 ticks = 0.128ms
   static const uint32_t ROLLOVER_HIGH_VALUE = 1 << 26;
 
+  //The types of data words
+  static const Payload_Header::data_packet_type_t DataTypeCounter   = 0x01; //0b0001
+  static const Payload_Header::data_packet_type_t DataTypeTrigger   = 0x02; //0b0010
+  static const Payload_Header::data_packet_type_t DataTypeTimestamp = 0x08; //0b1000
+
   static uint64_t getMask(int param){
 	uint64_t mask=0;
 	mask = (1 << param) - 1;//sets the mask to 0000...11111...11

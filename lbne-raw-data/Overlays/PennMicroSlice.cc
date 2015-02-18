@@ -66,29 +66,40 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
       data_packet_type = type;
       short_nova_timestamp = payload_header->short_nova_timestamp;
       pl_ptr += 4;
-      if(type == 0x01)
-	payload_size = lbne::PennMicroSlice::payload_size_counter;
-      else if(type == 0x02)
-	payload_size = lbne::PennMicroSlice::payload_size_trigger;
-      else if(type == 0x08)
-	payload_size = lbne::PennMicroSlice::payload_size_timestamp;
-      else
-	payload_size = 0;
+      switch(type)
+	{
+	case lbne::PennMicroSlice::DataTypeCounter:
+	  payload_size = lbne::PennMicroSlice::payload_size_counter;
+	  break;
+	case lbne::PennMicroSlice::DataTypeTrigger:
+	  payload_size = lbne::PennMicroSlice::payload_size_trigger;
+	  break;
+	case lbne::PennMicroSlice::DataTypeTimestamp:
+	  payload_size = lbne::PennMicroSlice::payload_size_timestamp;
+	  break;
+	default:
+	  std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+	  payload_size = 0;
+	  break;
+	}//switch(type)
       return pl_ptr;
     }
-    else if(type == 0x01) {
-      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
-    }
-    else if(type == 0x02) {
-      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
-    }
-    else if(type == 0x08) {
-      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
-    }
-    else {
-      std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
-      return 0;
-    }
+    switch(type)
+      {
+      case lbne::PennMicroSlice::DataTypeCounter:
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
+	break;
+      case lbne::PennMicroSlice::DataTypeTrigger:
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
+	break;
+      case lbne::PennMicroSlice::DataTypeTimestamp:
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
+	break;
+      default:
+	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+	return 0;
+	break;
+      }//switch(type)
     i++;
   }
   std::cerr << "Could not find payload with ID " << word_id << " (the data buffer has overrun)" << std::endl;
@@ -126,22 +137,25 @@ lbne::PennMicroSlice::sample_count_t lbne::PennMicroSlice::sampleCount(
 #ifdef __DEBUG_sampleCount__
     std::cout << "PennMicroSlice::sampleCount DEBUG type 0x" << std::hex << (unsigned int)type << " timestamp " << std::dec << payload_header->short_nova_timestamp << std::endl;
 #endif
-    if(type == 0x01) {
-      n_counter_words++;
-      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
-    }
-    else if(type == 0x02) {
-      n_trigger_words++;
-      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
-    }
-    else if(type == 0x08) {
-      n_timestamp_words++;
-      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
-    }
-    else {
-      std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
-      return 0;
-    }
+    switch(type)
+      {
+      case lbne::PennMicroSlice::DataTypeCounter:
+	n_counter_words++;
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
+	break;
+      case lbne::PennMicroSlice::DataTypeTrigger:
+	n_trigger_words++;
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
+	break;
+      case lbne::PennMicroSlice::DataTypeTimestamp:
+	n_timestamp_words++;
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
+	break;
+      default:
+	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+	return 0;
+	break;
+      }//switch(type)
   }
   return n_counter_words + n_trigger_words + n_timestamp_words;
 }
@@ -178,23 +192,31 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplit(uint64_t boundary_time, size_t& r
 #endif
     //check the timestamp
     if(timestamp > boundary_time) {
-      remaining_size = (buffer_ + pl_size) - pl_ptr;
-      return pl_ptr;
+      //need to be careful and make sure that boundary_time hasn't overflowed the 28 bits
+      //do this by checking whether timestamp isn't very large AND boundary_time isn't very small
+      //TODO a better way to catch rollovers?
+      if(!((boundary_time < lbne::PennMicroSlice::ROLLOVER_LOW_VALUE) && (timestamp > lbne::PennMicroSlice::ROLLOVER_HIGH_VALUE))) {
+	remaining_size = (buffer_ + pl_size) - pl_ptr;
+	return pl_ptr;
+      }
     }
     //check the type, to increment
-    if(type == 0x01) {
-      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
-    }
-    else if(type == 0x02) {
-      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
-    }
-    else if(type == 0x08) {
-      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
-    }
-    else {
-      std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
-      return 0;
-    }
+    switch(type)
+      {
+      case lbne::PennMicroSlice::DataTypeCounter:
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
+	break;
+      case lbne::PennMicroSlice::DataTypeTrigger:
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
+	break;
+      case lbne::PennMicroSlice::DataTypeTimestamp:
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
+	break;
+      default:
+	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+	return 0;
+	break;
+      }//switch(type)
   }
   return 0;
 }
@@ -251,31 +273,35 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCount(uint64_t boundary_time, s
       }
     }
     //check the type to increment counters & the ptr
-    if(type == 0x01) {
-      if(is_before)
-	n_counter_words_b++;
-      else
-	n_counter_words_a++;
-      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
-    }
-    else if(type == 0x02) {
-      if(is_before)
-	n_trigger_words_b++;
-      else
-	n_trigger_words_a++;
-      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
-    }
-    else if(type == 0x08) {
-      if(is_before)
-	n_timestamp_words_b++;
-      else
-	n_timestamp_words_a++;
-      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
-    }
-    else {
-      std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
-      return 0;
-    }
+    switch(type)
+      {
+      case lbne::PennMicroSlice::DataTypeCounter:
+	if(is_before)
+	  n_counter_words_b++;
+	else
+	  n_counter_words_a++;
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
+	break;
+      case lbne::PennMicroSlice::DataTypeTrigger:
+	if(is_before)
+	  n_trigger_words_b++;
+	else
+	  n_trigger_words_a++;
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
+	break;
+      case lbne::PennMicroSlice::DataTypeTimestamp:
+	if(is_before)
+	  n_timestamp_words_b++;
+	else
+	  n_timestamp_words_a++;
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
+	break;
+      default:
+	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type 
+		  << std::dec << std::endl;
+	return 0;
+	break;
+      }//switch(type)
   }
   n_words_b = n_counter_words_b + n_trigger_words_b + n_timestamp_words_b;
   n_words_a = n_counter_words_a + n_trigger_words_a + n_timestamp_words_a;

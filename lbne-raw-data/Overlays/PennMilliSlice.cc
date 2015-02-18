@@ -59,29 +59,40 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
       data_packet_type = type;
       short_nova_timestamp = payload_header->short_nova_timestamp;
       pl_ptr += 4;
-      if(type == 0x01)
-        payload_size = lbne::PennMicroSlice::payload_size_counter;
-      else if(type == 0x02)
-        payload_size = lbne::PennMicroSlice::payload_size_trigger;
-      else if(type == 0x08)
-        payload_size = lbne::PennMicroSlice::payload_size_timestamp;
-      else
-        payload_size = 0;
+      switch(type)
+	{
+	case lbne::PennMicroSlice::DataTypeCounter:
+	  payload_size = lbne::PennMicroSlice::payload_size_counter;
+	  break;
+	case lbne::PennMicroSlice::DataTypeTrigger:
+	  payload_size = lbne::PennMicroSlice::payload_size_trigger;
+	  break;
+	case lbne::PennMicroSlice::DataTypeTimestamp:
+	  payload_size = lbne::PennMicroSlice::payload_size_timestamp;
+	  break;
+	default:
+	  std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+	  payload_size = 0;
+	  break;
+	}//switch(type)
       return pl_ptr;
     }
-    else if(type == 0x01) {
-      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
-    }
-    else if(type == 0x02) {
-      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
-    }
-    else if(type == 0x08) {
-      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
-    }
-    else {
-      std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
-      return 0;
-    }
+    switch(type)
+      {
+      case lbne::PennMicroSlice::DataTypeCounter:
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
+	break;
+      case lbne::PennMicroSlice::DataTypeTrigger:
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
+	break;
+      case lbne::PennMicroSlice::DataTypeTimestamp:
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
+	break;
+      default:
+	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+	return 0;
+	break;
+      }//switch(type)
     i++;
   }
   std::cerr << "Could not find payload with ID " << index << " (the data buffer has overrun)" << std::endl;

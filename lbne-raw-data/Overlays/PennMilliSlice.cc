@@ -1,5 +1,8 @@
 #include "lbne-raw-data/Overlays/PennMilliSlice.hh"
 #include <iostream>
+#include <bitset>
+
+//#define __DEBUG_payload__
 
 lbne::PennMilliSlice::PennMilliSlice(uint8_t* address) : buffer_(address)
 {
@@ -58,7 +61,16 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
     if(i == index) {
       data_packet_type = type;
       short_nova_timestamp = payload_header->short_nova_timestamp;
-      pl_ptr += 4;
+#ifdef __DEBUG_payload__
+    std::cout << "PennMilliSlice::payload() payload  " << i << " has type 0x"
+	      << std::hex << (unsigned int)data_packet_type << std::dec
+	      << " " << std::bitset<8>(data_packet_type)
+	      << " and timestamp " << short_nova_timestamp
+	      << " " << std::bitset<32>(short_nova_timestamp)
+	      << " payload header bits " << std::bitset<32>(*((uint32_t*)pl_ptr))
+	      << std::endl;
+#endif
+      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words;
       switch(type)
 	{
 	case lbne::PennMicroSlice::DataTypeCounter:
@@ -96,6 +108,7 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
     i++;
   }
   std::cerr << "Could not find payload with ID " << index << " (the data buffer has overrun)" << std::endl;
+  payload_size = 0;
   return 0;
 }
 

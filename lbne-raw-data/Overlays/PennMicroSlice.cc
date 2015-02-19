@@ -302,11 +302,18 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCount(uint64_t boundary_time, s
 	return 0;
 	break;
       }//switch(type)
+#ifdef __DEBUG_sampleTimeSplitAndCount__
+#endif
   }
   n_words_b = n_counter_words_b + n_trigger_words_b + n_timestamp_words_b;
   n_words_a = n_counter_words_a + n_trigger_words_a + n_timestamp_words_a;
 #ifdef __DEBUG_sampleTimeSplitAndCount__
-  std::cout << "PennMicroSlice::sampleTimeSplitAndCount DEBUG returning with remaining size " << remaining_size << " for boundary_time " << boundary_time << std::endl;
+  std::cout << "PennMicroSlice::sampleTimeSplitAndCount DEBUG returning with remaining size " << remaining_size << " for boundary_time " << boundary_time
+	    << std::endl
+	    << "PennMicroSlice::sampleTimeSplitAndCount DEBUG returning with: "
+	    << " Payloads before " << n_words_b << " = " << n_counter_words_b << " + " << n_trigger_words_b << " + " << n_timestamp_words_b
+	    << " Payloads after  " << n_words_a << " = " << n_counter_words_a << " + " << n_trigger_words_a << " + " << n_timestamp_words_a
+	    << std::endl;
 #endif
   return remaining_data_ptr;
 }

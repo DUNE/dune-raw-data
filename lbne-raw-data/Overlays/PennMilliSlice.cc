@@ -102,14 +102,14 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
 	break;
       default:
 	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
-	return 0;
+	return nullptr;
 	break;
       }//switch(type)
     i++;
   }
   std::cerr << "Could not find payload with ID " << index << " (the data buffer has overrun)" << std::endl;
   payload_size = 0;
-  return 0;
+  return nullptr;
 }
 
 lbne::PennMilliSlice::Header const* lbne::PennMilliSlice::header_() const

@@ -87,6 +87,14 @@ public:
 				   sample_count_t &n_words_a, sample_count_t &n_counter_words_a, sample_count_t &n_trigger_words_a, sample_count_t &n_timestamp_words_a,
 				   bool swap_payload_header_bytes, size_t override_uslice_size = 0) const;
 
+  // As sampleTimeSplitAndCount, but also gets information for a second time (overlap_time), in the same loop
+  uint8_t* sampleTimeSplitAndCountTwice(uint64_t boundary_time, size_t& remaining_size,
+					uint64_t overlap_time,  size_t& overlap_size,   uint8_t*& overlap_data_ptr,
+					sample_count_t &n_words_b, sample_count_t &n_counter_words_b, sample_count_t &n_trigger_words_b, sample_count_t &n_timestamp_words_b,
+					sample_count_t &n_words_a, sample_count_t &n_counter_words_a, sample_count_t &n_trigger_words_a, sample_count_t &n_timestamp_words_a,
+					sample_count_t &n_words_o, sample_count_t &n_counter_words_o, sample_count_t &n_trigger_words_o, sample_count_t &n_timestamp_words_o,
+					bool swap_payload_header_bytes, size_t override_uslice_size = 0) const;
+
   //Values used to handle the rollover.
   //The width of the millislice should be:
   // LESS than the ROLLOVER_LOW_VALUE

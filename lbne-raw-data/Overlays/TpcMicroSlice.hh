@@ -23,15 +23,25 @@ public:
     // Raw header word 1 fields
     typedef uint32_t sequence_id_t;
 
+    // Raw header word 2 fields
+    typedef uint32_t type_id_t;
+
+    // Raw header word 3-4 fields
+    typedef uint64_t softmsg_t;
+
+    // Raw header word 5-6 fields
+    typedef uint64_t firmmsg_t;
+
     // Parameters derived from header field translation
     typedef uint32_t nanoslice_count_t;
 
-    static constexpr size_t raw_header_words = 2;
+    //    static constexpr size_t raw_header_words = 8;
+    //this number should be 7*32bits from what artdaqbuffer says it sends
+    static constexpr size_t raw_header_words = 7;
     static constexpr uint8_t groups_per_microslice = 4;
 
     // Raw header words
     data_t raw_header_data[raw_header_words];
-
   };
 
   // This constructor accepts a memory buffer that contains an existing
@@ -44,8 +54,18 @@ public:
   // Returns the sequence ID of the TpcMicroSlice
   Header::sequence_id_t sequence_id() const;
 
+  // Returns the type ID of the TpcMicroSlice
+  Header::type_id_t type_id() const;
+
+  // Returns the software message of the TpcMicroSlice
+  Header::softmsg_t software_message() const;
+
+  // Returns the firmware message of the TpcMicroSlice
+  Header::firmmsg_t firmware_message() const;
+
   // Returns the number of nanoslices in the microslice
   Header::nanoslice_count_t nanoSliceCount() const;
+
 
   // Returns the requested NanoSlice if the requested slice was found,
   // otherwise returns an empty pointer

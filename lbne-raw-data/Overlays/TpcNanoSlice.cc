@@ -22,9 +22,12 @@ lbne::TpcNanoSlice::Header::format_version_t lbne::TpcNanoSlice::format_version(
 lbne::TpcNanoSlice::Header::nova_timestamp_t lbne::TpcNanoSlice::nova_timestamp() const
 {
 	uint64_t nova_timestamp = (header_()->raw_header_data[0] & 0xFFFFFFFFFFFFFF);
+		std::cout << " TPC::Nanoslice  NOvA timestamp   : 0x" << std::hex << std::setw(14) << std::setfill('0')
+							      << nova_timestamp << std::dec << std::endl;
 	return static_cast<lbne::TpcNanoSlice::Header::nova_timestamp_t>(nova_timestamp);
 }
 
+// 2/12/2015--mg right now we only have a header word == nova_timestamp...everything below referring to the header[1-x] isn't there...
 lbne::TpcNanoSlice::Header::rce_counter_t lbne::TpcNanoSlice::rce_counter() const
 {
 	uint32_t rce_counter = (header_()->raw_header_data[1] >> 32) & 0xFFFFFFFF;
@@ -148,7 +151,7 @@ lbne::TpcNanoSlice::Header const* lbne::TpcNanoSlice::header_() const
 {
   return reinterpret_cast<Header const *>(buffer_);
 }
-
+//
 // Returns a pointer to the first payload data word in the nanoslice
 uint64_t const* lbne::TpcNanoSlice::data_() const
 {

@@ -4,15 +4,19 @@ lbne::PennMilliSliceWriter::
 PennMilliSliceWriter(uint8_t* address, uint32_t max_size_bytes) :
     PennMilliSlice(address), max_size_bytes_(max_size_bytes)
 {
-  header_()->version = 1;
-  header_()->millislice_size = sizeof(Header);
-  header_()->microslice_count = 0;
+  header_()->sequence_id             = 0;
+  header_()->version                 = 0xFFFF;
+  header_()->millislice_size         = sizeof(Header);
   header_()->payload_count           = 0;
   header_()->payload_count_counter   = 0;
   header_()->payload_count_trigger   = 0;
   header_()->payload_count_timestamp = 0;
+  header_()->end_timestamp           = 0;
+  header_()->width_in_ticks          = 0;
+  header_()->overlap_in_ticks        = 0;
 }
 
+#ifdef PENN_DONT_REBLOCK_USLICES
 std::shared_ptr<lbne::PennMicroSliceWriter>
 lbne::PennMilliSliceWriter::reserveMicroSlice(uint32_t ms_max_bytes)
 {
@@ -33,10 +37,16 @@ lbne::PennMilliSliceWriter::reserveMicroSlice(uint32_t ms_max_bytes)
   header_()->millislice_size += ms_max_bytes;
   return latest_microslice_ptr_;
 }
+#endif
 
-int32_t lbne::PennMilliSliceWriter::finalize(bool override, uint32_t data_size_bytes, uint32_t microslice_count,
+int32_t lbne::PennMilliSliceWriter::finalize(bool override, uint32_t data_size_bytes,
+#ifdef PENN_DONT_REBLOCK_USLICES
+					     uint32_t microslice_count,
+#endif
+					     uint16_t sequence_id,
 					     uint16_t payload_count, uint16_t payload_count_counter,
-					     uint16_t payload_count_trigger, uint16_t payload_count_timestamp)
+					     uint16_t payload_count_trigger, uint16_t payload_count_timestamp,
+					     uint64_t end_timestamp, uint32_t width_in_ticks, uint32_t overlap_in_ticks)
 {
   // first, we need to finalize the last MicroSlice, in case that
   // hasn't already been done
@@ -45,11 +55,17 @@ int32_t lbne::PennMilliSliceWriter::finalize(bool override, uint32_t data_size_b
   //Override the current size if requested
   if(override) {
     header_()->millislice_size = sizeof(Header) + data_size_bytes;
+#ifdef PENN_DONT_REBLOCK_USLICES
     header_()->microslice_count = microslice_count;
-    header_()->payload_count = payload_count;
-    header_()->payload_count_counter = payload_count_counter;
-    header_()->payload_count_trigger = payload_count_trigger;
+#endif
+    header_()->payload_count           = payload_count;
+    header_()->payload_count_counter   = payload_count_counter;
+    header_()->payload_count_trigger   = payload_count_trigger;
     header_()->payload_count_timestamp = payload_count_timestamp;
+    header_()->end_timestamp           = end_timestamp;
+    header_()->width_in_ticks          = width_in_ticks;
+    header_()->overlap_in_ticks        = overlap_in_ticks;
+    header_()->sequence_id             = sequence_id;
   }
 
   // next, we update our maximum size so that no more MicroSlices
@@ -61,7 +77,11 @@ int32_t lbne::PennMilliSliceWriter::finalize(bool override, uint32_t data_size_b
 
 void lbne::PennMilliSliceWriter::finalizeLatestMicroSlice_()
 {
-  if (header_()->microslice_count > 0 && latest_microslice_ptr_.get() != 0) {
+  if (
+#ifdef PENN_DONT_REBLOCK_USLICES
+      header_()->microslice_count > 0 && 
+#endif
+      latest_microslice_ptr_.get() != 0) {
     int size_change = latest_microslice_ptr_->finalize();
     header_()->millislice_size -= size_change;
   }

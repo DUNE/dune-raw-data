@@ -4,6 +4,8 @@
 #include "lbne-raw-data/Overlays/PennMicroSlice.hh"
 #include "artdaq-core/Data/Fragment.hh"
 
+//#define PENN_DONT_REBLOCK_USLICES
+
 namespace lbne {
   class PennMilliSlice;
 }
@@ -13,27 +15,36 @@ class lbne::PennMilliSlice {
 public:
 
   struct Header {
-    typedef uint32_t data_t;
+    //typedef uint32_t data_t;
+    typedef uint64_t data_t;
 
-    typedef uint16_t pattern_t;
+    typedef uint16_t sequence_id_t;
     typedef uint16_t version_t;
     typedef uint32_t millislice_size_t;  
-    typedef uint32_t microslice_count_t;  
     typedef uint16_t payload_count_t;
+    typedef uint64_t timestamp_t;
+    typedef uint32_t ticks_t;
+#ifdef PENN_DONT_REBLOCK_USLICES
+    typedef uint32_t microslice_count_t;
+#endif
 
     // TODO finalise millislice header
 
-    data_t fixed_pattern : 16;
-    data_t version       : 16;
-
+    data_t sequence_id     : 16;
+    data_t version         : 16;
     data_t millislice_size : 32;   // total size, data & header
-
+#ifdef PENN_DONT_REBLOCK_USLICES
     data_t microslice_count : 32;
+#endif
 
     data_t payload_count           : 16;
     data_t payload_count_counter   : 16;
     data_t payload_count_trigger   : 16;
     data_t payload_count_timestamp : 16;
+
+    data_t end_timestamp    : 64;
+    data_t width_in_ticks   : 32;  // neglecting overlap
+    data_t overlap_in_ticks : 32;
   };
 
   // This constructor accepts a memory buffer that contains an existing
@@ -43,16 +54,33 @@ public:
   // Returns the size of the MilliSlice
   Header::millislice_size_t size() const;
 
-  // Returns the number of MicroSlices in this MilliSlice
-  Header::microslice_count_t microSliceCount() const;
+  // Returns the sequence ID of the MilliSlice
+  Header::sequence_id_t sequenceID() const;
+
+  // Returns the version of the MilliSlice
+  Header::version_t version() const;
+
+  // Returns the timestamp marking the end of the MilliSlice
+  Header::timestamp_t endTimestamp() const;
+
+  // Returns the number of ticks (neglecting overlaps) in the MilliSlice
+  Header::ticks_t widthTicks() const;
+
+  // Returns the number of ticks in the overlap region of the MilliSlice
+  Header::ticks_t overlapTicks() const;
 
   // Returns the number of payloads in this MilliSlice
   Header::payload_count_t payloadCount() const;
   Header::payload_count_t payloadCount(Header::payload_count_t& counter, Header::payload_count_t& trigger, Header::payload_count_t& timestamp) const;
 
+#ifdef PENN_DONT_REBLOCK_USLICES
+  // Returns the number of MicroSlices in this MilliSlice
+  Header::microslice_count_t microSliceCount() const;
+
   // Returns the requested MicroSlice if the requested slice was found,
   // otherwise returns an empty pointer
   std::unique_ptr<PennMicroSlice> microSlice(uint32_t index) const;
+#endif
 
   // Returns the requested Payload if found,
   // otherwise returns an empty pointer

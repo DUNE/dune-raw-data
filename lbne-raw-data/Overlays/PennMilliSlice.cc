@@ -13,9 +13,36 @@ lbne::PennMilliSlice::Header::millislice_size_t lbne::PennMilliSlice::size() con
   return header_()->millislice_size;
 }
 
+#ifdef PENN_DONT_REBLOCK_USLICES
 lbne::PennMilliSlice::Header::microslice_count_t lbne::PennMilliSlice::microSliceCount() const
 {
   return header_()->microslice_count;
+}
+#endif
+
+lbne::PennMilliSlice::Header::sequence_id_t lbne::PennMilliSlice::sequenceID() const
+{
+  return header_()->sequence_id;
+}
+
+lbne::PennMilliSlice::Header::version_t lbne::PennMilliSlice::version() const
+{
+  return header_()->version;
+}
+
+lbne::PennMilliSlice::Header::timestamp_t lbne::PennMilliSlice::endTimestamp() const
+{
+  return header_()->end_timestamp;
+}
+
+lbne::PennMilliSlice::Header::ticks_t lbne::PennMilliSlice::widthTicks() const
+{
+  return header_()->width_in_ticks;
+}
+
+lbne::PennMilliSlice::Header::ticks_t lbne::PennMilliSlice::overlapTicks() const
+{
+  return header_()->overlap_in_ticks;
 }
 
 lbne::PennMilliSlice::Header::payload_count_t lbne::PennMilliSlice::payloadCount() const
@@ -34,7 +61,7 @@ lbne::PennMilliSlice::Header::payload_count_t lbne::PennMilliSlice::payloadCount
   return payloadCount();
 }
 
-
+#ifdef PENN_DONT_REBLOCK_USLICES
 // Returns the requested MicroSlice if the requested slice was found,
 // otherwise returns an empty pointer
 std::unique_ptr<lbne::PennMicroSlice> lbne::PennMilliSlice::microSlice(uint32_t index) const
@@ -46,6 +73,7 @@ std::unique_ptr<lbne::PennMicroSlice> lbne::PennMilliSlice::microSlice(uint32_t 
   }
   return mslice_ptr;
 }
+#endif
 
 //Returns the requested payload
 uint8_t* lbne::PennMilliSlice::payload(uint32_t index, 

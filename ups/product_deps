@@ -1,6 +1,6 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
-parent lbne_raw_data	v1_00_00
+parent lbne_raw_data	v1_02_00
 defaultqual	e6:s6
 
 # These optional lines define the installed directories where
@@ -18,8 +18,8 @@ bindir      fq_dir      bin
 #
 product		version		optional
 gcc		v4_9_1
-artdaq_core	v1_04_08
-cetbuildtools	v4_05_00	-	only_for_build
+artdaq_core	v1_04_10
+cetbuildtools	v4_07_03	-	only_for_build
 end_product_list
 
 

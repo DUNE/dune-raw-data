@@ -140,6 +140,20 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
   return nullptr;
 }
 
+uint32_t lbne::PennMilliSlice::calculateChecksum() const
+{
+  try {
+    boost::crc_32_type checksum;
+    checksum.process_bytes(buffer_, this->size());
+    return checksum.checksum();
+  }
+  catch ( ... ) {
+    std::cout << "Error caught in PennMilliSlice::calculateChecksum()" << std::endl;
+    //TODO handle error cleanly here
+    return 0;
+  }
+}
+
 lbne::PennMilliSlice::Header const* lbne::PennMilliSlice::header_() const
 {
   return reinterpret_cast<Header const*>(buffer_);

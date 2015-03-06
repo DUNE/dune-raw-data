@@ -4,6 +4,8 @@
 #include "lbne-raw-data/Overlays/PennMicroSlice.hh"
 #include "artdaq-core/Data/Fragment.hh"
 
+#include <boost/crc.hpp>
+
 //#define PENN_DONT_REBLOCK_USLICES
 
 namespace lbne {
@@ -87,6 +89,9 @@ public:
   uint8_t* payload(uint32_t index, lbne::PennMicroSlice::Payload_Header::data_packet_type_t& data_packet_type,
 		   lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t& short_nova_timestamp,
 		   size_t& payload_size) const;
+
+  // Calculate a checksum for this millslice
+  uint32_t calculateChecksum() const;
 
 protected:
 

@@ -1,6 +1,6 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
-parent lbne_raw_data	v1_02_02
+parent lbne_raw_data	v1_02_03
 defaultqual	e6:s6
 
 # These optional lines define the installed directories where
@@ -17,7 +17,6 @@ bindir      fq_dir      bin
 
 #
 product		version		optional
-gcc		v4_9_1
 artdaq_core	v1_04_10
 cetbuildtools	v4_07_03	-	only_for_build
 end_product_list
@@ -28,19 +27,19 @@ end_product_list
 # -nq- here means there is no qualifier
 # a "-" here means the dependent product is not required by the parent and will not be setup
 
-qualifier	artdaq_core      gcc     notes
-e6:s6:prof	e6:s6:prof	 -nq-	 -std=c++1y
-e6:s6:debug	e6:s6:debug	 -nq-	 -std=c++1y
-e6:s7:prof	e6:s7:prof	 -nq-	 -std=c++1y
-e6:s7:debug	e6:s7:debug	 -nq-	 -std=c++1y
-e7:s7:prof	e7:s7:prof	 -nq-	 -std=c++1y
-e7:s7:debug	e7:s7:debug	 -nq-	 -std=c++1y
-nu:e6:s6:prof	nu:e6:s6:prof	 -nq-	 -std=c++1y
-nu:e6:s6:debug	nu:e6:s6:debug	 -nq-	 -std=c++1y
-nu:e6:s7:prof	nu:e6:s7:prof	 -nq-	 -std=c++1y
-nu:e6:s7:debug	nu:e6:s7:debug	 -nq-	 -std=c++1y
-nu:e7:s7:prof	nu:e7:s7:prof	 -nq-	 -std=c++1y
-nu:e7:s7:debug	nu:e7:s7:debug	 -nq-	 -std=c++1y
+qualifier	artdaq_core      notes
+e6:s6:prof	e6:s6:prof	 -std=c++1y
+e6:s6:debug	e6:s6:debug	 -std=c++1y
+e6:s7:prof	e6:s7:prof	 -std=c++1y
+e6:s7:debug	e6:s7:debug	 -std=c++1y
+e7:s7:prof	e7:s7:prof	 -std=c++1y
+e7:s7:debug	e7:s7:debug	 -std=c++1y
+nu:e6:s6:prof	nu:e6:s6:prof	 -std=c++1y
+nu:e6:s6:debug	nu:e6:s6:debug	 -std=c++1y
+nu:e6:s7:prof	nu:e6:s7:prof	 -std=c++1y
+nu:e6:s7:debug	nu:e6:s7:debug	 -std=c++1y
+nu:e7:s7:prof	nu:e7:s7:prof	 -std=c++1y
+nu:e7:s7:debug	nu:e7:s7:debug	 -std=c++1y
 
 
 # Preserve tabs and formatting in emacs and vi / vim:

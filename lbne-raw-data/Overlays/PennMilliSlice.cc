@@ -110,6 +110,12 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
 	case lbne::PennMicroSlice::DataTypeTimestamp:
 	  payload_size = lbne::PennMicroSlice::payload_size_timestamp;
 	  break;
+	case lbne::PennMicroSlice::DataTypeSelftest:
+	  payload_size = lbne::PennMicroSlice::payload_size_selftest;
+	  break;
+	case lbne::PennMicroSlice::DataTypeChecksum:
+	  payload_size = lbne::PennMicroSlice::payload_size_checksum;
+	  break;
 	default:
 	  std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
 	  payload_size = 0;
@@ -127,6 +133,12 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
 	break;
       case lbne::PennMicroSlice::DataTypeTimestamp:
 	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
+	break;
+      case lbne::PennMicroSlice::DataTypeSelftest:
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+	break;
+      case lbne::PennMicroSlice::DataTypeChecksum:
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
 	break;
       default:
 	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;

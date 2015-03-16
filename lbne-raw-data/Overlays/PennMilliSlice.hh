@@ -73,7 +73,9 @@ public:
 
   // Returns the number of payloads in this MilliSlice
   Header::payload_count_t payloadCount() const;
-  Header::payload_count_t payloadCount(Header::payload_count_t& counter, Header::payload_count_t& trigger, Header::payload_count_t& timestamp) const;
+  Header::payload_count_t payloadCount(Header::payload_count_t& counter, Header::payload_count_t& trigger, Header::payload_count_t& timestamp
+				       //, Header::payload_count_t& selftest, Header::payload_count_t& checksum
+				       ) const;
 
 #ifdef PENN_DONT_REBLOCK_USLICES
   // Returns the number of MicroSlices in this MilliSlice

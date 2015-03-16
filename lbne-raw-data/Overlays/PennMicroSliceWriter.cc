@@ -5,7 +5,7 @@ PennMicroSliceWriter(uint8_t* address, uint32_t max_size_bytes) :
 		     //uint8_t sequence_id) :
     PennMicroSlice(address), max_size_bytes_(max_size_bytes)
 {
-  header_()->format_version = 0xF0;
+  header_()->format_version = 0xE1;
   //header_()->sequence_id    = sequence_id;
   header_()->block_size     = sizeof(Header);
 

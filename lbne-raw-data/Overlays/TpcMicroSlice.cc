@@ -70,6 +70,18 @@ std::unique_ptr<lbne::TpcNanoSlice> lbne::TpcMicroSlice::nanoSlice(uint32_t inde
 	return nslice_ptr;
 }
 
+// Puts the ADC for nanoslice[index] and sample[sample] in memory [value]
+// Returns success
+bool lbne::TpcMicroSlice::nanosliceSampleValue(uint32_t index, uint32_t sample, uint16_t& value) const
+{
+  if (index < nanoSliceCount()) {
+    uint8_t *ns_ptr = data_(index);
+    TpcNanoSlice nslice(ns_ptr);
+    return nslice.sampleValue(sample,value);
+  }
+  return false;
+}
+
 // Returns a pointer to the header
 lbne::TpcMicroSlice::Header const* lbne::TpcMicroSlice::header_() const
 {

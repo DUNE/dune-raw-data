@@ -66,6 +66,10 @@ public:
   // Returns the number of nanoslices in the microslice
   Header::nanoslice_count_t nanoSliceCount() const;
 
+  // Finds the ADC value associated with nanoslice[index] and sample[sample] and
+  // assigns it to memory location [value]
+  bool nanosliceSampleValue(uint32_t index, uint32_t sample, uint16_t& value) const;
+
 
   // Returns the requested NanoSlice if the requested slice was found,
   // otherwise returns an empty pointer

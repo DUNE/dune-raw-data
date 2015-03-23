@@ -4,6 +4,8 @@
 #include "lbne-raw-data/Overlays/PennMicroSlice.hh"
 #include "artdaq-core/Data/Fragment.hh"
 
+#include <boost/crc.hpp>
+
 //#define PENN_DONT_REBLOCK_USLICES
 
 namespace lbne {
@@ -71,7 +73,9 @@ public:
 
   // Returns the number of payloads in this MilliSlice
   Header::payload_count_t payloadCount() const;
-  Header::payload_count_t payloadCount(Header::payload_count_t& counter, Header::payload_count_t& trigger, Header::payload_count_t& timestamp) const;
+  Header::payload_count_t payloadCount(Header::payload_count_t& counter, Header::payload_count_t& trigger, Header::payload_count_t& timestamp
+				       //, Header::payload_count_t& selftest, Header::payload_count_t& checksum
+				       ) const;
 
 #ifdef PENN_DONT_REBLOCK_USLICES
   // Returns the number of MicroSlices in this MilliSlice
@@ -87,6 +91,9 @@ public:
   uint8_t* payload(uint32_t index, lbne::PennMicroSlice::Payload_Header::data_packet_type_t& data_packet_type,
 		   lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t& short_nova_timestamp,
 		   size_t& payload_size) const;
+
+  // Calculate a checksum for this millslice
+  uint32_t calculateChecksum() const;
 
 protected:
 

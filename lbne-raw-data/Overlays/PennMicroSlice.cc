@@ -78,6 +78,12 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
 	case lbne::PennMicroSlice::DataTypeTimestamp:
 	  payload_size = lbne::PennMicroSlice::payload_size_timestamp;
 	  break;
+	case lbne::PennMicroSlice::DataTypeSelftest:
+	  payload_size = lbne::PennMicroSlice::payload_size_selftest;
+	  break;
+	case lbne::PennMicroSlice::DataTypeChecksum:
+	  payload_size = lbne::PennMicroSlice::payload_size_checksum;
+	  break;
 	default:
 	  std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
 	  payload_size = 0;
@@ -96,6 +102,12 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
       case lbne::PennMicroSlice::DataTypeTimestamp:
 	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
 	break;
+      case lbne::PennMicroSlice::DataTypeSelftest:
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+	break;
+      case lbne::PennMicroSlice::DataTypeChecksum:
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
+	break;
       default:
 	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
 	return nullptr;
@@ -113,10 +125,12 @@ lbne::PennMicroSlice::sample_count_t lbne::PennMicroSlice::sampleCount(
 								       lbne::PennMicroSlice::sample_count_t &n_counter_words,
 								       lbne::PennMicroSlice::sample_count_t &n_trigger_words,
 								       lbne::PennMicroSlice::sample_count_t &n_timestamp_words,
+								       lbne::PennMicroSlice::sample_count_t &n_selftest_words,
+								       lbne::PennMicroSlice::sample_count_t &n_checksum_words,
 								       bool swap_payload_header_bytes,
 								       size_t override_uslice_size) const
 {
-  n_counter_words = n_trigger_words = n_timestamp_words = 0;
+  n_counter_words = n_trigger_words = n_timestamp_words = n_selftest_words = n_checksum_words = 0;
 
   //if we're overriding, we don't have a Header to offset by
   uint8_t* pl_ptr = 0;
@@ -152,13 +166,21 @@ lbne::PennMicroSlice::sample_count_t lbne::PennMicroSlice::sampleCount(
 	n_timestamp_words++;
 	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
 	break;
+      case lbne::PennMicroSlice::DataTypeSelftest:
+	n_selftest_words++;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+        break;
+      case lbne::PennMicroSlice::DataTypeChecksum:
+	n_checksum_words++;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
+        break;
       default:
 	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
 	return 0;
 	break;
       }//switch(type)
   }
-  return n_counter_words + n_trigger_words + n_timestamp_words;
+  return n_counter_words + n_trigger_words + n_timestamp_words + n_selftest_words + n_checksum_words;
 }
 
 //Returns a point to the first payload header AFTER boundary_time
@@ -213,6 +235,12 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplit(uint64_t boundary_time, size_t& r
       case lbne::PennMicroSlice::DataTypeTimestamp:
 	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
 	break;
+      case lbne::PennMicroSlice::DataTypeSelftest:
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+        break;
+      case lbne::PennMicroSlice::DataTypeChecksum:
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
+        break;
       default:
 	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
 	return nullptr;
@@ -228,14 +256,18 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCount(uint64_t boundary_time, s
 						       lbne::PennMicroSlice::sample_count_t &n_counter_words_b,
 						       lbne::PennMicroSlice::sample_count_t &n_trigger_words_b,
 						       lbne::PennMicroSlice::sample_count_t &n_timestamp_words_b,
+						       lbne::PennMicroSlice::sample_count_t &n_selftest_words_b,
+						       lbne::PennMicroSlice::sample_count_t &n_checksum_words_b,
 						       lbne::PennMicroSlice::sample_count_t &n_words_a,
 						       lbne::PennMicroSlice::sample_count_t &n_counter_words_a,
 						       lbne::PennMicroSlice::sample_count_t &n_trigger_words_a,
 						       lbne::PennMicroSlice::sample_count_t &n_timestamp_words_a,
+						       lbne::PennMicroSlice::sample_count_t &n_selftest_words_a,
+						       lbne::PennMicroSlice::sample_count_t &n_checksum_words_a,
 						       bool swap_payload_header_bytes, size_t override_uslice_size) const
 {
-  n_words_b = n_counter_words_b = n_trigger_words_b = n_timestamp_words_b = 0;
-  n_words_a = n_counter_words_a = n_trigger_words_a = n_timestamp_words_a = 0;
+  n_words_b = n_counter_words_b = n_trigger_words_b = n_timestamp_words_b = n_selftest_words_b = n_checksum_words_b = 0;
+  n_words_a = n_counter_words_a = n_trigger_words_a = n_timestamp_words_a = n_selftest_words_a = n_checksum_words_a = 0;
   remaining_size = 0;
   uint8_t* remaining_data_ptr = nullptr;
   bool is_before = true;
@@ -297,6 +329,20 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCount(uint64_t boundary_time, s
 	  n_timestamp_words_a++;
 	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
 	break;
+      case lbne::PennMicroSlice::DataTypeSelftest:
+	if(is_before)
+	  n_selftest_words_b++;
+	else
+	  n_selftest_words_a++;
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+	break;
+      case lbne::PennMicroSlice::DataTypeChecksum:
+	if(is_before)
+	  n_checksum_words_b++;
+	else
+	  n_checksum_words_a++;
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
+	break;
       default:
 	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type 
 		  << std::dec << std::endl;
@@ -304,14 +350,16 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCount(uint64_t boundary_time, s
 	break;
       }//switch(type)
   }
-  n_words_b = n_counter_words_b + n_trigger_words_b + n_timestamp_words_b;
-  n_words_a = n_counter_words_a + n_trigger_words_a + n_timestamp_words_a;
+  n_words_b = n_counter_words_b + n_trigger_words_b + n_timestamp_words_b + n_selftest_words_b + n_checksum_words_b;
+  n_words_a = n_counter_words_a + n_trigger_words_a + n_timestamp_words_a + n_selftest_words_a + n_checksum_words_a;
 #ifdef __DEBUG_sampleTimeSplitAndCount__
   std::cout << "PennMicroSlice::sampleTimeSplitAndCount DEBUG returning with remaining size " << remaining_size << " for boundary_time " << boundary_time
 	    << std::endl
 	    << "PennMicroSlice::sampleTimeSplitAndCount DEBUG returning with: "
-	    << " Payloads before " << n_words_b << " = " << n_counter_words_b << " + " << n_trigger_words_b << " + " << n_timestamp_words_b
-	    << " Payloads after  " << n_words_a << " = " << n_counter_words_a << " + " << n_trigger_words_a << " + " << n_timestamp_words_a
+	    << " Payloads before " << n_words_b << " = " << n_counter_words_b << " + " << n_trigger_words_b
+	    << " + " << n_timestamp_words_b << " + " << n_selftest_words_b << " + " << n_checksum_words_b
+	    << " Payloads after  " << n_words_a << " = " << n_counter_words_a << " + " << n_trigger_words_a
+	    << " + " << n_timestamp_words_a << " + " << n_selftest_words_a << " + " << n_checksum_words_a
 	    << std::endl;
 #endif
   return remaining_data_ptr;
@@ -325,19 +373,25 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
 							    lbne::PennMicroSlice::sample_count_t &n_counter_words_b,
 							    lbne::PennMicroSlice::sample_count_t &n_trigger_words_b,
 							    lbne::PennMicroSlice::sample_count_t &n_timestamp_words_b,
+							    lbne::PennMicroSlice::sample_count_t &n_selftest_words_b,
+							    lbne::PennMicroSlice::sample_count_t &n_checksum_words_b,
 							    lbne::PennMicroSlice::sample_count_t &n_words_a,
 							    lbne::PennMicroSlice::sample_count_t &n_counter_words_a,
 							    lbne::PennMicroSlice::sample_count_t &n_trigger_words_a,
 							    lbne::PennMicroSlice::sample_count_t &n_timestamp_words_a,
+							    lbne::PennMicroSlice::sample_count_t &n_selftest_words_a,
+							    lbne::PennMicroSlice::sample_count_t &n_checksum_words_a,
 							    lbne::PennMicroSlice::sample_count_t &n_words_o,
 							    lbne::PennMicroSlice::sample_count_t &n_counter_words_o,
 							    lbne::PennMicroSlice::sample_count_t &n_trigger_words_o,
 							    lbne::PennMicroSlice::sample_count_t &n_timestamp_words_o,
+							    lbne::PennMicroSlice::sample_count_t &n_selftest_words_o,
+							    lbne::PennMicroSlice::sample_count_t &n_checksum_words_o,
 							    bool swap_payload_header_bytes, size_t override_uslice_size) const
 {
-  n_words_b = n_counter_words_b = n_trigger_words_b = n_timestamp_words_b = 0;
-  n_words_a = n_counter_words_a = n_trigger_words_a = n_timestamp_words_a = 0;
-  //n_words_o = n_counter_words_o = n_trigger_words_o = n_timestamp_words_o = 0; //don't reset these, as there is likely multiple uslices contained in the overlap
+  n_words_b = n_counter_words_b = n_trigger_words_b = n_timestamp_words_b = n_selftest_words_b = n_checksum_words_b = 0;
+  n_words_a = n_counter_words_a = n_trigger_words_a = n_timestamp_words_a = n_selftest_words_a = n_checksum_words_a = 0;
+  //n_words_o = n_counter_words_o = n_trigger_words_o = n_timestamp_words_o = n_selftest_words_o = n_checksum_words_o = 0; //don't reset these, as there is likely multiple uslices contained in the overlap
   overlap_size = remaining_size = 0;
   uint8_t* remaining_data_ptr = nullptr;
   overlap_data_ptr = nullptr;
@@ -430,6 +484,24 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
 	  n_timestamp_words_o++;
 	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
 	break;
+      case lbne::PennMicroSlice::DataTypeSelftest:
+        if(is_before_boundary)
+          n_selftest_words_b++;
+        else
+          n_selftest_words_a++;
+        if(is_in_overlap)
+          n_selftest_words_o++;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+        break;
+      case lbne::PennMicroSlice::DataTypeChecksum:
+        if(is_before_boundary)
+          n_checksum_words_b++;
+        else
+          n_checksum_words_a++;
+        if(is_in_overlap)
+          n_checksum_words_o++;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
+        break;
       default:
 	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type 
 		  << std::dec << std::endl;
@@ -437,18 +509,21 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
 	break;
       }//switch(type)
   }
-  n_words_b = n_counter_words_b + n_trigger_words_b + n_timestamp_words_b;
-  n_words_a = n_counter_words_a + n_trigger_words_a + n_timestamp_words_a;
-  n_words_o = n_counter_words_o + n_trigger_words_o + n_timestamp_words_o;
+  n_words_b = n_counter_words_b + n_trigger_words_b + n_timestamp_words_b + n_selftest_words_b + n_checksum_words_b;
+  n_words_a = n_counter_words_a + n_trigger_words_a + n_timestamp_words_a + n_selftest_words_a + n_checksum_words_a;
+  n_words_o = n_counter_words_o + n_trigger_words_o + n_timestamp_words_o + n_selftest_words_o + n_checksum_words_o;
 #ifdef __DEBUG_sampleTimeSplitAndCountTwice__
   std::cout << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG returning with:"
 	    << " remaining size " << remaining_size << " for boundary_time " << boundary_time
 	    << " overlap   size " << overlap_size   << " for overlap_time "  << overlap_time
 	    << std::endl
 	    << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG returning with: "
-	    << " Payloads before  " << n_words_b << " = " << n_counter_words_b << " + " << n_trigger_words_b << " + " << n_timestamp_words_b
-	    << " Payloads after   " << n_words_a << " = " << n_counter_words_a << " + " << n_trigger_words_a << " + " << n_timestamp_words_a
-	    << " Overlap payloads " << n_words_o << " = " << n_counter_words_o << " + " << n_trigger_words_o << " + " << n_timestamp_words_o
+	    << " Payloads before  " << n_words_b << " = " << n_counter_words_b << " + " << n_trigger_words_b 
+	    << " + " << n_timestamp_words_b << " + " << n_selftest_words_b << " + " << n_checksum_words_b
+	    << " Payloads after   " << n_words_a << " = " << n_counter_words_a << " + " << n_trigger_words_a
+	    << " + " << n_timestamp_words_a << " + " << n_selftest_words_a << " + " << n_checksum_words_a
+	    << " Overlap payloads " << n_words_o << " = " << n_counter_words_o << " + " << n_trigger_words_o
+	    << " + " << n_timestamp_words_o << " + " << n_selftest_words_o << " + " << n_checksum_words_o
 	    << std::endl;
 #endif
   return remaining_data_ptr;

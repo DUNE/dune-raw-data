@@ -110,6 +110,12 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
 	case lbne::PennMicroSlice::DataTypeTimestamp:
 	  payload_size = lbne::PennMicroSlice::payload_size_timestamp;
 	  break;
+	case lbne::PennMicroSlice::DataTypeSelftest:
+	  payload_size = lbne::PennMicroSlice::payload_size_selftest;
+	  break;
+	case lbne::PennMicroSlice::DataTypeChecksum:
+	  payload_size = lbne::PennMicroSlice::payload_size_checksum;
+	  break;
 	default:
 	  std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
 	  payload_size = 0;
@@ -128,6 +134,12 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
       case lbne::PennMicroSlice::DataTypeTimestamp:
 	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
 	break;
+      case lbne::PennMicroSlice::DataTypeSelftest:
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+	break;
+      case lbne::PennMicroSlice::DataTypeChecksum:
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
+	break;
       default:
 	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
 	return nullptr;
@@ -138,6 +150,20 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
   std::cerr << "Could not find payload with ID " << index << " (the data buffer has overrun)" << std::endl;
   payload_size = 0;
   return nullptr;
+}
+
+uint32_t lbne::PennMilliSlice::calculateChecksum() const
+{
+  try {
+    boost::crc_32_type checksum;
+    checksum.process_bytes(buffer_, this->size());
+    return checksum.checksum();
+  }
+  catch ( ... ) {
+    std::cout << "Error caught in PennMilliSlice::calculateChecksum()" << std::endl;
+    //TODO handle error cleanly here
+    return 0;
+  }
 }
 
 lbne::PennMilliSlice::Header const* lbne::PennMilliSlice::header_() const

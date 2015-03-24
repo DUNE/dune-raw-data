@@ -387,12 +387,14 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
 							    lbne::PennMicroSlice::sample_count_t &n_timestamp_words_o,
 							    lbne::PennMicroSlice::sample_count_t &n_selftest_words_o,
 							    lbne::PennMicroSlice::sample_count_t &n_checksum_words_o,
+							    uint32_t &checksum,
 							    bool swap_payload_header_bytes, size_t override_uslice_size) const
 {
   n_words_b = n_counter_words_b = n_trigger_words_b = n_timestamp_words_b = n_selftest_words_b = n_checksum_words_b = 0;
   n_words_a = n_counter_words_a = n_trigger_words_a = n_timestamp_words_a = n_selftest_words_a = n_checksum_words_a = 0;
   //n_words_o = n_counter_words_o = n_trigger_words_o = n_timestamp_words_o = n_selftest_words_o = n_checksum_words_o = 0; //don't reset these, as there is likely multiple uslices contained in the overlap
   overlap_size = remaining_size = 0;
+  checksum = 0;
   uint8_t* remaining_data_ptr = nullptr;
   overlap_data_ptr = nullptr;
   bool is_before_boundary = true, is_before_overlap = true, is_in_overlap = false;
@@ -500,6 +502,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
           n_checksum_words_a++;
         if(is_in_overlap)
           n_checksum_words_o++;
+	checksum = *(uint32_t*)(pl_ptr + lbne::PennMicroSlice::Payload_Header::size_words);
         pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
         break;
       default:

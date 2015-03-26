@@ -152,7 +152,7 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
   return nullptr;
 }
 
-uint32_t lbne::PennMilliSlice::calculateChecksum() const
+lbne::PennMilliSlice::checksum_t lbne::PennMilliSlice::calculateChecksum() const
 {
   try {
     boost::crc_32_type checksum;
@@ -164,6 +164,11 @@ uint32_t lbne::PennMilliSlice::calculateChecksum() const
     //TODO handle error cleanly here
     return 0;
   }
+}
+
+lbne::PennMilliSlice::checksum_t lbne::PennMilliSlice::checksum() const
+{
+  return *(reinterpret_cast<lbne::PennMilliSlice::checksum_t*>(buffer_ + this->size() - sizeof(lbne::PennMilliSlice::checksum_t)));
 }
 
 lbne::PennMilliSlice::Header const* lbne::PennMilliSlice::header_() const

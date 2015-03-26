@@ -101,6 +101,7 @@ public:
 					sample_count_t &n_timestamp_words_a, sample_count_t &n_selftest_words_a, sample_count_t &n_checksum_words_a,
 					sample_count_t &n_words_o, sample_count_t &n_counter_words_o, sample_count_t &n_trigger_words_o,
 					sample_count_t &n_timestamp_words_o, sample_count_t &n_selftest_words_o, sample_count_t &n_checksum_words_o,
+					uint32_t &checksum,
 					bool swap_payload_header_bytes, size_t override_uslice_size = 0) const;
 
   //Values used to handle the rollover.

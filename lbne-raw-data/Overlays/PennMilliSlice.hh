@@ -92,8 +92,14 @@ public:
 		   lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t& short_nova_timestamp,
 		   size_t& payload_size) const;
 
+
+  typedef uint32_t checksum_t;
+
   // Calculate a checksum for this millslice
-  uint32_t calculateChecksum() const;
+  checksum_t calculateChecksum() const;
+
+  // Returns the checksum
+  checksum_t checksum() const;
 
 protected:
 

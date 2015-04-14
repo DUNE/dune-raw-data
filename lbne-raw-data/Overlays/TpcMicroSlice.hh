@@ -75,9 +75,6 @@ public:
   // otherwise returns an empty pointer
   std::unique_ptr<TpcNanoSlice> nanoSlice(uint32_t index) const;
 
-  // Size of nanoslice contained in microslice (same for all)
-  unsigned int nanoslice_size;
-
 protected:
 
   // returns a pointer to the header

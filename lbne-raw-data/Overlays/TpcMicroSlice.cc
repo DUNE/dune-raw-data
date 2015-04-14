@@ -4,10 +4,6 @@
 
 lbne::TpcMicroSlice::TpcMicroSlice(uint8_t* address) : buffer_(address)
 {
-  // Size of nanoslice
-  // Currently hard-coded to improve efficiency, will be able to find a
-  // dynamic way of setting this variable if necessary
-  nanoslice_size = 264;
 }
 
 // Returns the size of the TpcMicroSlice
@@ -96,5 +92,6 @@ lbne::TpcMicroSlice::Header const* lbne::TpcMicroSlice::header_() const
 uint8_t* lbne::TpcMicroSlice::data_(uint32_t index) const
 {
   uint8_t* ns_ptr = reinterpret_cast<uint8_t *>(buffer_ + sizeof(Header));
-  return ns_ptr + (index * nanoslice_size);
+  TpcNanoSlice tmp_ns(ns_ptr);
+  return ns_ptr + (index * tmp_ns.size());
 }

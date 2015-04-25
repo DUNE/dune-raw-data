@@ -68,6 +68,12 @@ int32_t lbne::PennMilliSliceWriter::finalize(bool override, uint32_t data_size_b
     header_()->sequence_id             = sequence_id;
   }
 
+  //Calculate checksum
+  //TODO decide if a footer is the right place to put the checksum. Alternative is associate it with the fragment
+  uint8_t* end_ptr = buffer_ + header_()->millislice_size;
+  *(reinterpret_cast<lbne::PennMilliSliceWriter::checksum_t *>(end_ptr)) = calculateChecksum();
+  header_()->millislice_size += sizeof(lbne::PennMilliSliceWriter::checksum_t);
+
   // next, we update our maximum size so that no more MicroSlices
   // can be added
   int32_t size_diff = max_size_bytes_ - header_()->millislice_size;

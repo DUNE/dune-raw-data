@@ -92,9 +92,6 @@ lbne::TpcMicroSlice::Header const* lbne::TpcMicroSlice::header_() const
 uint8_t* lbne::TpcMicroSlice::data_(uint32_t index) const
 {
   uint8_t* ns_ptr = reinterpret_cast<uint8_t *>(buffer_ + sizeof(Header));
-  for (uint32_t idx = 0; idx < index; ++idx) {
-    TpcNanoSlice tmp_ns(ns_ptr);
-    ns_ptr += tmp_ns.size();
-  }
-  return ns_ptr;
+  TpcNanoSlice tmp_ns(ns_ptr);
+  return ns_ptr + (index * tmp_ns.size());
 }

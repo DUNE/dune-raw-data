@@ -1,7 +1,7 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
-parent lbne_raw_data	v1_03_03
-defaultqual	e7:nu:s8
+parent lbne_raw_data	v1_03_04
+defaultqual	e7:nu:s11
 
 # These optional lines define the installed directories where
 # headers, libraries, and executables will be found
@@ -17,37 +17,37 @@ bindir      fq_dir      bin
 
 #
 product		version		optional
-artdaq_core	v1_04_11
-cetbuildtools	v4_09_02	-	only_for_build
+artdaq_core	v1_04_13
+cetbuildtools	v4_10_02	-	only_for_build
 end_product_list
 
-
-# e7  - with gcc 4.9.2 and -std=c++1y
 # e6  - with gcc 4.9.1 and -std=c++1y
+# e7  - with gcc 4.9.2 and -std=c++1y
+
+# s6  - with art v1_12_05
+# s7  - with art v1_13_01
+# s8  - with art v1_13_02
+# s11 - with art v1_14_02
 # -nq- here means there is no qualifier
 # a "-" here means the dependent product is not required by the parent and will not be setup
 
 qualifier	artdaq_core      notes
-e6:s6:prof	e6:s6:prof	 -std=c++1y
-e6:s6:debug	e6:s6:debug	 -std=c++1y
-e6:s7:prof	e6:s7:prof	 -std=c++1y
-e6:s7:debug	e6:s7:debug	 -std=c++1y
-e6:s8:prof	e6:s8:prof	 -std=c++1y
-e6:s8:debug	e6:s8:debug	 -std=c++1y
-e7:s7:prof	e7:s7:prof	 -std=c++1y
-e7:s7:debug	e7:s7:debug	 -std=c++1y
-e7:s8:prof	e7:s8:prof	 -std=c++1y
-e7:s8:debug	e7:s8:debug	 -std=c++1y
-nu:e6:s6:prof	nu:e6:s6:prof	 -std=c++1y
-nu:e6:s6:debug	nu:e6:s6:debug	 -std=c++1y
-nu:e6:s7:prof	nu:e6:s7:prof	 -std=c++1y
-nu:e6:s7:debug	nu:e6:s7:debug	 -std=c++1y
-nu:e6:s8:prof	nu:e6:s8:prof	 -std=c++1y
-nu:e6:s8:debug	nu:e6:s8:debug	 -std=c++1y
-nu:e7:s7:prof	nu:e7:s7:prof	 -std=c++1y
-nu:e7:s7:debug	nu:e7:s7:debug	 -std=c++1y
-nu:e7:s8:prof	nu:e7:s8:prof	 -std=c++1y
-nu:e7:s8:debug	nu:e7:s8:debug	 -std=c++1y
+e6:s6:prof	e6:s6:prof
+e6:s6:debug	e6:s6:debug
+e6:s7:prof	e6:s7:prof
+e6:s7:debug	e6:s7:debug
+e7:s8:prof	e7:s8:prof
+e7:s8:debug	e7:s8:debug
+e7:s11:prof	e7:s11:prof
+e7:s11:debug	e7:s11:debug
+nu:e6:s6:prof	nu:e6:s6:prof
+nu:e6:s6:debug	nu:e6:s6:debug
+nu:e6:s7:prof	nu:e6:s7:prof
+nu:e6:s7:debug	nu:e6:s7:debug
+nu:e7:s8:prof	nu:e7:s8:prof
+nu:e7:s8:debug	nu:e7:s8:debug
+nu:e7:s11:prof	nu:e7:s11:prof
+nu:e7:s11:debug	nu:e7:s11:debug
 
 
 # Preserve tabs and formatting in emacs and vi / vim:

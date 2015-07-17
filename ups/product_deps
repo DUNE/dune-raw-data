@@ -29,7 +29,7 @@ end_product_list
 # s8  - with art v1_13_02
 # s11 - with art v1_14_02
 # s12 - with art v1_14_03
-# s12 - with art v1_15_01
+# s14 - with art v1_15_01
 # -nq- here means there is no qualifier
 # a "-" here means the dependent product is not required by the parent and will not be setup
 

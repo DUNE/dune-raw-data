@@ -1,7 +1,7 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
-parent lbne_raw_data	v1_03_05
-defaultqual	e7:nu:s12
+parent lbne_raw_data	v1_03_06
+defaultqual	e7:nu:s14
 
 # These optional lines define the installed directories where
 # headers, libraries, and executables will be found
@@ -17,7 +17,7 @@ bindir      fq_dir      bin
 
 #
 product		version		optional
-artdaq_core	v1_04_14
+artdaq_core	v1_04_15
 cetbuildtools	v4_12_05	-	only_for_build
 end_product_list
 
@@ -29,6 +29,7 @@ end_product_list
 # s8  - with art v1_13_02
 # s11 - with art v1_14_02
 # s12 - with art v1_14_03
+# s12 - with art v1_15_01
 # -nq- here means there is no qualifier
 # a "-" here means the dependent product is not required by the parent and will not be setup
 
@@ -43,6 +44,8 @@ e7:s11:prof	e7:s11:prof
 e7:s11:debug	e7:s11:debug
 e7:s12:prof	e7:s12:prof
 e7:s12:debug	e7:s12:debug
+e7:s14:prof	e7:s14:prof
+e7:s14:debug	e7:s14:debug
 nu:e6:s6:prof	nu:e6:s6:prof
 nu:e6:s6:debug	nu:e6:s6:debug
 nu:e6:s7:prof	nu:e6:s7:prof
@@ -53,7 +56,8 @@ nu:e7:s11:prof	nu:e7:s11:prof
 nu:e7:s11:debug	nu:e7:s11:debug
 nu:e7:s12:prof	nu:e7:s12:prof
 nu:e7:s12:debug	nu:e7:s12:debug
-
+nu:e7:s14:prof	nu:e7:s14:prof
+nu:e7:s14:debug	nu:e7:s14:debug
 
 # Preserve tabs and formatting in emacs and vi / vim:
 

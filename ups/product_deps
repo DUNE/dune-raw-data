@@ -1,6 +1,6 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
-parent lbne_raw_data	v1_03_06
+parent lbne_raw_data	v1_03_07
 defaultqual	e7:nu:s14
 
 # These optional lines define the installed directories where

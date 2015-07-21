@@ -114,7 +114,8 @@ public:
   //The types of data words
   static const Payload_Header::data_packet_type_t DataTypeCounter   = 0x01; //0b0001
   static const Payload_Header::data_packet_type_t DataTypeTrigger   = 0x02; //0b0010
-  static const Payload_Header::data_packet_type_t DataTypeTimestamp = 0x08; //0b1000
+  //  static const Payload_Header::data_packet_type_t DataTypeTimestamp = 0x08; //0b1000
+  static const Payload_Header::data_packet_type_t DataTypeTimestamp = 0x07; //0b0111
   static const Payload_Header::data_packet_type_t DataTypeSelftest  = 0x00; //0b0000
   static const Payload_Header::data_packet_type_t DataTypeChecksum  = 0x04; //0b0100
 

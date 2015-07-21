@@ -1,4 +1,8 @@
 #include "lbne-raw-data/Overlays/PennMicroSlice.hh"
+#include "lbne-raw-data/Overlays/Utilities.hh"
+
+#include "messagefacility/MessageLogger/MessageLogger.h"
+
 #include <iostream>
 #include <iomanip>
 #include <stdio.h>
@@ -410,6 +414,10 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
     pl_ptr  = buffer_ + sizeof(Header);
     pl_size = size();
   }
+
+  mf::LogInfo("PennMicroSlice") << "JCF: pl_ptr == " << static_cast<void*>(pl_ptr) << ", pl_size == " << pl_size;
+  
+  display_bits(pl_ptr, pl_size, "PennMicroSlice");
 
   //loop over the microslice
   while(pl_ptr < (buffer_ + pl_size)) {

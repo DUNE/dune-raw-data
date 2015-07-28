@@ -29,8 +29,8 @@ S reinterpret_cast_checked(T inptr) {
 
   S outptr = reinterpret_cast<S>( inptr );
 
-  void* inptr_void = static_cast<void*>( inptr );
-  void* outptr_void = static_cast<void*>( outptr );
+  const void* inptr_void = static_cast<const void*>( inptr );
+  const void* outptr_void = static_cast<const void*>( outptr );
 
   if ( inptr_void != outptr_void ) {
     throw cet::exception("reinterpret_cast_checked") << "Error: reinterpret_cast casted " << inptr_void << " to " << outptr_void << " => results of the cast can't be trusted";

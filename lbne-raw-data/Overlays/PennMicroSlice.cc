@@ -11,7 +11,7 @@
 //#define __DEBUG_sampleCount__
 //#define __DEBUG_sampleTimeSplit__
 //#define __DEBUG_sampleTimeSplitAndCount__
-//#define __DEBUG_sampleTimeSplitAndCountTwice__
+#define __DEBUG_sampleTimeSplitAndCountTwice__
 
 lbne::PennMicroSlice::PennMicroSlice(uint8_t* address) : buffer_(address) 
 {
@@ -65,7 +65,7 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
   while(pl_ptr < (buffer_ + pl_size)) {
     if(swap_payload_header_bytes)
       *((uint32_t*)pl_ptr) = ntohl(*((uint32_t*)pl_ptr));
-    lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
+    lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast_checked<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
     lbne::PennMicroSlice::Payload_Header::data_packet_type_t type = payload_header->data_packet_type;
     if(i == word_id) {
       data_packet_type = type;
@@ -151,7 +151,7 @@ lbne::PennMicroSlice::sample_count_t lbne::PennMicroSlice::sampleCount(
   while(pl_ptr < (buffer_ + pl_size)) {
     if(swap_payload_header_bytes)
       *((uint32_t*)pl_ptr) = ntohl(*((uint32_t*)pl_ptr));
-    lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
+    lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast_checked<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
     lbne::PennMicroSlice::Payload_Header::data_packet_type_t type = payload_header->data_packet_type;
 #ifdef __DEBUG_sampleCount__
     std::cout << "PennMicroSlice::sampleCount DEBUG type 0x" << std::hex << (unsigned int)type << " timestamp " << std::dec << payload_header->short_nova_timestamp << std::endl;
@@ -211,7 +211,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplit(uint64_t boundary_time, size_t& r
   while(pl_ptr < (buffer_ + pl_size)) {
     if(swap_payload_header_bytes)
       *((uint32_t*)pl_ptr) = ntohl(*((uint32_t*)pl_ptr));
-    lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
+    lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast_checked<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
     lbne::PennMicroSlice::Payload_Header::data_packet_type_t     type      = payload_header->data_packet_type;
     lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t timestamp = payload_header->short_nova_timestamp;
 #ifdef __DEBUG_sampleTimeSplit__
@@ -292,7 +292,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCount(uint64_t boundary_time, s
   while(pl_ptr < (buffer_ + pl_size)) {
     if(swap_payload_header_bytes)
       *((uint32_t*)pl_ptr) = ntohl(*((uint32_t*)pl_ptr));
-    lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
+    lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast_checked<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
     lbne::PennMicroSlice::Payload_Header::data_packet_type_t     type      = payload_header->data_packet_type;
     lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t timestamp = payload_header->short_nova_timestamp;
 #ifdef __DEBUG_sampleTimeSplitAndCount__
@@ -422,7 +422,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
   //loop over the microslice
   while(pl_ptr < (buffer_ + pl_size)) {
 #ifdef __DEBUG_sampleTimeSplitAndCountTwice__
-    std::cout << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG pointers." 
+    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG pointers." 
 	      << " Payload "    << (unsigned int*)pl_ptr
 	      << "\tOverlap "   << (unsigned int*)overlap_data_ptr
 	      << "\tRemaining " << (unsigned int*)remaining_data_ptr
@@ -430,11 +430,11 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
 #endif
     if(swap_payload_header_bytes)
       *((uint32_t*)pl_ptr) = ntohl(*((uint32_t*)pl_ptr));
-    lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
+    lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast_checked<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
     lbne::PennMicroSlice::Payload_Header::data_packet_type_t     type      = payload_header->data_packet_type;
     lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t timestamp = payload_header->short_nova_timestamp;
 #ifdef __DEBUG_sampleTimeSplitAndCountTwice__
-    std::cout << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type 0x" << std::hex << (unsigned int)type << " timestamp " << std::dec << timestamp << std::endl;
+    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type 0x" << std::hex << (unsigned int)type << " timestamp " << std::hex << timestamp << std::endl;
 #endif
     //check the timestamp
     if(is_before_boundary && (timestamp > boundary_time)) {
@@ -524,7 +524,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
   n_words_a = n_counter_words_a + n_trigger_words_a + n_timestamp_words_a + n_selftest_words_a + n_checksum_words_a;
   n_words_o = n_counter_words_o + n_trigger_words_o + n_timestamp_words_o + n_selftest_words_o + n_checksum_words_o;
 #ifdef __DEBUG_sampleTimeSplitAndCountTwice__
-  std::cout << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG returning with:"
+  mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG returning with:"
 	    << " remaining size " << remaining_size << " for boundary_time " << boundary_time
 	    << " overlap   size " << overlap_size   << " for overlap_time "  << overlap_time
 	    << std::endl
@@ -543,17 +543,17 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
 // Returns a pointer to the raw data words in the microslice for diagnostics
 uint32_t* lbne::PennMicroSlice::raw() const
 {
-	return reinterpret_cast<uint32_t*>(buffer_);
+	return reinterpret_cast_checked<uint32_t*>(buffer_);
 }
 
 // Returns a pointer to the microslice header
 lbne::PennMicroSlice::Header const* lbne::PennMicroSlice::header_() const
 {
-  return reinterpret_cast<Header const *>(buffer_);
+  return reinterpret_cast_checked<Header const *>(buffer_);
 }
 
 // Returns a pointer to the first payload data word in the microslice
 uint32_t const* lbne::PennMicroSlice::data_() const
 {
-  return reinterpret_cast<uint32_t const*>(buffer_ + sizeof(lbne::PennMicroSlice::Header));
+  return reinterpret_cast_checked<uint32_t const*>(buffer_ + sizeof(lbne::PennMicroSlice::Header));
 }

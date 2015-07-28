@@ -20,9 +20,18 @@ public:
     typedef uint8_t  sequence_id_t;
     typedef uint16_t block_size_t;
 
-    format_version_t format_version : 8;
-    sequence_id_t    sequence_id    : 8;
+    // JCF, Jul-28-15
+
+    // The order of these variables have been reversed to reflect that
+    // the block size takes up the two least significant bytes, the
+    // sequence ID the second most significant byte, and the format
+    // version the most significant byte, of the four-byte microslice header
+
     block_size_t     block_size     : 16;
+    sequence_id_t    sequence_id    : 8;
+    format_version_t format_version : 8;
+
+
 
     static size_t const size_words = sizeof(data_t);
 
@@ -37,8 +46,16 @@ public:
     typedef uint8_t  data_packet_type_t;
     typedef uint32_t short_nova_timestamp_t;
 
+    // JCF, Jul-28-15
+
+    // The order of the data packet type and the timestamp have been
+    // swapped to reflect that it's the MOST significant three bits in
+    // the payload header which contain the type. I've also added a
+    // 1-bit pad to reflect that the least significant bit is unused.
+
+    uint8_t padding : 1;
     short_nova_timestamp_t short_nova_timestamp : 28;
-    data_packet_type_t     data_packet_type     : 4;
+    data_packet_type_t     data_packet_type     : 3;
 
     static size_t const size_words = sizeof(data_t);
   };

@@ -62,12 +62,16 @@ public:
 
   typedef Header::block_size_t microslice_size_t;
 
+  // JCF, Jul-28-2015
+
+  // TODO: figure out whether these payload size values are still correct
+
   //the size of the payloads (neglecting the Payload_Header)
   static microslice_size_t const payload_size_counter   = 4 * sizeof(uint32_t); //128-bit payload
   static microslice_size_t const payload_size_trigger   = 1 * sizeof(uint32_t); //32-bit payload
   static microslice_size_t const payload_size_timestamp = 2 * sizeof(uint32_t); //64-bit payload
   static microslice_size_t const payload_size_selftest  = 1 * sizeof(uint32_t); //32-bit payload
-  static microslice_size_t const payload_size_checksum  = 1 * sizeof(uint32_t); //32-bit payload
+  static microslice_size_t const payload_size_checksum  = 0 * sizeof(uint32_t); //32-bit payload
 
   // This constructor accepts a memory buffer that contains an existing
   // microSlice and allows the the data inside it to be accessed
@@ -89,35 +93,58 @@ public:
   lbne::PennMicroSlice::microslice_size_t size() const;
 
   // Returns the number of samples in the microslice
+
   typedef uint32_t sample_count_t;
-  sample_count_t sampleCount(sample_count_t &n_counter_words, sample_count_t &n_trigger_words, sample_count_t &n_timestamp_words,
+
+  sample_count_t sampleCount(sample_count_t &n_counter_words, sample_count_t &n_trigger_words, 
+			     sample_count_t &n_timestamp_words,
 			     sample_count_t &n_selftest_words, sample_count_t &n_checksum_words,
 			     bool swap_payload_header_bytes, size_t override_uslice_size = 0) const;
 
-  // Returns a pointer to the first payload_header in data that has a time after boundary_time (returns 0 if that doesn't exist)
-  // also sets remaining_size - the size of data that is after boundary_time
-  uint8_t* sampleTimeSplit(uint64_t boundary_time, size_t& remaining_size, bool swap_payload_header_bytes, size_t override_uslice_size = 0) const;
+  // Returns a pointer to the first payload_header in data that has a
+  // time after boundary_time (returns 0 if that doesn't exist) also
+  // sets remaining_size - the size of data that is after
+  // boundary_time
 
-  // Returns a pointer to the first payload_header in data that has a time after boundary_time (returns 0 if that doesn't exist)
-  // also sets remaining_size - the size of data that is after boundary_time
-  // and counts payloads before & after the time
-  //NOTE this is prefered to calling sampleCount() and sampleTimeSplit() separately, as it loops through the data exactly once (instead of between once & exactly twice)
+  uint8_t* sampleTimeSplit(uint64_t boundary_time, size_t& remaining_size, bool swap_payload_header_bytes, 
+			   size_t override_uslice_size = 0) const;
+
+  // Returns a pointer to the first payload_header in data that has a
+  // time after boundary_time (returns 0 if that doesn't exist) also
+  // sets remaining_size - the size of data that is after
+  // boundary_time and counts payloads before & after the time NOTE
+  // this is prefered to calling sampleCount() and sampleTimeSplit()
+  // separately, as it loops through the data exactly once (instead of
+  // between once & exactly twice)
+
   uint8_t* sampleTimeSplitAndCount(uint64_t boundary_time, size_t& remaining_size,
-				   sample_count_t &n_words_b, sample_count_t &n_counter_words_b, sample_count_t &n_trigger_words_b,
-				   sample_count_t &n_timestamp_words_b, sample_count_t &n_selftest_words_b, sample_count_t &n_checksum_words_b,
-				   sample_count_t &n_words_a, sample_count_t &n_counter_words_a, sample_count_t &n_trigger_words_a,
-				   sample_count_t &n_timestamp_words_a, sample_count_t &n_selftest_words_a, sample_count_t &n_checksum_words_a,
-				   bool swap_payload_header_bytes, size_t override_uslice_size = 0) const;
+				   sample_count_t &n_words_b, sample_count_t &n_counter_words_b, 
+				   sample_count_t &n_trigger_words_b,
+				   sample_count_t &n_timestamp_words_b, sample_count_t &n_selftest_words_b, 
+				   sample_count_t &n_checksum_words_b,
+				   sample_count_t &n_words_a, sample_count_t &n_counter_words_a, 
+				   sample_count_t &n_trigger_words_a,
+				   sample_count_t &n_timestamp_words_a, sample_count_t &n_selftest_words_a, 
+				   sample_count_t &n_checksum_words_a,
+				   bool swap_payload_header_bytes, 
+				   size_t override_uslice_size = 0) const;
 
   // As sampleTimeSplitAndCount, but also gets information for a second time (overlap_time), in the same loop
+
   uint8_t* sampleTimeSplitAndCountTwice(uint64_t boundary_time, size_t& remaining_size,
 					uint64_t overlap_time,  size_t& overlap_size,   uint8_t*& overlap_data_ptr,
-					sample_count_t &n_words_b, sample_count_t &n_counter_words_b, sample_count_t &n_trigger_words_b,
-					sample_count_t &n_timestamp_words_b, sample_count_t &n_selftest_words_b, sample_count_t &n_checksum_words_b,
-					sample_count_t &n_words_a, sample_count_t &n_counter_words_a, sample_count_t &n_trigger_words_a,
-					sample_count_t &n_timestamp_words_a, sample_count_t &n_selftest_words_a, sample_count_t &n_checksum_words_a,
-					sample_count_t &n_words_o, sample_count_t &n_counter_words_o, sample_count_t &n_trigger_words_o,
-					sample_count_t &n_timestamp_words_o, sample_count_t &n_selftest_words_o, sample_count_t &n_checksum_words_o,
+					sample_count_t &n_words_b, sample_count_t &n_counter_words_b, 
+					sample_count_t &n_trigger_words_b,
+					sample_count_t &n_timestamp_words_b, sample_count_t &n_selftest_words_b, 
+					sample_count_t &n_checksum_words_b,
+					sample_count_t &n_words_a, sample_count_t &n_counter_words_a, 
+					sample_count_t &n_trigger_words_a,
+					sample_count_t &n_timestamp_words_a, sample_count_t &n_selftest_words_a, 
+					sample_count_t &n_checksum_words_a,
+					sample_count_t &n_words_o, sample_count_t &n_counter_words_o, 
+					sample_count_t &n_trigger_words_o,
+					sample_count_t &n_timestamp_words_o, sample_count_t &n_selftest_words_o, 
+					sample_count_t &n_checksum_words_o,
 					uint32_t &checksum,
 					bool swap_payload_header_bytes, size_t override_uslice_size = 0) const;
 
@@ -129,12 +156,12 @@ public:
   static const uint32_t ROLLOVER_HIGH_VALUE = 1 << 26;
 
   //The types of data words
-  static const Payload_Header::data_packet_type_t DataTypeCounter   = 0x01; //0b0001
-  static const Payload_Header::data_packet_type_t DataTypeTrigger   = 0x02; //0b0010
-  //  static const Payload_Header::data_packet_type_t DataTypeTimestamp = 0x08; //0b1000
-  static const Payload_Header::data_packet_type_t DataTypeTimestamp = 0x07; //0b0111
-  static const Payload_Header::data_packet_type_t DataTypeSelftest  = 0x00; //0b0000
-  static const Payload_Header::data_packet_type_t DataTypeChecksum  = 0x04; //0b0100
+  static const Payload_Header::data_packet_type_t DataTypeSelftest  = 0x0; //0b000
+  static const Payload_Header::data_packet_type_t DataTypeCounter   = 0x1; //0b001
+  static const Payload_Header::data_packet_type_t DataTypeTrigger   = 0x2; //0b010
+  static const Payload_Header::data_packet_type_t DataTypeChecksum  = 0x4; //0b100
+  static const Payload_Header::data_packet_type_t DataTypeTimestamp = 0x7; //0b111
+
 
   static uint64_t getMask(int param){
 	uint64_t mask=0;

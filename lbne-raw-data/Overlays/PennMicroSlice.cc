@@ -2,6 +2,7 @@
 #include "lbne-raw-data/Overlays/Utilities.hh"
 
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "cetlib/exception.h"
 
 #include <iostream>
 #include <iomanip>
@@ -134,6 +135,8 @@ lbne::PennMicroSlice::sample_count_t lbne::PennMicroSlice::sampleCount(
 								       bool swap_payload_header_bytes,
 								       size_t override_uslice_size) const
 {
+  throw cet::exception("PennMicroSlice") << "As of Jul-28-2015, lbne::PennMicroSlice::sampleCount is deprecated";
+
   n_counter_words = n_trigger_words = n_timestamp_words = n_selftest_words = n_checksum_words = 0;
 
   //if we're overriding, we don't have a Header to offset by
@@ -191,6 +194,9 @@ lbne::PennMicroSlice::sample_count_t lbne::PennMicroSlice::sampleCount(
 uint8_t* lbne::PennMicroSlice::sampleTimeSplit(uint64_t boundary_time, size_t& remaining_size,
 					       bool swap_payload_header_bytes, size_t override_uslice_size) const
 {
+
+  throw cet::exception("PennMicroSlice") << "As of Jul-28-2015, lbne::PennMicroSlice::sampleTimeSplit is deprecated";
+
   //need to mask to get the lowest 28 bits of the nova timestamp
   //in order to compare with the 'short_nova_timestamp' in the Payload_Header
   boundary_time = boundary_time & 0xFFFFFFF;
@@ -270,6 +276,8 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCount(uint64_t boundary_time, s
 						       lbne::PennMicroSlice::sample_count_t &n_checksum_words_a,
 						       bool swap_payload_header_bytes, size_t override_uslice_size) const
 {
+  throw cet::exception("PennMicroSlice") << "As of Jul-28-2015, lbne::PennMicroSlice::sampleTimeSplitAndCount is deprecated";
+
   n_words_b = n_counter_words_b = n_trigger_words_b = n_timestamp_words_b = n_selftest_words_b = n_checksum_words_b = 0;
   n_words_a = n_counter_words_a = n_trigger_words_a = n_timestamp_words_a = n_selftest_words_a = n_checksum_words_a = 0;
   remaining_size = 0;
@@ -371,6 +379,11 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCount(uint64_t boundary_time, s
 
 //Returns a pointer to the first payload header AFTER boundary_time, and also counts payload types before/after the boundary
 //Also checks the overlap_time, and does the same for that
+
+// JCF, Jul-28-2015
+
+// Sections in the code where, e.g., there's a timestamp rollover will now result in an exception throw
+
 uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_time, size_t& remaining_size,
 							    uint64_t overlap_time,  size_t& overlap_size, uint8_t*& overlap_data_ptr,
 							    lbne::PennMicroSlice::sample_count_t &n_words_b,
@@ -397,6 +410,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
   n_words_b = n_counter_words_b = n_trigger_words_b = n_timestamp_words_b = n_selftest_words_b = n_checksum_words_b = 0;
   n_words_a = n_counter_words_a = n_trigger_words_a = n_timestamp_words_a = n_selftest_words_a = n_checksum_words_a = 0;
   //n_words_o = n_counter_words_o = n_trigger_words_o = n_timestamp_words_o = n_selftest_words_o = n_checksum_words_o = 0; //don't reset these, as there is likely multiple uslices contained in the overlap
+
   overlap_size = remaining_size = 0;
   checksum = 0;
   uint8_t* remaining_data_ptr = nullptr;
@@ -434,7 +448,11 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
     lbne::PennMicroSlice::Payload_Header::data_packet_type_t     type      = payload_header->data_packet_type;
     lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t timestamp = payload_header->short_nova_timestamp;
 #ifdef __DEBUG_sampleTimeSplitAndCountTwice__
-    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type 0x" << std::hex << (unsigned int)type << " timestamp " << std::hex << timestamp << std::endl;
+    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type " << static_cast<int>(type) << " timestamp " << static_cast<int>(timestamp) << std::endl;
+    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG: boundary_time == " << 
+      boundary_time << ", is_before_boundary == " << is_before_boundary << ", overlap_size == " << overlap_size << 
+      ", is_before_overlap == " << is_before_overlap << ", is_in_overlap == " << is_in_overlap;
+
 #endif
     //check the timestamp
     if(is_before_boundary && (timestamp > boundary_time)) {
@@ -450,6 +468,11 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
 	if(overlap_size) {
 	  overlap_size -= remaining_size; //take off the bytes after the overlap started, and after the end of the current millislice
 	}
+      } else {
+	throw cet::exception("PennMicroSlice") << "Error: one or both of the following is true: boundary time of " << 
+	  boundary_time << " is greater than ROLLOVER_LOW_VALUE time of " << lbne::PennMicroSlice::ROLLOVER_LOW_VALUE << 
+	  ", timestamp value of " << timestamp << " is less than ROLLOVER_HIGH_VALUE time of " << 
+	  lbne::PennMicroSlice::ROLLOVER_HIGH_VALUE; 
       }
     }
     //'else' is to make sure we don't have data in both the 'overlap' and 'remaining' buffers
@@ -462,8 +485,14 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
 	overlap_data_ptr  = pl_ptr;
 	is_in_overlap     = true;
 	is_before_overlap = false;
+      } else {
+	throw cet::exception("PennMicroSlice") << "Error: one or both of the following is true: overlap time of " << 
+	  overlap_time << " is greater than ROLLOVER_LOW_VALUE time of " << lbne::PennMicroSlice::ROLLOVER_LOW_VALUE << 
+	  ", timestamp value of " << timestamp << " is less than ROLLOVER_HIGH_VALUE time of " << 
+	  lbne::PennMicroSlice::ROLLOVER_HIGH_VALUE; 
       }
     }
+
     //check the type to increment counters & the ptr
     switch(type)
       {
@@ -510,7 +539,9 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
           n_checksum_words_a++;
         if(is_in_overlap)
           n_checksum_words_o++;
-	checksum = *(uint32_t*)(pl_ptr + lbne::PennMicroSlice::Payload_Header::size_words);
+	checksum = *( reinterpret_cast<uint16_t*>(pl_ptr) );
+	//	display_bits(pl_ptr, sizeof(uint32_t), "PennMicroSlice");
+	
         pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
         break;
       default:
@@ -525,17 +556,16 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
   n_words_o = n_counter_words_o + n_trigger_words_o + n_timestamp_words_o + n_selftest_words_o + n_checksum_words_o;
 #ifdef __DEBUG_sampleTimeSplitAndCountTwice__
   mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG returning with:"
-	    << " remaining size " << remaining_size << " for boundary_time " << boundary_time
-	    << " overlap   size " << overlap_size   << " for overlap_time "  << overlap_time
-	    << std::endl
-	    << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG returning with: "
-	    << " Payloads before  " << n_words_b << " = " << n_counter_words_b << " + " << n_trigger_words_b 
-	    << " + " << n_timestamp_words_b << " + " << n_selftest_words_b << " + " << n_checksum_words_b
-	    << " Payloads after   " << n_words_a << " = " << n_counter_words_a << " + " << n_trigger_words_a
-	    << " + " << n_timestamp_words_a << " + " << n_selftest_words_a << " + " << n_checksum_words_a
-	    << " Overlap payloads " << n_words_o << " = " << n_counter_words_o << " + " << n_trigger_words_o
-	    << " + " << n_timestamp_words_o << " + " << n_selftest_words_o << " + " << n_checksum_words_o
-	    << std::endl;
+				<< " remaining size " << remaining_size << " for boundary_time " << boundary_time
+				<< " overlap   size " << overlap_size   << " for overlap_time "  << overlap_time;
+
+  mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG returning with: "
+				<< " Payloads before  " << n_words_b << " = " << n_counter_words_b << " + " << n_trigger_words_b 
+				<< " + " << n_timestamp_words_b << " + " << n_selftest_words_b << " + " << n_checksum_words_b
+				<< " Payloads after   " << n_words_a << " = " << n_counter_words_a << " + " << n_trigger_words_a
+				<< " + " << n_timestamp_words_a << " + " << n_selftest_words_a << " + " << n_checksum_words_a
+				<< " Overlap payloads " << n_words_o << " = " << n_counter_words_o << " + " << n_trigger_words_o
+				<< " + " << n_timestamp_words_o << " + " << n_selftest_words_o << " + " << n_checksum_words_o ;
 #endif
   return remaining_data_ptr;
 }

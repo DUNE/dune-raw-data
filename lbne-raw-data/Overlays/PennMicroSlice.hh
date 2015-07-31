@@ -66,6 +66,10 @@ public:
 
   // TODO: figure out whether these payload size values are still correct
 
+  // E.g., counter payload may have been reduced to 3 from 4
+  // uint32_t's, its payload header's cbit covering the fact that
+  // there are 97 bits of info in the counter frame
+
   //the size of the payloads (neglecting the Payload_Header)
   static microslice_size_t const payload_size_counter   = 4 * sizeof(uint32_t); //128-bit payload
   static microslice_size_t const payload_size_trigger   = 1 * sizeof(uint32_t); //32-bit payload

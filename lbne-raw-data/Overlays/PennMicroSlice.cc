@@ -428,10 +428,8 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
     pl_ptr  = buffer_ + sizeof(Header);
     pl_size = size();
   }
-
-  mf::LogInfo("PennMicroSlice") << "JCF: pl_ptr == " << static_cast<void*>(pl_ptr) << ", pl_size == " << pl_size;
   
-  display_bits(pl_ptr, pl_size, "PennMicroSlice");
+  //  display_bits(pl_ptr, pl_size, "PennMicroSlice");
 
   //loop over the microslice
   while(pl_ptr < (buffer_ + pl_size)) {
@@ -442,16 +440,21 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
 	      << "\tRemaining " << (unsigned int*)remaining_data_ptr
 	      << std::endl;
 #endif
-    if(swap_payload_header_bytes)
+
+    // JCF, Jul-29-2015: is this "if" block necessary any longer?
+    if(swap_payload_header_bytes) {
       *((uint32_t*)pl_ptr) = ntohl(*((uint32_t*)pl_ptr));
+    }
+
     lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast_checked<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
     lbne::PennMicroSlice::Payload_Header::data_packet_type_t     type      = payload_header->data_packet_type;
     lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t timestamp = payload_header->short_nova_timestamp;
+
 #ifdef __DEBUG_sampleTimeSplitAndCountTwice__
     mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type " << static_cast<int>(type) << " timestamp " << static_cast<int>(timestamp) << std::endl;
-    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG: boundary_time == " << 
-      boundary_time << ", is_before_boundary == " << is_before_boundary << ", overlap_size == " << overlap_size << 
-      ", is_before_overlap == " << is_before_overlap << ", is_in_overlap == " << is_in_overlap;
+    //    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG: boundary_time == " << 
+    //      boundary_time << ", overlap_time == " << overlap_time << ", is_before_boundary == " << is_before_boundary << ", overlap_size ==" << overlap_size << 
+    //      ", is_before_overlap == " << is_before_overlap << ", is_in_overlap == " << is_in_overlap;
 
 #endif
     //check the timestamp
@@ -465,6 +468,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
 	is_before_boundary = false;
 	is_before_overlap  = false;
 	is_in_overlap      = false;
+
 	if(overlap_size) {
 	  overlap_size -= remaining_size; //take off the bytes after the overlap started, and after the end of the current millislice
 	}
@@ -477,6 +481,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
     }
     //'else' is to make sure we don't have data in both the 'overlap' and 'remaining' buffers
     else if(is_before_overlap && (timestamp > overlap_time)) {
+
       //need to be careful and make sure that boundary_time hasn't overflowed the 28 bits
       //do this by checking whether timestamp isn't very large AND boundary_time isn't very small
       //TODO a better way to catch rollovers?
@@ -522,6 +527,9 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
 	if(is_in_overlap)
 	  n_timestamp_words_o++;
 	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
+	//	mf::LogInfo("PennMicroSlice") << "JCF, sampleTimeSplitAndCountTwice: now have n_timestamp_words_b == " <<
+	//	  n_timestamp_words_b << ", n_timestamp_words_a == " << n_timestamp_words_a <<
+	//	  ", n_timestamp_words_o == " << n_timestamp_words_o;
 	break;
       case lbne::PennMicroSlice::DataTypeSelftest:
         if(is_before_boundary)
@@ -539,8 +547,12 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
           n_checksum_words_a++;
         if(is_in_overlap)
           n_checksum_words_o++;
+
+	//	mf::LogInfo("PennMicroSlice") << "JCF, sampleTimeSplitAndCountTwice: now have n_checksum_words_b == " <<
+	//	  n_checksum_words_b << ", n_checksum_words_a == " << n_checksum_words_a << 
+	//	  ", n_checksum_words_o == " << n_checksum_words_o;
+
 	checksum = *( reinterpret_cast<uint16_t*>(pl_ptr) );
-	//	display_bits(pl_ptr, sizeof(uint32_t), "PennMicroSlice");
 	
         pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
         break;

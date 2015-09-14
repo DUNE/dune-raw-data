@@ -14,7 +14,7 @@
 //#define __DEBUG_sampleTimeSplitAndCount__
 #define __DEBUG_sampleTimeSplitAndCountTwice__
 
-lbne::PennMicroSlice::PennMicroSlice(uint8_t* address) : buffer_(address) 
+lbne::PennMicroSlice::PennMicroSlice(uint8_t* address) : buffer_(address) , current_payload_(address), current_word_id_(0)
 {
 }
 
@@ -42,6 +42,105 @@ lbne::PennMicroSlice::Header::block_size_t lbne::PennMicroSlice::block_size() co
   //return ((header_()->block_size & 0xFF00) >> 8) | ((header_()->block_size & 0x00FF) << 8);
   return header_()->block_size;
 }
+
+uint8_t* lbne::PennMicroSlice::get_next_payload(uint32_t& word_id,
+						lbne::PennMicroSlice::Payload_Header::data_packet_type_t &data_packet_type,	
+						lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t& short_nova_timestamp,
+						size_t& payload_size,
+						bool swap_payload_header_bytes,
+						size_t override_uslice_size){
+  size_t pl_size = 0;
+  if(current_word_id_ == 0){
+    if(override_uslice_size) {
+      current_payload_ = buffer_;
+      pl_size = override_uslice_size - sizeof(Header);
+    }
+    else {
+      current_payload_ = buffer_ + sizeof(Header);
+      pl_size = size();
+    }
+  }//if(current_word_id_ == 0)
+
+  //Switch from network to host byte ordering //Copied from get_payload
+  if(swap_payload_header_bytes)
+    *((uint32_t*)current_payload_) = ntohl(*((uint32_t*)current_payload_));
+
+  if(current_word_id_ != 0 ){
+    //current_payload_ points to the last payload served up
+    //We need to skip over this one
+    lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast_checked<lbne::PennMicroSlice::Payload_Header*>(current_payload_);
+    lbne::PennMicroSlice::Payload_Header::data_packet_type_t type = payload_header->data_packet_type;
+    switch(type)
+      {
+      case lbne::PennMicroSlice::DataTypeCounter:
+	current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
+	break;
+      case lbne::PennMicroSlice::DataTypeTrigger:
+	current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
+	break;
+      case lbne::PennMicroSlice::DataTypeTimestamp:
+	current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
+	break;
+      case lbne::PennMicroSlice::DataTypeSelftest:
+	current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+	break;
+      case lbne::PennMicroSlice::DataTypeChecksum:
+	current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
+	break;
+      default:
+	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+	return nullptr;
+	break;
+      }//switch(type)
+  }//(current_word_id_ != 0)
+
+  //Now current_payload_ will point to the next payload. Process the information that we want
+
+  //Need to make sure we have not gone off the end of the buffer
+  if(current_payload_ >= (buffer_ + pl_size)) 
+    return nullptr;
+  
+
+  lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast_checked<lbne::PennMicroSlice::Payload_Header*>(current_payload_);
+  lbne::PennMicroSlice::Payload_Header::data_packet_type_t type = payload_header->data_packet_type;
+
+  //Set the variables passed as references
+  word_id = current_word_id_;
+  type = payload_header->data_packet_type;
+  data_packet_type = type;
+  short_nova_timestamp = payload_header->short_nova_timestamp;
+
+  switch(type)
+    {
+    case lbne::PennMicroSlice::DataTypeCounter:
+      payload_size = lbne::PennMicroSlice::payload_size_counter;
+      break;
+    case lbne::PennMicroSlice::DataTypeTrigger:
+      payload_size = lbne::PennMicroSlice::payload_size_trigger;
+      break;
+    case lbne::PennMicroSlice::DataTypeTimestamp:
+      payload_size = lbne::PennMicroSlice::payload_size_timestamp;
+      break;
+    case lbne::PennMicroSlice::DataTypeSelftest:
+      payload_size = lbne::PennMicroSlice::payload_size_selftest;
+      break;
+    case lbne::PennMicroSlice::DataTypeChecksum:
+      payload_size = lbne::PennMicroSlice::payload_size_checksum;
+      break;
+    default:
+      std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+      payload_size = 0;
+      break;
+    }//switch(type)
+
+  current_word_id_++;
+  //current_payload_ points at the Payload_Header of the next payload
+  //this function assumes that state is true the next time it is called (so it knows how to shift to the next payload)
+  //but the user is expecting just the payload data. Therefore return the buffer offset by the payload_header
+
+  return (current_payload_ + lbne::PennMicroSlice::Payload_Header::size_words);
+}
+					
 
 uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlice::Payload_Header::data_packet_type_t& data_packet_type,
 					   lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t& short_nova_timestamp,

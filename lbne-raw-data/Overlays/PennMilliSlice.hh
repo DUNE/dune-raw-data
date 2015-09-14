@@ -16,6 +16,42 @@ class lbne::PennMilliSlice {
 
 public:
 
+  struct TriggerPayload {
+    uint32_t trigger_pattern: 27;
+    uint32_t trigger_type   :  5;
+    static uint8_t const num_bits_trigger_pattern = 27;
+    static uint8_t const num_bits_trigger_type    =  5;
+
+  };
+  struct CounterPayload {
+    static uint8_t const num_bits_tsu_wu     = 10;
+    static uint8_t const num_bits_tsu_el     = 10;
+    static uint8_t const num_bits_tsu_extra  =  4;
+    static uint8_t const num_bits_tsu_nu     =  6;
+    static uint8_t const num_bits_tsu_sl     =  6;
+    static uint8_t const num_bits_tsu_nl     =  6;
+    static uint8_t const num_bits_tsu_su     =  6;
+    static uint8_t const num_bits_bsu_rm     = 16;
+    static uint8_t const num_bits_bsu_cu     = 10;
+    static uint8_t const num_bits_bsu_cl     = 13;
+    static uint8_t const num_bits_bsu_rl     = 10;
+    static uint8_t const num_bits_ts_rollover= 28;
+    static uint8_t const num_bits_header     =  3;
+    uint64_t tsu_wu     : 10;
+    uint64_t tsu_el     : 10;
+    uint64_t tsu_extra  :  4;    
+    uint64_t tsu_nu     :  6;
+    uint64_t tsu_sl     :  6;
+    uint64_t tsu_nl     :  6;
+    uint64_t tsu_su     :  6;
+    uint64_t bsu_rm     : 16;//end of first uint64_t
+    uint64_t bsu_cu     : 10;
+    uint64_t bsu_cl     : 13;
+    uint64_t bsu_rl     : 10;
+    uint64_t ts_rollover: 28;
+    uint64_t header     :  3;
+  };
+
   struct Header {
     //typedef uint32_t data_t;
     typedef uint64_t data_t;
@@ -92,6 +128,11 @@ public:
 		   lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t& short_nova_timestamp,
 		   size_t& payload_size) const;
 
+  uint8_t* get_next_payload(uint32_t &index, 
+			    lbne::PennMicroSlice::Payload_Header::data_packet_type_t& data_packet_type,
+			    lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t& short_nova_timestamp,
+			    size_t& payload_size);
+
 
   typedef uint32_t checksum_t;
 
@@ -110,6 +151,9 @@ protected:
   uint8_t* data_(int index) const;
 
   uint8_t* buffer_;
+  uint8_t* current_payload_;
+  uint32_t current_word_id_;
+
 };
 
 #endif /* lbne_artdaq_Overlays_PennMilliSlice_hh */

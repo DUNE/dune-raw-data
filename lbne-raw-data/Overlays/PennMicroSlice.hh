@@ -83,6 +83,9 @@ public:
 
   // Get the contents of a payload
   uint8_t* get_payload(uint32_t word_id, Payload_Header::data_packet_type_t& data_packet_type, Payload_Header::short_nova_timestamp_t& short_nova_timestamp, size_t& size, bool swap_payload_header_bytes, size_t override_uslice_size = 0) const;
+  // Get the contents of the next payload
+  //JPD -- get_payload is inefficient for user code use - it has to loop through (i) payloads to get the (ith) payload. This function increments the current_payload_ pointer to the next payload, and returns nullptr when off the end
+  uint8_t* get_next_payload(uint32_t &word_id, Payload_Header::data_packet_type_t& data_packet_type, Payload_Header::short_nova_timestamp_t& short_nova_timestamp, size_t& size, bool swap_payload_header_bytes, size_t override_uslice_size = 0);
 
   // Returns the format version field from the header
   Header::format_version_t format_version() const;
@@ -184,6 +187,8 @@ protected:
   uint32_t const* data_() const;
 
   uint8_t* buffer_;
+  uint8_t* current_payload_;
+  uint32_t current_word_id_;
 };
 
 #endif /* lbne_artdaq_Overlays_PennMicroSlice_hh */

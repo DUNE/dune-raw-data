@@ -36,11 +36,15 @@ public:
 
     struct TriggerTypes {
       static trigger_type_t const calibration = 0x00;
-      static trigger_type_t const ssp = 0x08;
       //FIXME not sure about the rce stuff!
       static trigger_type_t const rce_a = 0x01;
       static trigger_type_t const rce_b = 0x02;
-      static trigger_type_t const rce_c = 0x04;
+      static trigger_type_t const rce_c = 0x03;
+      static trigger_type_t const rce_d = 0x04;
+      static trigger_type_t const rce_e = 0x05;
+      static trigger_type_t const rce_f = 0x06;
+      static trigger_type_t const rce_g = 0x07;
+      static trigger_type_t const ssp   = 0x08;
       static trigger_type_t const muon  = 0x10;
     };
 

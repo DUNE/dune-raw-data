@@ -32,6 +32,26 @@ public:
       static trigger_bits_t const tsu_nu_sl = 25;
       static trigger_bits_t const tsu_sl_nu = 24;
       static trigger_bits_t const tsu_el_wu = 23;
+      static std::string getName(trigger_bits_t trigger_bit){
+	switch(trigger_bit){
+	case bsu_rm_cl:
+	  return "bsu_rm_cl";
+	  break;
+	case tsu_nu_sl:
+	  return "tsu_nu_sl";
+	  break;
+	case tsu_sl_nu:
+	  return "tsu_sl_nu";
+	  break;
+	case tsu_el_wu:
+	  return "tsu_el_wu";
+	  break;
+	default:
+	  return "unkown";
+	  break;
+	}//switch(trigger_bit
+	return "";
+      }
     };
 
     struct TriggerTypes {
@@ -46,6 +66,44 @@ public:
       static trigger_type_t const rce_g = 0x07;
       static trigger_type_t const ssp   = 0x08;
       static trigger_type_t const muon  = 0x10;
+      static std::string getName(trigger_type_t trigger_type){
+	switch(trigger_type){
+	case calibration:
+	  return "calibration";
+	  break;
+	case rce_a:
+	  return "rce_a";
+	  break;
+	case rce_b:
+	  return "rce_b";
+	  break;
+	case rce_c:
+	  return "rce_c";
+	  break;
+	case rce_d:
+	  return "rce_d";
+	  break;
+	case rce_e:
+	  return "rce_e";
+	  break;
+	case rce_f:
+	  return "rce_f";
+	  break;
+	case rce_g:
+	  return "rce_g";
+	  break;
+	case ssp  :
+	  return "ssp";
+	  break;
+	case muon :
+	  return "muon";
+	  break;
+	default:
+	  return "unknown";
+	  break;
+	}
+	return "";
+      }//getName
     };
 
   };

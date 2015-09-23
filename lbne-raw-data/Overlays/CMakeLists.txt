@@ -9,6 +9,9 @@ art_make(BASENAME_ONLY
   ${ARTDAQ_DAQDATA}
   ${CETLIB}
   ${Boost_SYSTEM_LIBRARY}
+  ${FHICLCPP}
+  ${MF_MESSAGELOGGER}
+  ${MF_MESSAGEUTILITIES}
   )
 
 install_headers()

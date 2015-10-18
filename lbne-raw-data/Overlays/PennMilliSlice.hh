@@ -16,6 +16,131 @@ class lbne::PennMilliSlice {
 
 public:
 
+  struct TriggerPayload {
+    //We'll use 32 bit atom since that is the total length of this struct 
+    typedef uint32_t trigger_type_t;
+    typedef uint32_t trigger_pattern_t;
+    typedef uint16_t trigger_bits_t;
+    trigger_pattern_t trigger_pattern: 27;
+    trigger_type_t trigger_type      :  5;
+
+    static trigger_bits_t const num_bits_trigger_pattern = 27;
+    static trigger_bits_t const num_bits_trigger_type    =  5;
+
+    struct TriggerPatternBits {
+      static trigger_bits_t const bsu_rm_cl = 26;
+      static trigger_bits_t const tsu_nu_sl = 25;
+      static trigger_bits_t const tsu_sl_nu = 24;
+      static trigger_bits_t const tsu_el_wu = 23;
+      static std::string getName(trigger_bits_t trigger_bit){
+	switch(trigger_bit){
+	case bsu_rm_cl:
+	  return "bsu_rm_cl";
+	  break;
+	case tsu_nu_sl:
+	  return "tsu_nu_sl";
+	  break;
+	case tsu_sl_nu:
+	  return "tsu_sl_nu";
+	  break;
+	case tsu_el_wu:
+	  return "tsu_el_wu";
+	  break;
+	default:
+	  return "unkown";
+	  break;
+	}//switch(trigger_bit
+	return "";
+      }
+    };
+
+    struct TriggerTypes {
+      static trigger_type_t const calibration = 0x00;
+      //FIXME not sure about the rce stuff!
+      static trigger_type_t const rce_a = 0x01;
+      static trigger_type_t const rce_b = 0x02;
+      static trigger_type_t const rce_c = 0x03;
+      static trigger_type_t const rce_d = 0x04;
+      static trigger_type_t const rce_e = 0x05;
+      static trigger_type_t const rce_f = 0x06;
+      static trigger_type_t const rce_g = 0x07;
+      static trigger_type_t const ssp   = 0x08;
+      static trigger_type_t const muon  = 0x10;
+      static std::string getName(trigger_type_t trigger_type){
+	switch(trigger_type){
+	case calibration:
+	  return "calibration";
+	  break;
+	case rce_a:
+	  return "rce_a";
+	  break;
+	case rce_b:
+	  return "rce_b";
+	  break;
+	case rce_c:
+	  return "rce_c";
+	  break;
+	case rce_d:
+	  return "rce_d";
+	  break;
+	case rce_e:
+	  return "rce_e";
+	  break;
+	case rce_f:
+	  return "rce_f";
+	  break;
+	case rce_g:
+	  return "rce_g";
+	  break;
+	case ssp  :
+	  return "ssp";
+	  break;
+	case muon :
+	  return "muon";
+	  break;
+	default:
+	  return "unknown";
+	  break;
+	}
+	return "";
+      }//getName
+    };
+
+  };
+
+  struct CounterPayload {
+    //Need to be careful about choice of atom within this struct due to atom boundaries of the bitfields
+    //The 128 bits can be devided into two 64 bit atoms, so we will use that
+    typedef uint64_t counter_set_t;
+    typedef uint16_t trigger_bits_t;
+    counter_set_t tsu_wu     : 10;
+    counter_set_t tsu_el     : 10;
+    counter_set_t tsu_extra  :  4;    
+    counter_set_t tsu_nu     :  6;
+    counter_set_t tsu_sl     :  6;
+    counter_set_t tsu_nl     :  6;
+    counter_set_t tsu_su     :  6;
+    counter_set_t bsu_rm     : 16;//end of first counter_set_t==uint64_t
+    counter_set_t bsu_cu     : 10;
+    counter_set_t bsu_cl     : 13;
+    counter_set_t bsu_rl     : 10;
+    counter_set_t ts_rollover: 28;
+    counter_set_t header     :  3;//end of second counter_set_t==uint64_t
+    static trigger_bits_t const num_bits_tsu_wu     = 10;
+    static trigger_bits_t const num_bits_tsu_el     = 10;
+    static trigger_bits_t const num_bits_tsu_extra  =  4;
+    static trigger_bits_t const num_bits_tsu_nu     =  6;
+    static trigger_bits_t const num_bits_tsu_sl     =  6;
+    static trigger_bits_t const num_bits_tsu_nl     =  6;
+    static trigger_bits_t const num_bits_tsu_su     =  6;
+    static trigger_bits_t const num_bits_bsu_rm     = 16;
+    static trigger_bits_t const num_bits_bsu_cu     = 10;
+    static trigger_bits_t const num_bits_bsu_cl     = 13;
+    static trigger_bits_t const num_bits_bsu_rl     = 10;
+    static trigger_bits_t const num_bits_ts_rollover= 28;
+    static trigger_bits_t const num_bits_header     =  3;
+  };
+
   struct Header {
     //typedef uint32_t data_t;
     typedef uint64_t data_t;
@@ -89,8 +214,16 @@ public:
   // Returns the requested Payload if found,
   // otherwise returns an empty pointer
   uint8_t* payload(uint32_t index, lbne::PennMicroSlice::Payload_Header::data_packet_type_t& data_packet_type,
-		   lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t& short_nova_timestamp,
-		   size_t& payload_size) const;
+                   lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t& short_nova_timestamp,
+                   size_t& payload_size) const;
+
+  // Returns the next payload if found, and increments the current_payload_ buffer, current_word_id_
+  // Returns nullptr if there is a problem or we run off the end of the buffer_
+  // Can't be const since it shifts the current_payload_buffer and current_word_id_
+  uint8_t* get_next_payload(uint32_t &index, 
+                            lbne::PennMicroSlice::Payload_Header::data_packet_type_t& data_packet_type,
+                            lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t& short_nova_timestamp,
+                            size_t& payload_size); 
 
 
   typedef uint32_t checksum_t;
@@ -110,6 +243,9 @@ protected:
   uint8_t* data_(int index) const;
 
   uint8_t* buffer_;
+  uint8_t* current_payload_;
+  uint32_t current_word_id_;
+
 };
 
 #endif /* lbne_artdaq_Overlays_PennMilliSlice_hh */

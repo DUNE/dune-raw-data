@@ -70,6 +70,9 @@ public:
   // assigns it to memory location [value]
   bool nanosliceSampleValue(uint32_t index, uint32_t sample, uint16_t& value) const;
 
+  // Finds the corresponding NOvA timestamp
+
+  lbne::TpcNanoSlice::Header::nova_timestamp_t nanosliceNova_timestamp(uint32_t index) const;
 
   // Returns the requested NanoSlice if the requested slice was found,
   // otherwise returns an empty pointer

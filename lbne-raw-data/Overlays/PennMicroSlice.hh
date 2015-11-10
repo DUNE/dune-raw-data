@@ -71,7 +71,7 @@ public:
   // there are 97 bits of info in the counter frame
 
   //the size of the payloads (neglecting the Payload_Header)
-  static microslice_size_t const payload_size_counter   = 4 * sizeof(uint32_t); //128-bit payload
+  static microslice_size_t const payload_size_counter   = 3 * sizeof(uint32_t); //128-bit payload
   static microslice_size_t const payload_size_trigger   = 1 * sizeof(uint32_t); //32-bit payload
   static microslice_size_t const payload_size_timestamp = 2 * sizeof(uint32_t); //64-bit payload
   static microslice_size_t const payload_size_selftest  = 1 * sizeof(uint32_t); //32-bit payload

@@ -4,14 +4,15 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib/exception.h"
 
+#include <bitset>
 #include <iostream>
 #include <iomanip>
 #include <stdio.h>
 #include <boost/asio.hpp>
 
-//#define __DEBUG_sampleCount__
-//#define __DEBUG_sampleTimeSplit__
-//#define __DEBUG_sampleTimeSplitAndCount__
+#define __DEBUG_sampleCount__
+#define __DEBUG_sampleTimeSplit__
+#define __DEBUG_sampleTimeSplitAndCount__
 #define __DEBUG_sampleTimeSplitAndCountTwice__
 
 lbne::PennMicroSlice::PennMicroSlice(uint8_t* address) : buffer_(address) , current_payload_(address), current_word_id_(0)
@@ -538,6 +539,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
 	      << "\tOverlap "   << (unsigned int*)overlap_data_ptr
 	      << "\tRemaining " << (unsigned int*)remaining_data_ptr
 	      << std::endl;
+    
 #endif
 
     // JCF, Jul-29-2015: is this "if" block necessary any longer?
@@ -550,7 +552,30 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
     lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t timestamp = payload_header->short_nova_timestamp;
 
 #ifdef __DEBUG_sampleTimeSplitAndCountTwice__
-    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type " << static_cast<int>(type) << " timestamp " << static_cast<int>(timestamp) << std::endl;
+    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type " << std::bitset<3>(type) << " timestamp " << static_cast<uint32_t>(timestamp) << " ["<< std::hex << timestamp << std::dec << "]"<< std::endl;
+    
+    /**
+  static microslice_size_t const payload_size_counter   = 3 * sizeof(uint32_t); //128-bit payload
+  static microslice_size_t const payload_size_trigger   = 1 * sizeof(uint32_t); //32-bit payload
+  static microslice_size_t const payload_size_timestamp = 2 * sizeof(uint32_t); //64-bit payload
+  static microslice_size_t const payload_size_selftest  = 1 * sizeof(uint32_t); //32-bit payload
+  static microslice_size_t const payload_size_checksum  = 0 * sizeof(uint32_t); //32-bit payload
+    */
+    switch (type) {
+    case 0x1: // counter word
+      mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_size_counter*8>(*pl_ptr);
+      break;
+    case 0x2: // trigger word
+      mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_size_trigger*8>(*pl_ptr);
+      break;
+    case 0x7: // timestamp word
+      mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_size_timestamp*8>(*pl_ptr);
+      break;
+    default:
+      mf::LogInfo("PennMicroSlice") << "Unexpected size...taking as if it was a self test";
+      
+    }
+
     //    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG: boundary_time == " << 
     //      boundary_time << ", overlap_time == " << overlap_time << ", is_before_boundary == " << is_before_boundary << ", overlap_size ==" << overlap_size << 
     //      ", is_before_overlap == " << is_before_overlap << ", is_in_overlap == " << is_in_overlap;

@@ -4,6 +4,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib/exception.h"
 
+#include <bitset>
 #include <iostream>
 #include <iomanip>
 #include <stdio.h>
@@ -550,7 +551,21 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
     lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t timestamp = payload_header->short_nova_timestamp;
 
 #ifdef __DEBUG_sampleTimeSplitAndCountTwice__
-    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type " << static_cast<int>(type) << " timestamp " << static_cast<int>(timestamp) << std::endl;
+    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type " << std::bitset<3>(type) << " timestamp " << static_cast<uint32_t>(timestamp) << " ["<< std::hex << timestamp << std::dec << "]" << std::endl;
+    switch (type) {
+    case 0x1: // counter word
+    	mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_
+    	break;
+    case 0x2: // trigger word
+    	mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_
+    	break;
+    case 0x7: // timestamp word
+    	mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_
+    	break;
+    default:
+    	mf::LogInfo("PennMicroSlice") << "Unexpected size...taking as if it was a self test";
+    }
+
     //    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG: boundary_time == " << 
     //      boundary_time << ", overlap_time == " << overlap_time << ", is_before_boundary == " << is_before_boundary << ", overlap_size ==" << overlap_size << 
     //      ", is_before_overlap == " << is_before_overlap << ", is_in_overlap == " << is_in_overlap;

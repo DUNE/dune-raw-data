@@ -168,6 +168,7 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
   while(pl_ptr < (buffer_ + pl_size)) {
     if(swap_payload_header_bytes)
       *((uint32_t*)pl_ptr) = ntohl(*((uint32_t*)pl_ptr));
+
     lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast_checked<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
     lbne::PennMicroSlice::Payload_Header::data_packet_type_t type = payload_header->data_packet_type;
 
@@ -567,27 +568,35 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
     lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t timestamp = payload_header->short_nova_timestamp;
 
 #ifdef __DEBUG_sampleTimeSplitAndCountTwice__
-    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type " << std::bitset<3>(type) << " timestamp " << static_cast<uint32_t>(timestamp) << " ["<< std::hex << timestamp << std::dec << "]" << std::endl;
-    // mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG full header [" << std::bitset<32>((uint32_t)(*payload_header)) << "]" << std::endl;
+    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type " << std::bitset<3>(type) << " timestamp " << static_cast<uint32_t>(timestamp) << " ["<< std::hex << timestamp << std::dec << "]";
+    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG full header [" << std::bitset<32>(*((uint32_t*)*payload_header)) << "]";
     switch (type) {
       case 0x1: // counter word
         mf::LogInfo("PennMicroSlice") << "Sample type: counter : [" << std::bitset<3>(type) << "]";
-        mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_size_counter*8>(*pl_ptr) << "]";
+        mf::LogInfo("PennMicroSlice") << "Contents : [";
+        display_bits(pl_ptr,lbne::PennMicroSlice::payload_size_counter,"PennMicroSlice");
+        mf::LogInfo("PennMicroSlice") << "]";
         break;
       case 0x2: // trigger word
         mf::LogInfo("PennMicroSlice") << "Sample type: trigger : [" << std::bitset<3>(type) << "]";
-	mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_size_trigger*8>(*pl_ptr) << "]";
+        mf::LogInfo("PennMicroSlice") << "Contents : [";
+        display_bits(pl_ptr,lbne::PennMicroSlice::payload_size_trigger,"PennMicroSlice");
+        mf::LogInfo("PennMicroSlice") << "]";
         break;
       case 0x4: // Checksum
         mf::LogInfo("PennMicroSlice") << "Sample type: checksum : [" << std::bitset<3>(type) << "]";
 	break;
       case 0x7: // timestamp word
         mf::LogInfo("PennMicroSlice") << "Sample type: timestamp : [" << std::bitset<3>(type) << "]";
-	mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_size_timestamp*8>(*pl_ptr) << "]";
+        mf::LogInfo("PennMicroSlice") << "Contents : [";
+        display_bits(pl_ptr,lbne::PennMicroSlice::payload_size_timestamp,"PennMicroSlice");
+        mf::LogInfo("PennMicroSlice") << "]";
         break;
       case 0x0: //self test
         mf::LogInfo("PennMicroSlice") << "Sample type: self test : [" << std::bitset<3>(type) << "]";
-	mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_size_selftest*8>(*pl_ptr) << "]";
+        mf::LogInfo("PennMicroSlice") << "Contents : [";
+        display_bits(pl_ptr,lbne::PennMicroSlice::payload_size_selftest,"PennMicroSlice");
+        mf::LogInfo("PennMicroSlice") << "]";
         break;
       default:
         mf::LogError("PennMicroSlice") << "Unexpected header type...something is going to fail [" << std::bitset<3>(type) << "]";

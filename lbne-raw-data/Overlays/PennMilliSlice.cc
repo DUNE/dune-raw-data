@@ -3,7 +3,7 @@
 #include <iostream>
 #include <bitset>
 
-//#define __DEBUG_payload__
+#define __DEBUG_payload__
 
 lbne::PennMilliSlice::PennMilliSlice(uint8_t* address) : buffer_(address), current_payload_(address), current_word_id_(0)
 {
@@ -181,9 +181,9 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
 #ifdef __DEBUG_payload__
     std::cout << "PennMilliSlice::payload() payload  " << i << " has type 0x"
 	      << std::hex << (unsigned int)data_packet_type << std::dec
-	      << " " << std::bitset<8>(data_packet_type)
+	      << " " << std::bitset<3>(data_packet_type)
 	      << " and timestamp " << short_nova_timestamp
-	      << " " << std::bitset<32>(short_nova_timestamp)
+	      << " " << std::bitset<28>(short_nova_timestamp)
 	      << " payload header bits " << std::bitset<32>(*((uint32_t*)pl_ptr))
 	      << std::endl;
 #endif

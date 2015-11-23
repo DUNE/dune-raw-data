@@ -569,18 +569,20 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
 
 #ifdef __DEBUG_sampleTimeSplitAndCountTwice__
     mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type " << std::bitset<3>(type) << " timestamp " << static_cast<uint32_t>(timestamp) << " ["<< std::hex << timestamp << std::dec << "]";
-    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG full header [" << std::bitset<32>(*((uint32_t*)*payload_header)) << "]";
+    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG full header [";
+    display_bits(pl_ptr,4,"PennMicroSlice");
+    mf::LogInfo("PennMicroSlice") << "]";
     switch (type) {
       case 0x1: // counter word
         mf::LogInfo("PennMicroSlice") << "Sample type: counter : [" << std::bitset<3>(type) << "]";
         mf::LogInfo("PennMicroSlice") << "Contents : [";
-        display_bits(pl_ptr,lbne::PennMicroSlice::payload_size_counter,"PennMicroSlice");
+        display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_counter,"PennMicroSlice");
         mf::LogInfo("PennMicroSlice") << "]";
         break;
       case 0x2: // trigger word
         mf::LogInfo("PennMicroSlice") << "Sample type: trigger : [" << std::bitset<3>(type) << "]";
         mf::LogInfo("PennMicroSlice") << "Contents : [";
-        display_bits(pl_ptr,lbne::PennMicroSlice::payload_size_trigger,"PennMicroSlice");
+        display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_trigger,"PennMicroSlice");
         mf::LogInfo("PennMicroSlice") << "]";
         break;
       case 0x4: // Checksum
@@ -589,13 +591,13 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
       case 0x7: // timestamp word
         mf::LogInfo("PennMicroSlice") << "Sample type: timestamp : [" << std::bitset<3>(type) << "]";
         mf::LogInfo("PennMicroSlice") << "Contents : [";
-        display_bits(pl_ptr,lbne::PennMicroSlice::payload_size_timestamp,"PennMicroSlice");
+        display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_timestamp,"PennMicroSlice");
         mf::LogInfo("PennMicroSlice") << "]";
         break;
       case 0x0: //self test
         mf::LogInfo("PennMicroSlice") << "Sample type: self test : [" << std::bitset<3>(type) << "]";
         mf::LogInfo("PennMicroSlice") << "Contents : [";
-        display_bits(pl_ptr,lbne::PennMicroSlice::payload_size_selftest,"PennMicroSlice");
+        display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_selftest,"PennMicroSlice");
         mf::LogInfo("PennMicroSlice") << "]";
         break;
       default:

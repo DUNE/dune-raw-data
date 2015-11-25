@@ -623,10 +623,18 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
           overlap_size -= remaining_size; //take off the bytes after the overlap started, and after the end of the current millislice
         }
       } else {
-        throw cet::exception("PennMicroSlice") << "Error: one or both of the following is true: boundary time of " <<
-            boundary_time << " is greater than ROLLOVER_LOW_VALUE time of " << lbne::PennMicroSlice::ROLLOVER_LOW_VALUE <<
-            ", timestamp value of " << timestamp << " is less than ROLLOVER_HIGH_VALUE time of " <<
-            lbne::PennMicroSlice::ROLLOVER_HIGH_VALUE;
+
+	// JCF, Oct-20-2015
+
+	// I need to use "loval" and "highval" in the cet::exception
+	// statement, otherwise debug builds will fail
+
+	auto loval = lbne::PennMicroSlice::ROLLOVER_LOW_VALUE;
+	auto highval = lbne::PennMicroSlice::ROLLOVER_HIGH_VALUE;
+
+	throw cet::exception("PennMicroSlice") << "Error: one or both of the following is true: boundary time of " << 
+	  boundary_time << " is greater than ROLLOVER_LOW_VALUE time of " << loval << 
+	  ", timestamp value of " << timestamp << " is less than ROLLOVER_HIGH_VALUE time of " << highval; 
       }
     }
     //'else' is to make sure we don't have data in both the 'overlap' and 'remaining' buffers
@@ -641,10 +649,19 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
         is_in_overlap     = true;
         is_before_overlap = false;
       } else {
-        throw cet::exception("PennMicroSlice") << "Error: one or both of the following is true: overlap time of " <<
-            overlap_time << " is greater than ROLLOVER_LOW_VALUE time of " << lbne::PennMicroSlice::ROLLOVER_LOW_VALUE <<
-            ", timestamp value of " << timestamp << " is less than ROLLOVER_HIGH_VALUE time of " <<
-            lbne::PennMicroSlice::ROLLOVER_HIGH_VALUE;
+
+	// JCF, Oct-20-2015
+
+	// I need to use "loval" and "highval" in the cet::exception
+	// statement, otherwise debug builds will fail
+
+	auto loval = lbne::PennMicroSlice::ROLLOVER_LOW_VALUE;
+	auto highval = lbne::PennMicroSlice::ROLLOVER_HIGH_VALUE;
+
+	throw cet::exception("PennMicroSlice") << "Error: one or both of the following is true: overlap time of " << 
+	  overlap_time << " is greater than ROLLOVER_LOW_VALUE time of " << loval << 
+	  ", timestamp value of " << timestamp << " is less than ROLLOVER_HIGH_VALUE time of " << 
+	  highval; 
       }
     }
 

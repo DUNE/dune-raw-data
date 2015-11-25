@@ -10,12 +10,11 @@
 #include <stdio.h>
 #include <boost/asio.hpp>
 
-#define __DEBUG_sampleCount__
-#define __DEBUG_sampleTimeSplit__
-#define __DEBUG_sampleTimeSplitAndCount__
-#define __DEBUG_sampleTimeSplitAndCountTwice__
+//#define __DEBUG_sampleCount__
+//#define __DEBUG_sampleTimeSplit__
+//#define __DEBUG_sampleTimeSplitAndCount__
+//#define __DEBUG_sampleTimeSplitAndCountTwice__
 
-// NFB: Why is the address represented in a single byte?
 lbne::PennMicroSlice::PennMicroSlice(uint8_t* address) : buffer_(address) , current_payload_(address), current_word_id_(0)
 {
 }

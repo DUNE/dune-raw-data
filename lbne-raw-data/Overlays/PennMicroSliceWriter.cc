@@ -61,5 +61,6 @@ lbne::PennMicroSlice::Header * lbne::PennMicroSliceWriter::header_()
 
 uint16_t * lbne::PennMicroSliceWriter::data_()
 {
+  // This is not really a good solution.
   return reinterpret_cast<uint16_t *>(buffer_ + sizeof(Header));
 }

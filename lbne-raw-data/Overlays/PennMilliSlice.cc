@@ -3,7 +3,7 @@
 #include <iostream>
 #include <bitset>
 
-#define __DEBUG_payload__
+// #define __DEBUG_payload__
 
 lbne::PennMilliSlice::PennMilliSlice(uint8_t* address) : buffer_(address), current_payload_(address), current_word_id_(0)
 {

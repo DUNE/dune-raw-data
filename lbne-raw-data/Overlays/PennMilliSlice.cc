@@ -103,7 +103,7 @@ uint8_t* lbne::PennMilliSlice::get_next_payload(uint32_t& index,
 	current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
 	break;
       case lbne::PennMicroSlice::DataTypeWarning:
-	current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+	current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_warning;
 	break;
       case lbne::PennMicroSlice::DataTypeChecksum:
 	current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
@@ -143,7 +143,7 @@ uint8_t* lbne::PennMilliSlice::get_next_payload(uint32_t& index,
       payload_size = lbne::PennMicroSlice::payload_size_timestamp;
       break;
     case lbne::PennMicroSlice::DataTypeWarning:
-      payload_size = lbne::PennMicroSlice::payload_size_selftest;
+      payload_size = lbne::PennMicroSlice::payload_size_warning;
       break;
     case lbne::PennMicroSlice::DataTypeChecksum:
       payload_size = lbne::PennMicroSlice::payload_size_checksum;
@@ -200,7 +200,7 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
 	  payload_size = lbne::PennMicroSlice::payload_size_timestamp;
 	  break;
 	case lbne::PennMicroSlice::DataTypeWarning:
-	  payload_size = lbne::PennMicroSlice::payload_size_selftest;
+	  payload_size = lbne::PennMicroSlice::payload_size_warning;
 	  break;
 	case lbne::PennMicroSlice::DataTypeChecksum:
 	  payload_size = lbne::PennMicroSlice::payload_size_checksum;
@@ -224,7 +224,7 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
 	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
 	break;
       case lbne::PennMicroSlice::DataTypeWarning:
-	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_warning;
 	break;
       case lbne::PennMicroSlice::DataTypeChecksum:
 	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;

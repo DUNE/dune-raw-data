@@ -17,6 +17,7 @@ class lbne::PennMilliSlice {
 public:
 
   struct TriggerPayload {
+    //FIXME: Change this format to something easier to debug.
     //We'll use 32 bit atom since that is the total length of this struct 
     typedef uint32_t trigger_type_t;
     typedef uint32_t trigger_pattern_t;
@@ -108,7 +109,6 @@ public:
 
   };
 
-
   struct TimestampPayload {
       typedef uint64_t timestamp_t;
       typedef uint16_t data_size_t;
@@ -186,6 +186,7 @@ public:
     data_t width_in_ticks   : 32;  // neglecting overlap
     data_t overlap_in_ticks : 32;
   };
+
 
   // This constructor accepts a memory buffer that contains an existing
   // PennMilliSlice and allows the the data inside it to be accessed

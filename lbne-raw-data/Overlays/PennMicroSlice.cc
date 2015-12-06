@@ -10,10 +10,10 @@
 #include <stdio.h>
 #include <boost/asio.hpp>
 
-//#define __DEBUG_sampleCount__
-//#define __DEBUG_sampleTimeSplit__
-//#define __DEBUG_sampleTimeSplitAndCount__
-//#define __DEBUG_sampleTimeSplitAndCountTwice__
+#define __DEBUG_sampleCount__
+#define __DEBUG_sampleTimeSplit__
+#define __DEBUG_sampleTimeSplitAndCount__
+#define __DEBUG_sampleTimeSplitAndCountTwice__
 
 lbne::PennMicroSlice::PennMicroSlice(uint8_t* address) : buffer_(address) , current_payload_(address), current_word_id_(0)
 {
@@ -83,7 +83,7 @@ uint8_t* lbne::PennMicroSlice::get_next_payload(uint32_t& word_id,
         current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
         break;
       case lbne::PennMicroSlice::DataTypeWarning:
-        current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+        current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_warning;
         break;
       case lbne::PennMicroSlice::DataTypeChecksum:
         current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
@@ -124,7 +124,7 @@ uint8_t* lbne::PennMicroSlice::get_next_payload(uint32_t& word_id,
       payload_size = lbne::PennMicroSlice::payload_size_timestamp;
       break;
     case lbne::PennMicroSlice::DataTypeWarning:
-      payload_size = lbne::PennMicroSlice::payload_size_selftest;
+      payload_size = lbne::PennMicroSlice::payload_size_warning;
       break;
     case lbne::PennMicroSlice::DataTypeChecksum:
       payload_size = lbne::PennMicroSlice::payload_size_checksum;
@@ -181,29 +181,6 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
       pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words;
 
       switch(type)
-<<<<<<< HEAD
-	{
-	case lbne::PennMicroSlice::DataTypeCounter:
-	  payload_size = lbne::PennMicroSlice::payload_size_counter;
-	  break;
-	case lbne::PennMicroSlice::DataTypeTrigger:
-	  payload_size = lbne::PennMicroSlice::payload_size_trigger;
-	  break;
-	case lbne::PennMicroSlice::DataTypeTimestamp:
-	  payload_size = lbne::PennMicroSlice::payload_size_timestamp;
-	  break;
-	case lbne::PennMicroSlice::DataTypeWarning:
-	  payload_size = lbne::PennMicroSlice::payload_size_selftest;
-	  break;
-	case lbne::PennMicroSlice::DataTypeChecksum:
-	  payload_size = lbne::PennMicroSlice::payload_size_checksum;
-	  break;
-	default:
-	  std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
-	  payload_size = 0;
-	  break;
-	}//switch(type)
-=======
       {
         case lbne::PennMicroSlice::DataTypeCounter:
           payload_size = lbne::PennMicroSlice::payload_size_counter;
@@ -214,8 +191,8 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
         case lbne::PennMicroSlice::DataTypeTimestamp:
           payload_size = lbne::PennMicroSlice::payload_size_timestamp;
           break;
-        case lbne::PennMicroSlice::DataTypeSelftest:
-          payload_size = lbne::PennMicroSlice::payload_size_selftest;
+        case lbne::PennMicroSlice::DataTypeWarning:
+          payload_size = lbne::PennMicroSlice::payload_size_warning;
           break;
         case lbne::PennMicroSlice::DataTypeChecksum:
           payload_size = lbne::PennMicroSlice::payload_size_checksum;
@@ -227,7 +204,6 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
           payload_size = 0;
           break;
       }//switch(type)
->>>>>>> origin/feature/penn_board_reader
       return pl_ptr;
     } else {
       // Advance the pointer to the size of the next payload
@@ -240,19 +216,11 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
         pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
         break;
       case lbne::PennMicroSlice::DataTypeTimestamp:
-<<<<<<< HEAD
-	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
-	break;
-      case lbne::PennMicroSlice::DataTypeWarning:
-	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
-	break;
-=======
         pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
         break;
-      case lbne::PennMicroSlice::DataTypeSelftest:
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+      case lbne::PennMicroSlice::DataTypeWarning:
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_warning;
         break;
->>>>>>> origin/feature/penn_board_reader
       case lbne::PennMicroSlice::DataTypeChecksum:
         pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
         break;
@@ -330,7 +298,7 @@ lbne::PennMicroSlice::sample_count_t lbne::PennMicroSlice::sampleCount(
       case lbne::PennMicroSlice::DataTypeSelftest:
         n_selftest_words++;
 >>>>>>> origin/feature/penn_board_reader
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_warning;
         break;
       case lbne::PennMicroSlice::DataTypeChecksum:
         n_checksum_words++;
@@ -407,7 +375,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplit(uint64_t boundary_time, size_t& r
         break;
       case lbne::PennMicroSlice::DataTypeSelftest:
 >>>>>>> origin/feature/penn_board_reader
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_warning;
         break;
       case lbne::PennMicroSlice::DataTypeChecksum:
         pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
@@ -509,7 +477,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCount(uint64_t boundary_time, s
 	  n_selftest_words_b++;
 	else
 	  n_selftest_words_a++;
-	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_warning;
 	break;
 =======
         if(is_before)
@@ -523,7 +491,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCount(uint64_t boundary_time, s
           n_selftest_words_b++;
         else
           n_selftest_words_a++;
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_warning;
         break;
 >>>>>>> origin/feature/penn_board_reader
       case lbne::PennMicroSlice::DataTypeChecksum:
@@ -562,6 +530,8 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCount(uint64_t boundary_time, s
 
 // Sections in the code where, e.g., there's a timestamp rollover will now result in an exception throw
 
+// NFB Dec-06-2015 : For the moment there are no fragmented microslices.
+// Always assume that a full timestamp is sent
 uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_time, size_t& remaining_size,
     uint64_t overlap_time,  size_t& overlap_size, uint8_t*& overlap_data_ptr,
     lbne::PennMicroSlice::sample_count_t &n_words_b,
@@ -585,7 +555,9 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
     uint32_t &checksum,
     bool swap_payload_header_bytes, size_t override_uslice_size) const
 {
+  // words counted before the split time
   n_words_b = n_counter_words_b = n_trigger_words_b = n_timestamp_words_b = n_selftest_words_b = n_checksum_words_b = 0;
+  // words counted after the split time
   n_words_a = n_counter_words_a = n_trigger_words_a = n_timestamp_words_a = n_selftest_words_a = n_checksum_words_a = 0;
   //n_words_o = n_counter_words_o = n_trigger_words_o = n_timestamp_words_o = n_selftest_words_o = n_checksum_words_o = 0; //don't reset these, as there is likely multiple uslices contained in the overlap
 
@@ -596,8 +568,10 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
   bool is_before_boundary = true, is_before_overlap = true, is_in_overlap = false;
 
   //if we're overriding, we don't have a Header to offset by
+  // In principle we're always overriding, right?
   uint8_t* pl_ptr;
   size_t   pl_size;
+
   if(override_uslice_size) {
     pl_ptr  = buffer_;
     pl_size = override_uslice_size - sizeof(Header);
@@ -607,7 +581,28 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
     pl_size = size();
   }
 
-  //  display_bits(pl_ptr, pl_size, "PennMicroSlice");
+#ifdef __DEBUG_sampleTimeSplitAndCountTwice__
+  mf::LogDebug("PennMicroSlice") << "Dumping the received microslice with " << pl_size << " bytes.";
+  display_bits(pl_ptr, pl_size, "PennMicroSlice");
+#endif
+
+  uint8_t* aux_ptr = pl_ptr;
+  // First thing: Grab the checksum word as a crosscheck
+  aux_ptr = pl_ptr + pl_size - (sizeof(lbne::PennMicroSlice::Payload_Header)+lbne::PennMicroSlice::payload_size_checksum);
+  lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast<lbne::PennMicroSlice::Payload_Header*>(aux_ptr);
+  if (payload_header->data_packet_type != lbne::PennMicroSlice::DataTypeChecksum) {
+    mf::LogError("PennMicroSlice") << "Last word in the microslice is not a checksum :" << std::bitset<3>(payload_header->data_packet_type);
+  }
+  aux_ptr -= (sizeof(lbne::PennMicroSlice::Payload_Header)+lbne::PennMicroSlice::payload_size_timestamp);
+  payload_header = reinterpret_cast<lbne::PennMicroSlice::Payload_Header*>(aux_ptr);
+  if (payload_header->data_packet_type != lbne::PennMicroSlice::DataTypeTimestamp) {
+    mf::LogError("PennMicroSlice") << "Failed to find the timestamp :" << std::bitset<3>(payload_header->data_packet_type);
+  }
+
+  // --  Assign the payload and get the timestamp to make sure that we are doing things right.
+  lbne::PennMilliSlice::TimestampPayload *pl_ts = reinterpret_cast<lbne::PennMilliSlice::TimestampPayload *>(aux_ptr + sizeof(lbne::PennMicroSlice::Payload_Header));
+  uint64_t microslice_boundary = pl_ts->nova_timestamp;
+  uint64_t frame_timestamp = 0;
 
   //loop over the microslice
   while(pl_ptr < (buffer_ + pl_size)) {
@@ -615,76 +610,99 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
     mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG pointers." 
         << " Payload "    << (unsigned int*)pl_ptr
         << "\tOverlap "   << (unsigned int*)overlap_data_ptr
-        << "\tRemaining " << (unsigned int*)remaining_data_ptr
-        << std::endl;
+        << "\tRemaining " << (unsigned int*)remaining_data_ptr;
 #endif
 
-    // JCF, Jul-29-2015: is this "if" block necessary any longer?
-    if(swap_payload_header_bytes) {
-      *((uint32_t*)pl_ptr) = ntohl(*((uint32_t*)pl_ptr));
-    }
+//    // JCF, Jul-29-2015: is this "if" block necessary any longer?
+//    if(swap_payload_header_bytes) {
+//      *((uint32_t*)pl_ptr) = ntohl(*((uint32_t*)pl_ptr));
+//    }
 
     lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast_checked<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
     lbne::PennMicroSlice::Payload_Header::data_packet_type_t     type      = payload_header->data_packet_type;
     lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t timestamp = payload_header->short_nova_timestamp;
 
+    // We know that only one rollover can occur within a microslice.
+    // Therefore if the rollover from the boundary is smaller than the timestamp, then
+    // it indeed rolled over
+    if ((microslice_boundary & 0x7FFFFFF) > timestamp) {
+      frame_timestamp = microslice_boundary - ((microslice_boundary & 0x7FFFFFF) - timestamp);
+    } else {
+      // it rolled over.
+      frame_timestamp = microslice_boundary - ((microslice_boundary & 0x7FFFFFF) + (0x7FFFFFF - timestamp) + 1 );
+    }
+
 #ifdef __DEBUG_sampleTimeSplitAndCountTwice__
-    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type " << std::bitset<3>(type) << " timestamp " << static_cast<uint32_t>(timestamp) << " ["<< std::hex << timestamp << std::dec << "]";
-    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG full header [";
+      mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG >> frame_timestamp : " << frame_timestamp;
+      mf::LogDebug("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type " << std::bitset<3>(type) << " timestamp " << static_cast<uint32_t>(timestamp) << " ["<< std::hex << timestamp << std::dec << "]";
+    mf::LogDebug("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG full header [";
     display_bits(pl_ptr,4,"PennMicroSlice");
-    mf::LogInfo("PennMicroSlice") << "]";
+    mf::LogDebug("PennMicroSlice") << "]";
     switch (type) {
-<<<<<<< HEAD
-    case 0x1: // counter word
-      mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_
-    	break;
-    case 0x2: // trigger word
-      mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_
-								     break;
-    case 0x7: // timestamp word
-      mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_
-								     break;
-    default:
-      mf::LogInfo("PennMicroSlice") << "Unexpected size...taking as if it was a self test";
-=======
-      case 0x1: // counter word
-        mf::LogInfo("PennMicroSlice") << "Sample type: counter : [" << std::bitset<3>(type) << "]";
-        mf::LogInfo("PennMicroSlice") << "Contents : [";
+      case lbne::PennMicroSlice::DataTypeCounter: // counter word
+        mf::LogDebug("PennMicroSlice") << "Sample type: counter : [" << std::bitset<3>(type) << "]";
+        mf::LogDebug("PennMicroSlice") << "Contents : [";
         display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_counter,"PennMicroSlice");
-        mf::LogInfo("PennMicroSlice") << "]";
+        mf::LogDebug("PennMicroSlice") << "]";
         break;
-      case 0x2: // trigger word
-        mf::LogInfo("PennMicroSlice") << "Sample type: trigger : [" << std::bitset<3>(type) << "]";
-        mf::LogInfo("PennMicroSlice") << "Contents : [";
+      case lbne::PennMicroSlice::DataTypeTrigger: // trigger word
+        mf::LogDebug("PennMicroSlice") << "Sample type: trigger : [" << std::bitset<3>(type) << "]";
+        mf::LogDebug("PennMicroSlice") << "Contents : [";
         display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_trigger,"PennMicroSlice");
-        mf::LogInfo("PennMicroSlice") << "]";
+        mf::LogDebug("PennMicroSlice") << "]";
         break;
-      case 0x4: // Checksum
-        mf::LogInfo("PennMicroSlice") << "Sample type: checksum : [" << std::bitset<3>(type) << "]";
-	break;
-      case 0x7: // timestamp word
-        mf::LogInfo("PennMicroSlice") << "Sample type: timestamp : [" << std::bitset<3>(type) << "]";
-        mf::LogInfo("PennMicroSlice") << "Contents : [";
+      case lbne::PennMicroSlice::DataTypeChecksum: // Checksum
+        mf::LogDebug("PennMicroSlice") << "Sample type: checksum : [" << std::bitset<3>(type) << "]";
+        break;
+      case lbne::PennMicroSlice::DataTypeTimestamp: // timestamp word
+        mf::LogDebug("PennMicroSlice") << "Sample type: timestamp : [" << std::bitset<3>(type) << "]";
+        mf::LogDebug("PennMicroSlice") << "Contents : [";
         display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_timestamp,"PennMicroSlice");
-        mf::LogInfo("PennMicroSlice") << "]";
+        mf::LogDebug("PennMicroSlice") << "]";
         break;
-      case 0x0: //self test
-        mf::LogInfo("PennMicroSlice") << "Sample type: self test : [" << std::bitset<3>(type) << "]";
-        mf::LogInfo("PennMicroSlice") << "Contents : [";
-        display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_selftest,"PennMicroSlice");
-        mf::LogInfo("PennMicroSlice") << "]";
+      case lbne::PennMicroSlice::DataTypeWarning: //self test
+        mf::LogDebug("PennMicroSlice") << "Sample type: WARNING : [" << std::bitset<3>(type) << "]";
+        mf::LogDebug("PennMicroSlice") << "Contents : [";
+        display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_warning,"PennMicroSlice");
+        mf::LogDebug("PennMicroSlice") << "]";
         break;
       default:
         mf::LogError("PennMicroSlice") << "Unexpected header type...something is going to fail [" << std::bitset<3>(type) << "]";
->>>>>>> origin/feature/penn_board_reader
     }
 
-    //    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG: boundary_time == " << 
+    //    mf::LogDebug("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG: boundary_time == " <<
     //      boundary_time << ", overlap_time == " << overlap_time << ", is_before_boundary == " << is_before_boundary << ", overlap_size ==" << overlap_size << 
     //      ", is_before_overlap == " << is_before_overlap << ", is_in_overlap == " << is_in_overlap;
 #endif
+
+
     //check the timestamp
-    if(is_before_boundary && (timestamp > boundary_time)) {
+    // Keep in mind that the timestamp should be incremented from the latest full timestamp received
+
+    if (is_before_boundary && (frame_timestamp > boundary_time)) {
+      remaining_size = (buffer_ + pl_size) - pl_ptr;
+      remaining_data_ptr = pl_ptr;
+      is_before_boundary = false;
+      is_before_overlap = false;
+      is_in_overlap = false;
+      if (overlap_size) {
+        //take off the bytes after the overlap started,
+        // and after the end of the current millislice
+        overlap_size -= remaining_size;
+      }
+    } else if (is_before_overlap & (frame_timestamp > overlap_time)) {
+      overlap_size = (buffer_ + pl_size) - pl_ptr;
+      overlap_data_ptr = pl_ptr;
+      is_in_overlap = true;
+      is_before_overlap = false;
+    }
+    // otherwise it is still inside the millislice
+
+/**
+
+
+    // this logic is no longer needed
+    if(is_before_boundary && (frame_timestamp > boundary_time)) {
       //need to be careful and make sure that boundary_time hasn't overflowed the 28 bits
       //do this by checking whether timestamp isn't very large AND boundary_time isn't very small
       //TODO a better way to catch rollovers?
@@ -741,6 +759,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
       }
     }
 
+**/
     //check the type to increment counters & the ptr
     switch(type)
     {
@@ -763,20 +782,6 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
         pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
         break;
       case lbne::PennMicroSlice::DataTypeTimestamp:
-<<<<<<< HEAD
-	if(is_before_boundary)
-	  n_timestamp_words_b++;
-	else
-	  n_timestamp_words_a++;
-	if(is_in_overlap)
-	  n_timestamp_words_o++;
-	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
-	//	mf::LogInfo("PennMicroSlice") << "JCF, sampleTimeSplitAndCountTwice: now have n_timestamp_words_b == " <<
-	//	  n_timestamp_words_b << ", n_timestamp_words_a == " << n_timestamp_words_a <<
-	//	  ", n_timestamp_words_o == " << n_timestamp_words_o;
-	break;
-      case lbne::PennMicroSlice::DataTypeWarning:
-=======
         if(is_before_boundary)
           n_timestamp_words_b++;
         else
@@ -788,15 +793,27 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
         //	  n_timestamp_words_b << ", n_timestamp_words_a == " << n_timestamp_words_a <<
         //	  ", n_timestamp_words_o == " << n_timestamp_words_o;
         break;
-      case lbne::PennMicroSlice::DataTypeSelftest:
->>>>>>> origin/feature/penn_board_reader
+      case lbne::PennMicroSlice::DataTypeWarning:
+
+        lbne::PennMicroSlice::Warning_Header *wh = reinterpret_cast_checked<lbne::PennMicroSlice::Warning_Header *>(pl_ptr);
+        switch(wh->warning_type) {
+          /// Issue the warning HERE:
+          case lbne::PennMicroSlice::WarnFIFOHalfFull:
+            mf::LogWarning("PennMicroSlice") << "FIFO reached half full state. Stop run recommended.";
+            break;
+          case lbne::PennMicroSlice::WarnFIFOFull:
+            mf::LogError("PennMicroSlice") << "FIFO reached full state. Data after this point is unreliable.";
+            break;
+          default:
+            mf::LogError("PennMicroSlice") << "Unknown FIFO warning type " << std::bitset<5>(wh->warning_type);
+        }
         if(is_before_boundary)
           n_selftest_words_b++;
         else
           n_selftest_words_a++;
         if(is_in_overlap)
           n_selftest_words_o++;
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_warning;
         break;
       case lbne::PennMicroSlice::DataTypeChecksum:
         if(is_before_boundary)
@@ -810,6 +827,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
         //	  n_checksum_words_b << ", n_checksum_words_a == " << n_checksum_words_a <<
         //	  ", n_checksum_words_o == " << n_checksum_words_o;
 
+        // It is correct. The checksum is stored in the 2 lsB
         checksum = *( reinterpret_cast<uint16_t*>(pl_ptr) );
 
         pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;

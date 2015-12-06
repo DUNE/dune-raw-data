@@ -84,7 +84,6 @@ public:
     static data_size_t const num_bits_packet_type = 3;
   };
 
-  static
 
   typedef Header::block_size_t microslice_size_t;
 

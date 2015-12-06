@@ -56,6 +56,14 @@ public:
 
   // Returns the type ID of the TpcMicroSlice
   Header::type_id_t type_id() const;
+  //some individual pieces in type_id
+  bool errorFlag() const;
+  bool softTrig() const;
+  bool extTrig() const;
+  bool droppedFrame() const;
+  bool timeGap() const;
+  uint8_t runMode() const;
+  uint16_t rceSoftwareVersion() const;
 
   // Returns the software message of the TpcMicroSlice
   Header::softmsg_t software_message() const;
@@ -71,7 +79,6 @@ public:
   bool nanosliceSampleValue(uint32_t index, uint32_t sample, uint16_t& value) const;
 
   // Finds the corresponding NOvA timestamp
-
   lbne::TpcNanoSlice::Header::nova_timestamp_t nanosliceNova_timestamp(uint32_t index) const;
 
   // Returns the requested NanoSlice if the requested slice was found,

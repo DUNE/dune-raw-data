@@ -82,7 +82,7 @@ uint8_t* lbne::PennMicroSlice::get_next_payload(uint32_t& word_id,
       case lbne::PennMicroSlice::DataTypeTimestamp:
 	current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
 	break;
-      case lbne::PennMicroSlice::DataTypeSelftest:
+      case lbne::PennMicroSlice::DataTypeWarning:
 	current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
 	break;
       case lbne::PennMicroSlice::DataTypeChecksum:
@@ -122,7 +122,7 @@ uint8_t* lbne::PennMicroSlice::get_next_payload(uint32_t& word_id,
     case lbne::PennMicroSlice::DataTypeTimestamp:
       payload_size = lbne::PennMicroSlice::payload_size_timestamp;
       break;
-    case lbne::PennMicroSlice::DataTypeSelftest:
+    case lbne::PennMicroSlice::DataTypeWarning:
       payload_size = lbne::PennMicroSlice::payload_size_selftest;
       break;
     case lbne::PennMicroSlice::DataTypeChecksum:
@@ -183,7 +183,7 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
 	case lbne::PennMicroSlice::DataTypeTimestamp:
 	  payload_size = lbne::PennMicroSlice::payload_size_timestamp;
 	  break;
-	case lbne::PennMicroSlice::DataTypeSelftest:
+	case lbne::PennMicroSlice::DataTypeWarning:
 	  payload_size = lbne::PennMicroSlice::payload_size_selftest;
 	  break;
 	case lbne::PennMicroSlice::DataTypeChecksum:
@@ -207,7 +207,7 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
       case lbne::PennMicroSlice::DataTypeTimestamp:
 	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
 	break;
-      case lbne::PennMicroSlice::DataTypeSelftest:
+      case lbne::PennMicroSlice::DataTypeWarning:
 	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
 	break;
       case lbne::PennMicroSlice::DataTypeChecksum:
@@ -273,7 +273,7 @@ lbne::PennMicroSlice::sample_count_t lbne::PennMicroSlice::sampleCount(
 	n_timestamp_words++;
 	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
 	break;
-      case lbne::PennMicroSlice::DataTypeSelftest:
+      case lbne::PennMicroSlice::DataTypeWarning:
 	n_selftest_words++;
         pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
         break;
@@ -345,7 +345,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplit(uint64_t boundary_time, size_t& r
       case lbne::PennMicroSlice::DataTypeTimestamp:
 	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
 	break;
-      case lbne::PennMicroSlice::DataTypeSelftest:
+      case lbne::PennMicroSlice::DataTypeWarning:
         pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_selftest;
         break;
       case lbne::PennMicroSlice::DataTypeChecksum:
@@ -441,7 +441,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCount(uint64_t boundary_time, s
 	  n_timestamp_words_a++;
 	pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
 	break;
-      case lbne::PennMicroSlice::DataTypeSelftest:
+      case lbne::PennMicroSlice::DataTypeWarning:
 	if(is_before)
 	  n_selftest_words_b++;
 	else
@@ -554,16 +554,16 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
     mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type " << std::bitset<3>(type) << " timestamp " << static_cast<uint32_t>(timestamp) << " ["<< std::hex << timestamp << std::dec << "]" << std::endl;
     switch (type) {
     case 0x1: // counter word
-    	mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_
+      mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_
     	break;
     case 0x2: // trigger word
-    	mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_
-    	break;
+      mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_
+								     break;
     case 0x7: // timestamp word
-    	mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_
-    	break;
+      mf::LogInfo("PennMicroSlice") << "Contents : [" << std::bitset<lbne::PennMicroSlice::payload_
+								     break;
     default:
-    	mf::LogInfo("PennMicroSlice") << "Unexpected size...taking as if it was a self test";
+      mf::LogInfo("PennMicroSlice") << "Unexpected size...taking as if it was a self test";
     }
 
     //    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG: boundary_time == " << 
@@ -645,7 +645,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
 	//	  n_timestamp_words_b << ", n_timestamp_words_a == " << n_timestamp_words_a <<
 	//	  ", n_timestamp_words_o == " << n_timestamp_words_o;
 	break;
-      case lbne::PennMicroSlice::DataTypeSelftest:
+      case lbne::PennMicroSlice::DataTypeWarning:
         if(is_before_boundary)
           n_selftest_words_b++;
         else

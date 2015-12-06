@@ -108,6 +108,19 @@ public:
 
   };
 
+
+  struct TimestampPayload {
+      typedef uint64_t timestamp_t;
+      typedef uint16_t data_size_t;
+      timestamp_t nova_timestamp : 64;
+
+      static data_size_t const num_bits_timestamp = 64;
+      static size_t const size_words = sizeof(uint64_t);
+
+      static size_t const ptb_offset = sizeof(uint32_t);
+
+  };
+
   struct CounterPayload {
     //Need to be careful about choice of atom within this struct due to atom boundaries of the bitfields
     //The 128 bits can be devided into two 64 bit atoms, so we will use that

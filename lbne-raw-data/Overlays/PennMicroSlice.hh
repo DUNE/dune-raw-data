@@ -165,7 +165,7 @@ public:
   static const uint32_t ROLLOVER_HIGH_VALUE = 1 << 26;
 
   //The types of data words
-  static const Payload_Header::data_packet_type_t DataTypeSelftest  = 0x0; //0b000
+  static const Payload_Header::data_packet_type_t DataTypeWarning  = 0x0; //0b000
   static const Payload_Header::data_packet_type_t DataTypeCounter   = 0x1; //0b001
   static const Payload_Header::data_packet_type_t DataTypeTrigger   = 0x2; //0b010
   static const Payload_Header::data_packet_type_t DataTypeChecksum  = 0x4; //0b100

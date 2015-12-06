@@ -583,10 +583,10 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
         << "\tRemaining " << (unsigned int*)remaining_data_ptr;
 #endif
 
-//    // JCF, Jul-29-2015: is this "if" block necessary any longer?
-//    if(swap_payload_header_bytes) {
-//      *((uint32_t*)pl_ptr) = ntohl(*((uint32_t*)pl_ptr));
-//    }
+    // JCF, Jul-29-2015: is this "if" block necessary any longer?
+    if(swap_payload_header_bytes) {
+      *((uint32_t*)pl_ptr) = ntohl(*((uint32_t*)pl_ptr));
+    }
 
     lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast_checked<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
     lbne::PennMicroSlice::Payload_Header::data_packet_type_t     type      = payload_header->data_packet_type;
@@ -764,7 +764,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
         //	  ", n_timestamp_words_o == " << n_timestamp_words_o;
         break;
       case lbne::PennMicroSlice::DataTypeWarning:
-
+      {
         lbne::PennMicroSlice::Warning_Header *wh = reinterpret_cast_checked<lbne::PennMicroSlice::Warning_Header *>(pl_ptr);
         switch(wh->warning_type) {
           /// Issue the warning HERE:
@@ -785,6 +785,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
           n_selftest_words_o++;
         pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_warning;
         break;
+      }
       case lbne::PennMicroSlice::DataTypeChecksum:
         if(is_before_boundary)
           n_checksum_words_b++;

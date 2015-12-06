@@ -39,6 +39,7 @@ public:
     //data_t raw_header_data[raw_header_words];
   };
 
+  // Nanoslice
   struct Payload_Header {
 
     typedef uint32_t data_t;
@@ -71,9 +72,9 @@ public:
   // there are 97 bits of info in the counter frame
 
   //the size of the payloads (neglecting the Payload_Header)
-  // FIXME: The size of the payload in the data from the PTB is 3, but the size of the
-  // payload stored in the DAQ should be bigger, to accomodate the extra bit
-  static microslice_size_t const payload_size_counter   = 3 * sizeof(uint32_t); //128-bit payload
+
+  // static microslice_size_t const payload_size_counter   = 4 * sizeof(uint32_t); //96-bit payload
+  static microslice_size_t const payload_size_counter   = 13; // 104-bit payload
   static microslice_size_t const payload_size_trigger   = 1 * sizeof(uint32_t); //32-bit payload
   static microslice_size_t const payload_size_timestamp = 2 * sizeof(uint32_t); //64-bit payload
   static microslice_size_t const payload_size_selftest  = 1 * sizeof(uint32_t); //32-bit payload
@@ -84,6 +85,7 @@ public:
   PennMicroSlice(uint8_t* address);
 
   // Get the contents of a payload
+  // Why is everything worked in bytes and not 32 bit units?
   uint8_t* get_payload(uint32_t word_id, Payload_Header::data_packet_type_t& data_packet_type, Payload_Header::short_nova_timestamp_t& short_nova_timestamp, size_t& size, bool swap_payload_header_bytes, size_t override_uslice_size = 0) const;
   // Get the contents of the next payload
   //JPD -- get_payload is inefficient for user code use - it has to loop through (i) payloads to get the (ith) payload. This function increments the current_payload_ pointer to the next payload, and returns nullptr when off the end
@@ -161,6 +163,7 @@ public:
   //The width of the millislice should be:
   // LESS than the ROLLOVER_LOW_VALUE
   // LESS than (max of a uint28_t - ROLLOVER_HIGH_VALUE)
+  // NFB : Not sure I understand this logic
   static const uint32_t ROLLOVER_LOW_VALUE  = 1 << 13; //8192 ticks = 0.128ms
   static const uint32_t ROLLOVER_HIGH_VALUE = 1 << 26;
 

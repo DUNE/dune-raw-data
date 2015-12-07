@@ -3,7 +3,28 @@
 #include <iomanip>
 #include <stdio.h>
 
-lbne::TpcNanoSlice::TpcNanoSlice(uint8_t* address) : buffer_(address) { }
+lbne::TpcNanoSlice::TpcNanoSlice(uint8_t* address) : buffer_(address) { 
+  runMode=0x3;//triggered
+  raw_payload_words_compressed=24;
+  raw_payload_words_uncompressed = 32;
+  num_channels=128;
+}
+
+lbne::TpcNanoSlice::TpcNanoSlice(uint8_t* address, uint8_t mode) : buffer_(address) {
+  runMode=mode;
+  if(runMode==0x1){
+    //scope mode
+    raw_payload_words_compressed=1;
+    raw_payload_words_uncompressed = 1;
+    num_channels=1;
+  }else if(runMode==0x3){
+    //triggered mode
+    raw_payload_words_compressed=24;
+    raw_payload_words_uncompressed = 32;
+    num_channels=128;    
+  }
+
+ }
 
 lbne::TpcNanoSlice::nanoslice_size_t lbne::TpcNanoSlice::size() const
 {

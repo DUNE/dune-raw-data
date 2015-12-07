@@ -51,7 +51,8 @@ lbne::TpcMicroSlice::Header::nanoslice_count_t lbne::TpcMicroSlice::nanoSliceCou
 
 	std::unique_ptr<TpcNanoSlice> nanoslice;
 	uint8_t* ns_ptr = data_(0);
-	nanoslice.reset(new TpcNanoSlice(ns_ptr));
+	//	nanoslice.reset(new TpcNanoSlice(ns_ptr));
+	nanoslice.reset(new TpcNanoSlice(ns_ptr,runMode()));
 
 	std::size_t microsliceDataSize = this->size() - sizeof(Header);
 	return static_cast<lbne::TpcMicroSlice::Header::nanoslice_count_t>
@@ -65,7 +66,8 @@ std::unique_ptr<lbne::TpcNanoSlice> lbne::TpcMicroSlice::nanoSlice(uint32_t inde
 	std::unique_ptr<TpcNanoSlice> nslice_ptr;
 	if (index < nanoSliceCount()) {
 		uint8_t* ns_ptr = data_(index);
-		nslice_ptr.reset(new TpcNanoSlice(ns_ptr));
+		//		nslice_ptr.reset(new TpcNanoSlice(ns_ptr));
+		nslice_ptr.reset(new TpcNanoSlice(ns_ptr,runMode()));
 	}
 	return nslice_ptr;
 }
@@ -77,7 +79,7 @@ bool lbne::TpcMicroSlice::nanosliceSampleValue(uint32_t index, uint32_t sample, 
 {
   if (index < nanoSliceCount()) {
     uint8_t *ns_ptr = data_(index);
-    TpcNanoSlice nslice(ns_ptr);
+    TpcNanoSlice nslice(ns_ptr,runMode());
     return nslice.sampleValue(sample,value);
   }
   return false;
@@ -87,7 +89,7 @@ lbne::TpcNanoSlice::Header::nova_timestamp_t lbne::TpcMicroSlice::nanosliceNova_
 {
   if (index < nanoSliceCount()) {
     uint8_t *ns_ptr = data_(index);
-    TpcNanoSlice nslice(ns_ptr);
+    TpcNanoSlice nslice(ns_ptr,runMode());
     return nslice.nova_timestamp();
   }
   return false;
@@ -103,6 +105,49 @@ lbne::TpcMicroSlice::Header const* lbne::TpcMicroSlice::header_() const
 uint8_t* lbne::TpcMicroSlice::data_(uint32_t index) const
 {
   uint8_t* ns_ptr = reinterpret_cast<uint8_t *>(buffer_ + sizeof(Header));
-  TpcNanoSlice tmp_ns(ns_ptr);
+  TpcNanoSlice tmp_ns(ns_ptr,runMode());
   return ns_ptr + (index * tmp_ns.size());
 }
+
+// Returns the error flag of the TpcMicroSlice
+bool lbne::TpcMicroSlice::errorFlag() const
+{
+  return  ((type_id()>>31) & 0x1);
+}
+
+// did this microslice have a software trigger?
+bool lbne::TpcMicroSlice::softTrig() const
+{
+  return  ((type_id()>>30) & 0x1);
+}
+
+// did this microslice have a external trigger?
+bool lbne::TpcMicroSlice::extTrig() const
+{
+  return  ((type_id()>>29) & 0x1);
+}
+
+// did this microslice drop its payload for some reason?
+bool lbne::TpcMicroSlice::droppedFrame() const
+{
+  return  ((type_id()>>28) & 0x1);
+}
+
+// did this microslice have a gap in the timestamps?
+bool lbne::TpcMicroSlice::timeGap() const
+{
+  return  ((type_id()>>27) & 0x1);
+}
+
+// return the run mode
+uint8_t lbne::TpcMicroSlice::runMode() const
+{
+  return  ((type_id()>>16) & 0xF);
+}
+
+// return the rce software version number
+uint16_t lbne::TpcMicroSlice::rceSoftwareVersion() const
+{
+  return  ((type_id()) & 0xFFFF);
+}
+

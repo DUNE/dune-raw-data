@@ -38,11 +38,6 @@ public:
   typedef uint16_t nanoslice_size_t;
   typedef uint16_t sample_count_t;
 
-  static constexpr nanoslice_size_t raw_payload_words_compressed = 24;
-  static constexpr nanoslice_size_t raw_payload_words_uncompressed = 32;
-
-  static const int num_channels = 128;
-
   enum pgp_lane_id {
 	  pgp_lane_0 = 0,
 	  pgp_lane_1,
@@ -60,6 +55,9 @@ public:
   // This constructor accepts a memory buffer that contains an existing
   // nanoSlice and allows the the data inside it to be accessed
   TpcNanoSlice(uint8_t* address);
+  //this constructor sets the run mode
+  // 
+  TpcNanoSlice(uint8_t* address, uint8_t mode);
 
   // Returns the format version field from the header
   Header::format_version_t format_version() const;
@@ -115,6 +113,8 @@ public:
 
   uint64_t* raw() const;
 
+  uint32_t  getNChannels() const {return  num_channels;};
+
 protected:
 
   // returns a pointer to the header
@@ -124,6 +124,16 @@ protected:
   uint64_t const* data_() const;
 
   uint8_t* buffer_;
+
+
+private:  
+  uint8_t runMode;
+
+  nanoslice_size_t raw_payload_words_compressed;
+  nanoslice_size_t raw_payload_words_uncompressed;
+
+  uint32_t num_channels;
+
 };
 
 #endif /* lbne_artdaq_Overlays_TpcNanoSlice_hh */

@@ -14,7 +14,7 @@ lbne::TpcNanoSlice::TpcNanoSlice(uint8_t* address, uint8_t mode) : buffer_(addre
   runMode=mode;
   if(runMode==0x1){
     //scope mode
-    raw_payload_words_compressed=1;
+    raw_payload_words_compressed = 1;
     raw_payload_words_uncompressed = 1;
     num_channels=1;
   }else if(runMode==0x3){
@@ -31,7 +31,10 @@ lbne::TpcNanoSlice::nanoslice_size_t lbne::TpcNanoSlice::size() const
 //	nanoslice_size_t raw_payload_words =
 //			this->data_compressed() ? raw_payload_words_compressed : raw_payload_words_uncompressed;
 	nanoslice_size_t raw_payload_words = raw_payload_words_uncompressed;
-	return (lbne::TpcNanoSlice::nanoslice_size_t)((Header::raw_header_words + raw_payload_words)* sizeof(raw_data_word_t));
+	if(runMode==0x1)// scope mode
+	  return (lbne::TpcNanoSlice::nanoslice_size_t)((Header::raw_header_words)* sizeof(raw_data_word_t)+sizeof(uint16_t));
+	else 
+	  return (lbne::TpcNanoSlice::nanoslice_size_t)((Header::raw_header_words + raw_payload_words)* sizeof(raw_data_word_t));
 }
 
 lbne::TpcNanoSlice::Header::format_version_t lbne::TpcNanoSlice::format_version() const
@@ -154,10 +157,18 @@ bool lbne::TpcNanoSlice::sampleValue(uint32_t channel, uint16_t& value) const
 //  }
 //  else
 //  {
-	  int index = (int)(channel/4);
-	  int nstart = (channel%4)*16;
-	  value = (data_()[index] >> nstart) & 0xFFF;
-//  }
+  int nstart;
+  int index; 
+  if(runMode==0x1){
+    index = 0;
+    nstart = 0;
+  }  
+  else{
+    index = (int)(channel/4);
+    nstart = (channel%4)*16;
+  }
+  value = (data_()[index] >> nstart) & 0xFFF;
+  //  }
   return true;
 }
 
@@ -176,5 +187,5 @@ lbne::TpcNanoSlice::Header const* lbne::TpcNanoSlice::header_() const
 // Returns a pointer to the first payload data word in the nanoslice
 uint64_t const* lbne::TpcNanoSlice::data_() const
 {
-  return reinterpret_cast<uint64_t const*>(buffer_ + sizeof(lbne::TpcNanoSlice::Header));
+    return reinterpret_cast<uint64_t const*>(buffer_ + sizeof(lbne::TpcNanoSlice::Header));
 }

@@ -114,7 +114,7 @@ public:
   uint64_t* raw() const;
 
   uint32_t  getNChannels() const {return  num_channels;};
-
+  uint8_t   getRunMode() const {return runMode;};
 protected:
 
   // returns a pointer to the header

@@ -1,4 +1,5 @@
 #include "lbne-raw-data/Overlays/PennMicroSlice.hh"
+#include "lbne-raw-data/Overlays/PennMilliSlice.hh"
 #include "lbne-raw-data/Overlays/Utilities.hh"
 
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -552,7 +553,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
   }
 
 #ifdef __DEBUG_sampleTimeSplitAndCountTwice__
-  mf::LogDebug("PennMicroSlice") << "Dumping the received microslice with " << pl_size << " bytes.";
+  mf::LogInfo("PennMicroSlice") << "Dumping the received microslice with " << pl_size << " bytes.";
   display_bits(pl_ptr, pl_size, "PennMicroSlice");
 #endif
 
@@ -572,11 +573,14 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
   // --  Assign the payload and get the timestamp to make sure that we are doing things right.
   lbne::PennMilliSlice::TimestampPayload *pl_ts = reinterpret_cast<lbne::PennMilliSlice::TimestampPayload *>(aux_ptr + sizeof(lbne::PennMicroSlice::Payload_Header));
   uint64_t microslice_boundary = pl_ts->nova_timestamp;
+  
   uint64_t frame_timestamp = 0;
 
   //loop over the microslice
   while(pl_ptr < (buffer_ + pl_size)) {
 #ifdef __DEBUG_sampleTimeSplitAndCountTwice__
+    
+    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG microslice_boundary = " << microslice_boundary;
     mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG pointers." 
         << " Payload "    << (unsigned int*)pl_ptr
         << "\tOverlap "   << (unsigned int*)overlap_data_ptr
@@ -593,13 +597,16 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
     lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t timestamp = payload_header->short_nova_timestamp;
 
     // We know that only one rollover can occur within a microslice.
-    // Therefore if the rollover from the boundary is smaller than the timestamp, then
+    // Therefore if the rollover from the boundary is smaller than the timestamp
     // it indeed rolled over
-    if ((microslice_boundary & 0x7FFFFFF) > timestamp) {
+    if ((microslice_boundary & 0x7FFFFFF) == timestamp) {
+      frame_timestamp = microslice_boundary;
+    } else if ((microslice_boundary & 0x7FFFFFF) > timestamp) {
       frame_timestamp = microslice_boundary - ((microslice_boundary & 0x7FFFFFF) - timestamp);
     } else {
       // it rolled over.
-      frame_timestamp = microslice_boundary - ((microslice_boundary & 0x7FFFFFF) + (0x7FFFFFF - timestamp) + 1 );
+      // Be sure of the values being set
+      frame_timestamp = microslice_boundary - ((microslice_boundary & 0x7FFFFFF) + (0x7FFFFFF - timestamp));
     }
 
 #ifdef __DEBUG_sampleTimeSplitAndCountTwice__

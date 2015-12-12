@@ -11,10 +11,10 @@
 #include <stdio.h>
 #include <boost/asio.hpp>
 
-#define __DEBUG_sampleCount__
-#define __DEBUG_sampleTimeSplit__
-#define __DEBUG_sampleTimeSplitAndCount__
-#define __DEBUG_sampleTimeSplitAndCountTwice__
+//#define __DEBUG_sampleCount__
+//#define __DEBUG_sampleTimeSplit__
+//#define __DEBUG_sampleTimeSplitAndCount__
+//#define __DEBUG_sampleTimeSplitAndCountTwice__
 
 lbne::PennMicroSlice::PennMicroSlice(uint8_t* address) : buffer_(address) , current_payload_(address), current_word_id_(0)
 {
@@ -599,7 +599,9 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
     // We know that only one rollover can occur within a microslice.
     // Therefore if the rollover from the boundary is smaller than the timestamp
     // it indeed rolled over
-    if ((microslice_boundary & 0x7FFFFFF) == timestamp) {
+    if (type == lbne::PennMicroSlice::DataTypeWarning) {
+      frame_timestamp = 0;
+    } else if ((microslice_boundary & 0x7FFFFFF) == timestamp) {
       frame_timestamp = microslice_boundary;
     } else if ((microslice_boundary & 0x7FFFFFF) > timestamp) {
       frame_timestamp = microslice_boundary - ((microslice_boundary & 0x7FFFFFF) - timestamp);
@@ -610,43 +612,44 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
     }
 
 #ifdef __DEBUG_sampleTimeSplitAndCountTwice__
-      mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG >> frame_timestamp : " << frame_timestamp;
-      mf::LogDebug("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type " << std::bitset<3>(type) << " timestamp " << static_cast<uint32_t>(timestamp) << " ["<< std::hex << timestamp << std::dec << "]";
-    mf::LogDebug("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG full header [";
-    display_bits(pl_ptr,4,"PennMicroSlice");
-    mf::LogDebug("PennMicroSlice") << "]";
+    mf::LogInfo("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG >> frame_timestamp : " << frame_timestamp << " type " << std::bitset<3>(type);
+    // mf::LogDebug("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG type " << std::bitset<3>(type) << " timestamp " << static_cast<uint32_t>(timestamp) << " ["<< std::hex << timestamp << std::dec << "]";
+    // mf::LogDebug("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG full header [";
+    // display_bits(pl_ptr,4,"PennMicroSlice");
+    // mf::LogDebug("PennMicroSlice") << "]";
     switch (type) {
       case lbne::PennMicroSlice::DataTypeCounter: // counter word
-        mf::LogDebug("PennMicroSlice") << "Sample type: counter : [" << std::bitset<3>(type) << "]";
-        mf::LogDebug("PennMicroSlice") << "Contents : [";
-        display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_counter,"PennMicroSlice");
-        mf::LogDebug("PennMicroSlice") << "]";
+	
+        mf::LogInfo("PennMicroSlice") << "Sample type: counter : [" << std::bitset<3>(type) << "]";
+        // mf::LogDebug("PennMicroSlice") << "Contents : [";
+        // display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_counter,"PennMicroSlice");
+        // mf::LogDebug("PennMicroSlice") << "]";
         break;
       case lbne::PennMicroSlice::DataTypeTrigger: // trigger word
-        mf::LogDebug("PennMicroSlice") << "Sample type: trigger : [" << std::bitset<3>(type) << "]";
-        mf::LogDebug("PennMicroSlice") << "Contents : [";
-        display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_trigger,"PennMicroSlice");
-        mf::LogDebug("PennMicroSlice") << "]";
+        mf::LogInfo("PennMicroSlice") << "Sample type: trigger : [" << std::bitset<3>(type) << "]";
+        // mf::LogDebug("PennMicroSlice") << "Contents : [";
+        // display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_trigger,"PennMicroSlice");
+        // mf::LogDebug("PennMicroSlice") << "]";
         break;
       case lbne::PennMicroSlice::DataTypeChecksum: // Checksum
-        mf::LogDebug("PennMicroSlice") << "Sample type: checksum : [" << std::bitset<3>(type) << "]";
+        mf::LogInfo("PennMicroSlice") << "Sample type: checksum : [" << std::bitset<3>(type) << "]";
         break;
       case lbne::PennMicroSlice::DataTypeTimestamp: // timestamp word
-        mf::LogDebug("PennMicroSlice") << "Sample type: timestamp : [" << std::bitset<3>(type) << "]";
-        mf::LogDebug("PennMicroSlice") << "Contents : [";
-        display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_timestamp,"PennMicroSlice");
-        mf::LogDebug("PennMicroSlice") << "]";
+        mf::LogInfo("PennMicroSlice") << "Sample type: timestamp : [" << std::bitset<3>(type) << "]";
+        // mf::LogDebug("PennMicroSlice") << "Contents : [";
+        // display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_timestamp,"PennMicroSlice");
+        // mf::LogDebug("PennMicroSlice") << "]";
         break;
       case lbne::PennMicroSlice::DataTypeWarning: //self test
-        mf::LogDebug("PennMicroSlice") << "Sample type: WARNING : [" << std::bitset<3>(type) << "]";
-        mf::LogDebug("PennMicroSlice") << "Contents : [";
-        display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_warning,"PennMicroSlice");
-        mf::LogDebug("PennMicroSlice") << "]";
+        mf::LogInfo("PennMicroSlice") << "Sample type: WARNING : [" << std::bitset<3>(type) << "]";
+        // mf::LogDebug("PennMicroSlice") << "Contents : [";
+        // display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_warning,"PennMicroSlice");
+        // mf::LogDebug("PennMicroSlice") << "]";
         break;
       default:
         mf::LogError("PennMicroSlice") << "Unexpected header type...something is going to fail [" << std::bitset<3>(type) << "]";
     }
-
+    
     //    mf::LogDebug("PennMicroSlice") << "PennMicroSlice::sampleTimeSplitAndCountTwice DEBUG: boundary_time == " <<
     //      boundary_time << ", overlap_time == " << overlap_time << ", is_before_boundary == " << is_before_boundary << ", overlap_size ==" << overlap_size << 
     //      ", is_before_overlap == " << is_before_overlap << ", is_in_overlap == " << is_in_overlap;

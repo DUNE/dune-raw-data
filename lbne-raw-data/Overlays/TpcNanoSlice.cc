@@ -17,7 +17,7 @@ lbne::TpcNanoSlice::TpcNanoSlice(uint8_t* address, uint8_t mode) : buffer_(addre
     raw_payload_words_compressed = 1;
     raw_payload_words_uncompressed = 1;
     num_channels=1;
-  }else if(runMode==0x3){
+  }else if(runMode==0x3||runMode==0x2){
     //triggered mode
     raw_payload_words_compressed=24;
     raw_payload_words_uncompressed = 32;
@@ -46,8 +46,8 @@ lbne::TpcNanoSlice::Header::format_version_t lbne::TpcNanoSlice::format_version(
 lbne::TpcNanoSlice::Header::nova_timestamp_t lbne::TpcNanoSlice::nova_timestamp() const
 {
 	uint64_t nova_timestamp = (header_()->raw_header_data[0] & 0xFFFFFFFFFFFFFF);
-		std::cout << " TPC::Nanoslice  NOvA timestamp   : 0x" << std::hex << std::setw(14) << std::setfill('0')
-							      << nova_timestamp << std::dec << std::endl;
+	//		std::cout << " TPC::Nanoslice  NOvA timestamp   : 0x" << std::hex << std::setw(14) << std::setfill('0')
+	//							      << nova_timestamp << std::dec << std::endl;
 	return static_cast<lbne::TpcNanoSlice::Header::nova_timestamp_t>(nova_timestamp);
 }
 

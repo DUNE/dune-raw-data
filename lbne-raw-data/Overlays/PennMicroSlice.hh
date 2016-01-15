@@ -54,12 +54,36 @@ public:
     // the payload header which contain the type. I've also added a
     // 1-bit pad to reflect that the least significant bit is unused.
 
-    uint8_t padding : 1;
-    short_nova_timestamp_t short_nova_timestamp : 28;
+    uint8_t padding : 2;
+    short_nova_timestamp_t short_nova_timestamp : 27;
     data_packet_type_t     data_packet_type     : 3;
 
     static size_t const size_words = sizeof(data_t);
   };
+
+  struct Warning_Header {
+    typedef uint32_t data_t;
+    typedef uint16_t data_size_t;
+
+    typedef uint8_t  warning_type_t;
+    typedef uint8_t  data_packet_type_t;
+    typedef uint32_t short_nova_timestamp_t;
+
+    // The order of the data packet type and the timestamp have been
+    // swapped to reflect that it's the MOST significant three bits in
+    // the payload header which contain the type. I've also added a
+    // 1-bit pad to reflect that the least significant bit is unused.
+
+    uint32_t padding : 24;
+    warning_type_t warning_type : 5;
+    data_packet_type_t     data_packet_type     : 3;
+
+    static size_t const size_words = sizeof(data_t);
+    static data_size_t const num_bits_padding     = 24;
+    static data_size_t const num_bits_warning  = 5;
+    static data_size_t const num_bits_packet_type = 3;
+  };
+
 
   typedef Header::block_size_t microslice_size_t;
 
@@ -73,11 +97,11 @@ public:
 
   //the size of the payloads (neglecting the Payload_Header)
 
-  // static microslice_size_t const payload_size_counter   = 4 * sizeof(uint32_t); //96-bit payload
-  static microslice_size_t const payload_size_counter   = 13; // 104-bit payload
+  static microslice_size_t const payload_size_counter   = 4 * sizeof(uint32_t); //96-bit payload
+  //static microslice_size_t const payload_size_counter   = 13; // 104-bit payload
   static microslice_size_t const payload_size_trigger   = 1 * sizeof(uint32_t); //32-bit payload
   static microslice_size_t const payload_size_timestamp = 2 * sizeof(uint32_t); //64-bit payload
-  static microslice_size_t const payload_size_selftest  = 1 * sizeof(uint32_t); //32-bit payload
+  static microslice_size_t const payload_size_warning  = 0 * sizeof(uint32_t); //32-bit payload
   static microslice_size_t const payload_size_checksum  = 0 * sizeof(uint32_t); //32-bit payload
 
   // This constructor accepts a memory buffer that contains an existing
@@ -165,14 +189,20 @@ public:
   // LESS than (max of a uint28_t - ROLLOVER_HIGH_VALUE)
   // NFB : Not sure I understand this logic
   static const uint32_t ROLLOVER_LOW_VALUE  = 1 << 13; //8192 ticks = 0.128ms
-  static const uint32_t ROLLOVER_HIGH_VALUE = 1 << 26;
+  //static const uint32_t ROLLOVER_HIGH_VALUE = 1 << 26;
+  static const uint64_t ROLLOVER_HIGH_VALUE = (1 << 27) -1;
 
   //The types of data words
-  static const Payload_Header::data_packet_type_t DataTypeSelftest  = 0x0; //0b000
+  static const Payload_Header::data_packet_type_t DataTypeWarning  = 0x0; //0b000
   static const Payload_Header::data_packet_type_t DataTypeCounter   = 0x1; //0b001
   static const Payload_Header::data_packet_type_t DataTypeTrigger   = 0x2; //0b010
   static const Payload_Header::data_packet_type_t DataTypeChecksum  = 0x4; //0b100
   static const Payload_Header::data_packet_type_t DataTypeTimestamp = 0x7; //0b111
+
+
+  //The types of data words
+  static const Warning_Header::warning_type_t WarnFIFOHalfFull  = 0x08;  //0b01000
+  static const Warning_Header::warning_type_t WarnFIFOFull  = 0x10; //0b10000
 
 
   static uint64_t getMask(int param){

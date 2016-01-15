@@ -7,6 +7,7 @@
 #include <boost/crc.hpp>
 
 //#define PENN_DONT_REBLOCK_USLICES
+//#define PENN_OLD_STRUCTS
 
 namespace lbne {
   class PennMilliSlice;
@@ -16,6 +17,7 @@ class lbne::PennMilliSlice {
 
 public:
 
+#ifdef PENN_OLD_STRUCTS
   struct TriggerPayload {
     //FIXME: Change this format to something easier to debug.
     //We'll use 32 bit atom since that is the total length of this struct 
@@ -153,7 +155,7 @@ public:
     static trigger_bits_t const num_bits_ts_rollover= 28;
     static trigger_bits_t const num_bits_header     =  3;
   };
-
+#endif /* PENN_OLD_STRUCTS */
   struct Header {
     //typedef uint32_t data_t;
     typedef uint64_t data_t;

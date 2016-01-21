@@ -156,7 +156,7 @@ struct Payload_Header {
   // (the microslice border)
   // and calculates the offset
   // to use the full timestamp received before use the other method (pre)
-  uint64_t get_full_timestamp_post(uint64_t ts_ref) {
+  uint64_t get_full_timestamp_pre(uint64_t ts_ref) {
     if ((ts_ref & 0x7FFFFFF) == short_nova_timestamp) {
       // they are equal. This word is right on the border of the microslice
       return ts_ref;
@@ -171,7 +171,7 @@ struct Payload_Header {
   }
   // Does the same as the previous but with the timestamp that came before
   // They should be equivalent but need to check to confirm
-  uint64_t get_full_timestamp_pre(uint64_t ts_ref) {
+  uint64_t get_full_timestamp_post(uint64_t ts_ref) {
     if ((ts_ref & 0x7FFFFFF) == short_nova_timestamp) {
       // they are equal. This word is right on the border of the microslice
       return ts_ref;
@@ -227,6 +227,29 @@ struct Payload_Counter {
   static data_size_t const num_bits_bsu_cl2   = 7;
   static data_size_t const num_bits_bsu_rl    = 10;
   static data_size_t const num_bits_padding   = 30;
+  static data_size_t const num_bits_bsu_cl    = 13;
+
+  // position boundaries for the different counter types
+  // it also works as a sort of enumerator for the different counter types
+  // so that they can be uniquely identified
+  // the value is the last element that belongs to the type
+  static data_size_t const counter_type_tsu_wu    = 10;
+  static data_size_t const counter_type_tsu_el    = 20;
+  static data_size_t const counter_type_tsu_extra = 24;
+  static data_size_t const counter_type_tsu_nu    = 30;
+  static data_size_t const counter_type_tsu_sl    = 36;
+  static data_size_t const counter_type_tsu_nl    = 42;
+  static data_size_t const counter_type_tsu_su    = 48;
+  static data_size_t const counter_type_bsu_rm    = 64;
+  static data_size_t const counter_type_bsu_cu    = 74;
+  static data_size_t const counter_type_bsu_cl1   = 80;
+  static data_size_t const counter_type_bsu_extra = 81; // -- unused channel (32)
+  static data_size_t const counter_type_bsu_cl2   = 88;
+  static data_size_t const counter_type_bsu_rl    = 98;
+  static data_size_t const counter_type_padding   = 128;
+  // special types that are only used in the enum
+  static data_size_t const counter_type_unknown   = 129;
+  static data_size_t const counter_type_bsu_cl    = 130;
 
   static size_t const size_bytes = 2*sizeof(uint64_t);
   static size_t const size_u32 = size_bytes/sizeof(uint32_t);
@@ -243,6 +266,94 @@ struct Payload_Counter {
   static size_t const payload_offset_bytes = payload_offset_u32*sizeof(uint32_t);
 
   counter_set_t get_bsu_cl() {return ((bsu_cl2 << 10) | (bsu_cl1));};
+
+  bool get_tsu_wu(uint32_t idx) {
+    return ((tsu_wu & (1 << idx)) != 0x0);
+  }
+  bool get_tsu_el(uint32_t idx) {
+    return ((tsu_el & (1 << idx)) != 0x0);
+  }
+  bool get_tsu_extra(uint32_t idx) {
+    return ((tsu_extra & (1 << idx)) != 0x0);
+  }
+  bool get_tsu_nu(uint32_t idx) {
+    return ((tsu_nu & (1 << idx)) != 0x0);
+  }
+  bool get_tsu_sl(uint32_t idx) {
+    return ((tsu_sl & (1 << idx)) != 0x0);
+  }
+  bool get_tsu_nl(uint32_t idx) {
+    return ((tsu_nl & (1 << idx)) != 0x0);
+  }
+  bool get_tsu_su(uint32_t idx) {
+    return ((tsu_su & (1 << idx)) != 0x0);
+  }
+  // BSU getters
+  bool get_bsu_rm(uint32_t idx) {
+    return ((bsu_rm & (1 << idx)) != 0x0);
+  }
+  bool get_bsu_cu(uint32_t idx) {
+    return ((bsu_cu & (1 << idx)) != 0x0);
+  }
+  // The CL is a bit special due to the crazy mapping
+  bool get_bsu_cl(uint32_t idx) {
+    if (idx <  num_bits_bsu_cl1) {
+      return ((bsu_cl1 & (1 << idx)) != 0x0);
+    } else {
+      return ((bsu_cl2 & (1 << (idx-num_bits_bsu_cl1))) != 0x0);
+    }
+  }
+  bool get_bsu_rl(uint32_t idx) {
+    return ((bsu_rl & (1 << idx)) != 0x0);
+  }
+
+  bool get_counter_status(uint32_t idx) {
+    // This was tested to return the right bits in the right order in a standalone test
+    // However, it is up to the user to know what type this bit corresponds to
+    return (((reinterpret_cast<uint8_t*>(this)[idx/8]) & (1 << (idx%8))) != 0x0);
+  }
+
+  static data_size_t get_counter_type(uint32_t bit_idx) {
+    // NFB: By construction bit_idx cannot be negative
+    //    if (bit_idx < 0) return counter_type_unknown; else
+    if (bit_idx < counter_type_tsu_wu) return counter_type_tsu_wu;
+    else if (bit_idx < counter_type_tsu_el) return counter_type_tsu_el;
+    else if (bit_idx < counter_type_tsu_extra) return counter_type_tsu_extra;
+    else if (bit_idx < counter_type_tsu_nu) return counter_type_tsu_nu;
+    else if (bit_idx < counter_type_tsu_sl) return counter_type_tsu_sl;
+    else if (bit_idx < counter_type_tsu_nl) return counter_type_tsu_nl;
+    else if (bit_idx < counter_type_tsu_su) return counter_type_tsu_su;
+    else if (bit_idx < counter_type_bsu_rm) return counter_type_bsu_rm;
+    else if (bit_idx < counter_type_bsu_cu) return counter_type_bsu_cu;
+    else if (bit_idx == (counter_type_bsu_extra-1)) return counter_type_bsu_extra;
+    else if (bit_idx < counter_type_bsu_cl2) return counter_type_bsu_cl;
+    else if (bit_idx < counter_type_bsu_rl) return counter_type_bsu_rl;
+    else if (bit_idx < counter_type_padding) return counter_type_padding;
+    else return counter_type_unknown;
+  }
+  // returns the index of the counter within its own group
+  // for instance get_counter_type_pos(10) should return 0 as this is
+  // the first counter in the tsu_el group
+static uint32_t get_counter_type_pos(uint32_t bit_idx) {
+  if (bit_idx < counter_type_tsu_wu) return bit_idx;
+  else if (bit_idx < counter_type_tsu_el) return (bit_idx - counter_type_tsu_wu);
+  else if (bit_idx < counter_type_tsu_extra) return (bit_idx - counter_type_tsu_el);
+  else if (bit_idx < counter_type_tsu_nu) return (bit_idx - counter_type_tsu_extra);
+  else if (bit_idx < counter_type_tsu_sl) return (bit_idx - counter_type_tsu_nu);
+  else if (bit_idx < counter_type_tsu_nl) return (bit_idx - counter_type_tsu_sl);
+  else if (bit_idx < counter_type_tsu_su) return (bit_idx - counter_type_tsu_nl);
+  else if (bit_idx < counter_type_bsu_rm) return (bit_idx - counter_type_tsu_su);
+  else if (bit_idx < counter_type_bsu_cu) return (bit_idx - counter_type_bsu_rm);
+  else if (bit_idx == (counter_type_bsu_extra-1)) return 0;
+  else if (bit_idx < counter_type_bsu_cl1) return (bit_idx - counter_type_bsu_cu);
+  // -- offset the extra position that is unused in between
+  else if (bit_idx < counter_type_bsu_cl2) return (bit_idx - counter_type_bsu_cu -1);
+  else if (bit_idx < counter_type_bsu_rl) return (bit_idx - counter_type_bsu_cl2);
+  else if (bit_idx < counter_type_padding) return (bit_idx - counter_type_bsu_rl);
+  else return counter_type_unknown;
+
+}
+
 };
 
 /// Trigger description
@@ -272,7 +383,7 @@ struct Payload_Trigger {
   // Better to ask for specific types
 
 
-  // ID the trigger types for fugure reference
+  // ID the trigger types for figure reference
   static trigger_type_t const calibration = 0x00;
   static trigger_type_t const muon        = 0x10;
   static trigger_type_t const ssp         = 0x08;
@@ -333,6 +444,13 @@ struct Payload_Trigger {
     return ((trigger_type & calibration) != 0x0);
   }
 
+  bool has_calibration(trigger_type_t t) {
+    return ((trigger_id_calib & t) != 0x0);
+  }
+
+  bool has_muon_trigger(trigger_type_t t) {
+    return ((trigger_id_muon & t) != 0x0);
+  }
 
   /// Test for the different calibration types
   ///

@@ -75,19 +75,19 @@ uint8_t* lbne::PennMicroSlice::get_next_payload(uint32_t& word_id,
     switch(type)
     {
       case lbne::PennMicroSlice::DataTypeCounter:
-        current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
+        current_payload_ += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_counter;
         break;
       case lbne::PennMicroSlice::DataTypeTrigger:
-        current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
+        current_payload_ += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_trigger;
         break;
       case lbne::PennMicroSlice::DataTypeTimestamp:
-        current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
+        current_payload_ += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_timestamp;
         break;
       case lbne::PennMicroSlice::DataTypeWarning:
-        current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_warning;
+        current_payload_ += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_warning;
         break;
       case lbne::PennMicroSlice::DataTypeChecksum:
-        current_payload_ += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
+        current_payload_ += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_checksum;
         break;
       default:
         std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
@@ -141,7 +141,7 @@ uint8_t* lbne::PennMicroSlice::get_next_payload(uint32_t& word_id,
   //this function assumes that state is true the next time it is called (so it knows how to shift to the next payload)
   //but the user is expecting just the payload data. Therefore return the buffer offset by the payload_header
 
-  return (current_payload_ + lbne::PennMicroSlice::Payload_Header::size_words);
+  return (current_payload_ + lbne::PennMicroSlice::Payload_Header::size_bytes);
 }
 
 // word_id is the index of the word to remove the
@@ -179,7 +179,7 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
       // What is this doing here?
 //      pl_ptr += 4;
       // Shift forward the size of the header
-      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words;
+      pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes;
 
       switch(type)
       {
@@ -211,19 +211,19 @@ uint8_t* lbne::PennMicroSlice::get_payload(uint32_t word_id, lbne::PennMicroSlic
     switch(type)
     {
       case lbne::PennMicroSlice::DataTypeCounter:
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_counter;
         break;
       case lbne::PennMicroSlice::DataTypeTrigger:
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_trigger;
         break;
       case lbne::PennMicroSlice::DataTypeTimestamp:
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_timestamp;
         break;
       case lbne::PennMicroSlice::DataTypeWarning:
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_warning;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_warning;
         break;
       case lbne::PennMicroSlice::DataTypeChecksum:
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_checksum;
         break;
       default:
         mf::LogError("PennMicroSlice") << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
@@ -279,23 +279,23 @@ lbne::PennMicroSlice::sample_count_t lbne::PennMicroSlice::sampleCount(
     {
       case lbne::PennMicroSlice::DataTypeCounter:
         n_counter_words++;
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_counter;
         break;
       case lbne::PennMicroSlice::DataTypeTrigger:
         n_trigger_words++;
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_trigger;
         break;
       case lbne::PennMicroSlice::DataTypeTimestamp:
         n_timestamp_words++;
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_timestamp;
         break;
             case lbne::PennMicroSlice::DataTypeWarning:
         n_selftest_words++;
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_warning;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_warning;
         break;
       case lbne::PennMicroSlice::DataTypeChecksum:
         n_checksum_words++;
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_checksum;
         break;
       default:
         std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
@@ -353,19 +353,19 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplit(uint64_t boundary_time, size_t& r
     switch(type)
     {
       case lbne::PennMicroSlice::DataTypeCounter:
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_counter;
         break;
       case lbne::PennMicroSlice::DataTypeTrigger:
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_trigger;
         break;
       case lbne::PennMicroSlice::DataTypeTimestamp:
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_timestamp;
         break;
       case lbne::PennMicroSlice::DataTypeWarning:
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_warning;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_warning;
         break;
       case lbne::PennMicroSlice::DataTypeChecksum:
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_checksum;
         break;
       default:
 
@@ -442,35 +442,35 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCount(uint64_t boundary_time, s
           n_counter_words_b++;
         else
           n_counter_words_a++;
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_counter;
         break;
       case lbne::PennMicroSlice::DataTypeTrigger:
         if(is_before)
           n_trigger_words_b++;
         else
           n_trigger_words_a++;
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_trigger;
         break;
       case lbne::PennMicroSlice::DataTypeTimestamp:
         if(is_before)
           n_timestamp_words_b++;
         else
           n_timestamp_words_a++;
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_timestamp;
         break;
             case lbne::PennMicroSlice::DataTypeWarning:
         if(is_before)
           n_selftest_words_b++;
         else
           n_selftest_words_a++;
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_warning;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_warning;
         break;
       case lbne::PennMicroSlice::DataTypeChecksum:
         if(is_before)
           n_checksum_words_b++;
         else
           n_checksum_words_a++;
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_checksum;
         break;
       default:
         std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type
@@ -622,13 +622,13 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
 	
         mf::LogInfo("PennMicroSlice") << "Sample type: counter : [" << std::bitset<3>(type) << "]";
         // mf::LogDebug("PennMicroSlice") << "Contents : [";
-        // display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_counter,"PennMicroSlice");
+        // display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_bytes,lbne::PennMicroSlice::payload_size_counter,"PennMicroSlice");
         // mf::LogDebug("PennMicroSlice") << "]";
         break;
       case lbne::PennMicroSlice::DataTypeTrigger: // trigger word
         mf::LogInfo("PennMicroSlice") << "Sample type: trigger : [" << std::bitset<3>(type) << "]";
         // mf::LogDebug("PennMicroSlice") << "Contents : [";
-        // display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_trigger,"PennMicroSlice");
+        // display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_bytes,lbne::PennMicroSlice::payload_size_trigger,"PennMicroSlice");
         // mf::LogDebug("PennMicroSlice") << "]";
         break;
       case lbne::PennMicroSlice::DataTypeChecksum: // Checksum
@@ -637,13 +637,13 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
       case lbne::PennMicroSlice::DataTypeTimestamp: // timestamp word
         mf::LogInfo("PennMicroSlice") << "Sample type: timestamp : [" << std::bitset<3>(type) << "]";
         // mf::LogDebug("PennMicroSlice") << "Contents : [";
-        // display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_timestamp,"PennMicroSlice");
+        // display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_bytes,lbne::PennMicroSlice::payload_size_timestamp,"PennMicroSlice");
         // mf::LogDebug("PennMicroSlice") << "]";
         break;
       case lbne::PennMicroSlice::DataTypeWarning: //self test
         mf::LogInfo("PennMicroSlice") << "Sample type: WARNING : [" << std::bitset<3>(type) << "]";
         // mf::LogDebug("PennMicroSlice") << "Contents : [";
-        // display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_words,lbne::PennMicroSlice::payload_size_warning,"PennMicroSlice");
+        // display_bits(pl_ptr+lbne::PennMicroSlice::Payload_Header::size_bytes,lbne::PennMicroSlice::payload_size_warning,"PennMicroSlice");
         // mf::LogDebug("PennMicroSlice") << "]";
         break;
       default:
@@ -750,7 +750,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
           n_counter_words_a++;
         if(is_in_overlap)
           n_counter_words_o++;
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_counter;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_counter;
         break;
       case lbne::PennMicroSlice::DataTypeTrigger:
         if(is_before_boundary)
@@ -759,7 +759,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
           n_trigger_words_a++;
         if(is_in_overlap)
           n_trigger_words_o++;
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_trigger;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_trigger;
         break;
       case lbne::PennMicroSlice::DataTypeTimestamp:
         if(is_before_boundary)
@@ -768,16 +768,20 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
           n_timestamp_words_a++;
         if(is_in_overlap)
           n_timestamp_words_o++;
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_timestamp;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_timestamp;
         //	mf::LogInfo("PennMicroSlice") << "JCF, sampleTimeSplitAndCountTwice: now have n_timestamp_words_b == " <<
         //	  n_timestamp_words_b << ", n_timestamp_words_a == " << n_timestamp_words_a <<
         //	  ", n_timestamp_words_o == " << n_timestamp_words_o;
         break;
       case lbne::PennMicroSlice::DataTypeWarning:
       {
-        lbne::PennMicroSlice::Warning_Header *wh = reinterpret_cast_checked<lbne::PennMicroSlice::Warning_Header *>(pl_ptr);
+        lbne::PennMicroSlice::Warning_Word *wh = reinterpret_cast_checked<lbne::PennMicroSlice::Warning_Word *>(pl_ptr);
         switch(wh->warning_type) {
           /// Issue the warning HERE:
+          case lbne::PennMicroSlice::WarnTimeout:
+            mf::LogWarning("PennMicroSlice") << "The DMA timed out. Possible data loss after this point.";
+          case lbne::PennMicroSlice::WarnUnknownDataType:
+            mf::LogWarning("PennMicroSlice") << "Unknown data type received.";
           case lbne::PennMicroSlice::WarnFIFOHalfFull:
             mf::LogWarning("PennMicroSlice") << "FIFO reached half full state. Stop run recommended.";
             break;
@@ -793,7 +797,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
           n_selftest_words_a++;
         if(is_in_overlap)
           n_selftest_words_o++;
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_warning;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_warning;
         break;
       }
       case lbne::PennMicroSlice::DataTypeChecksum:
@@ -811,7 +815,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
         // It is correct. The checksum is stored in the 2 lsB
         checksum = *( reinterpret_cast<uint16_t*>(pl_ptr) );
 
-        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_words + lbne::PennMicroSlice::payload_size_checksum;
+        pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_checksum;
         break;
       default:
         mf::LogError("PennMicroSlice") << "Unknown data packet type found 0x" << std::hex << (unsigned int)type

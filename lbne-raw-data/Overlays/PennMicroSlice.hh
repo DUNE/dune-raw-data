@@ -1,9 +1,9 @@
 #ifndef lbne_artdaq_Overlays_PennMicroSlice_hh
 #define lbne_artdaq_Overlays_PennMicroSlice_hh
 
-#include <stdint.h>
-#include <stddef.h>
-
+#include <cstdint>
+//#include <stddef.h>
+#include <string>
 //#define PENN_OLD_STRUCTS
 
 namespace lbne {

@@ -571,7 +571,7 @@ uint8_t* lbne::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
   }
 
   // --  Assign the payload and get the timestamp to make sure that we are doing things right.
-  lbne::PennMilliSlice::TimestampPayload *pl_ts = reinterpret_cast<lbne::PennMilliSlice::TimestampPayload *>(aux_ptr + sizeof(lbne::PennMicroSlice::Payload_Header));
+  lbne::PennMicroSlice::Payload_Timestamp *pl_ts = reinterpret_cast<lbne::PennMicroSlice::Payload_Timestamp *>(aux_ptr + sizeof(lbne::PennMicroSlice::Payload_Header));
   uint64_t microslice_boundary = pl_ts->nova_timestamp;
   
   uint64_t frame_timestamp = 0;

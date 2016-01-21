@@ -54,8 +54,7 @@ lbne::PennMilliSlice::Header::payload_count_t lbne::PennMilliSlice::payloadCount
 lbne::PennMilliSlice::Header::payload_count_t lbne::PennMilliSlice::payloadCount(
 										 lbne::PennMilliSlice::Header::payload_count_t& counter, 
 										 lbne::PennMilliSlice::Header::payload_count_t& trigger,
-										 lbne::PennMilliSlice::Header::payload_count_t& timestamp,
-										 ) const
+										 lbne::PennMilliSlice::Header::payload_count_t& timestamp) const
 {
   counter   = header_()->payload_count_counter;
   trigger   = header_()->payload_count_trigger;
@@ -209,11 +208,11 @@ uint8_t* lbne::PennMilliSlice::get_next_payload(uint32_t &index,lbne::PennMicroS
 
 
   lbne::PennMicroSlice::Payload_Header* payload_header = reinterpret_cast_checked<lbne::PennMicroSlice::Payload_Header*>(current_payload_);
-  lbne::PennMicroSlice::Payload_Header::data_packet_type_t type = payload_header->data_packet_type;
-
+  //lbne::PennMicroSlice::Payload_Header::data_packet_type_t type = payload_header->data_packet_type;
+  
   //Set the variables passed as references
   index = current_word_id_;
-  type = payload_header->data_packet_type;
+  //type = payload_header->data_packet_type;
   data_header = payload_header;
 
   current_word_id_++;
@@ -265,7 +264,7 @@ uint8_t* lbne::PennMilliSlice::get_next_timestamp(lbne::PennMicroSlice::Payload_
   }
 
   if (found) {
-    data_header = pl_ptr;
+    data_header = reinterpret_cast_checked<lbne::PennMicroSlice::Payload_Header*>(pl_ptr);
     return (pl_ptr + lbne::PennMicroSlice::Payload_Header::size_bytes);
   }
   else return nullptr;

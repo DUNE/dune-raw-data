@@ -307,10 +307,10 @@ struct Payload_Counter {
     return ((bsu_rl & (1 << idx)) != 0x0);
   }
 
-  bool get_counter_status(uint32_t idx) {
+  bool get_counter_status(uint32_t idx) const {
     // This was tested to return the right bits in the right order in a standalone test
     // However, it is up to the user to know what type this bit corresponds to
-    return (((reinterpret_cast<uint8_t*>(this)[idx/8]) & (1 << (idx%8))) != 0x0);
+    return (((reinterpret_cast<const uint8_t*>(this)[idx/8]) & (1 << (idx%8))) != 0x0);
   }
 
   static data_size_t get_counter_type(uint32_t bit_idx) {

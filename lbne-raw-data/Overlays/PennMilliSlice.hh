@@ -7,6 +7,7 @@
 #include <boost/crc.hpp>
 
 //#define PENN_DONT_REBLOCK_USLICES
+//#define PENN_OLD_STRUCTS
 
 namespace lbne {
   class PennMilliSlice;
@@ -16,6 +17,7 @@ class lbne::PennMilliSlice {
 
 public:
 
+#ifdef PENN_OLD_STRUCTS
   struct TriggerPayload {
     //FIXME: Change this format to something easier to debug.
     //We'll use 32 bit atom since that is the total length of this struct 
@@ -153,7 +155,7 @@ public:
     static trigger_bits_t const num_bits_ts_rollover= 28;
     static trigger_bits_t const num_bits_header     =  3;
   };
-
+#endif /* PENN_OLD_STRUCTS */
   struct Header {
     //typedef uint32_t data_t;
     typedef uint64_t data_t;
@@ -181,7 +183,10 @@ public:
     data_t payload_count_counter   : 16;
     data_t payload_count_trigger   : 16;
     data_t payload_count_timestamp : 16;
-
+// -- There is information missing here
+#ifdef NEW_FORMAT
+    data_t payload_count_warning  : 16;
+#endif
     data_t end_timestamp    : 64;
     data_t width_in_ticks   : 32;  // neglecting overlap
     data_t overlap_in_ticks : 32;
@@ -213,8 +218,10 @@ public:
   // Returns the number of payloads in this MilliSlice
   Header::payload_count_t payloadCount() const;
   Header::payload_count_t payloadCount(Header::payload_count_t& counter, Header::payload_count_t& trigger, Header::payload_count_t& timestamp
-				       //, Header::payload_count_t& selftest, Header::payload_count_t& checksum
+				       //, Header::payload_count_t& warning, Header::payload_count_t& checksum
+				       // NFB, Jan-15-2016 : checksums should be kept out of the millislice.
 				       ) const;
+
 
 #ifdef PENN_DONT_REBLOCK_USLICES
   // Returns the number of MicroSlices in this MilliSlice
@@ -231,6 +238,17 @@ public:
                    lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t& short_nova_timestamp,
                    size_t& payload_size) const;
 
+//  // Returns a requested payload. The header is passed by reference. A pointer to the begin of the body
+//  // is returned.
+//  // if the payload is not found a null pointer is returned.
+//  uint8_t* payload(uint32_t index, lbne::PennMicroSlice::Payload_Header &data_header, size_t &payload_size) const;
+
+  // Returns a requested payload. The header is passed by reference. A pointer to the begin of the body
+  // is returned.
+  // if the payload is not found a null pointer is returned.
+  // NFB: approved
+  uint8_t* payload(uint32_t index, lbne::PennMicroSlice::Payload_Header* &data_header) const;
+
   // Returns the next payload if found, and increments the current_payload_ buffer, current_word_id_
   // Returns nullptr if there is a problem or we run off the end of the buffer_
   // Can't be const since it shifts the current_payload_buffer and current_word_id_
@@ -239,6 +257,14 @@ public:
                             lbne::PennMicroSlice::Payload_Header::short_nova_timestamp_t& short_nova_timestamp,
                             size_t& payload_size); 
 
+  //NFB: My own implementation of get_next_payload
+  // return nullpltr if runs off the buffer
+  // or if there is some other unspecified problem
+  // it also updates the current_payload_buffer and current_word_id_
+  uint8_t* get_next_payload(uint32_t &index,lbne::PennMicroSlice::Payload_Header*& data_header);
+
+  // NFB: Returns the nearest timestamp payload after the current_word_id_
+  uint8_t* get_next_timestamp(lbne::PennMicroSlice::Payload_Header*& data_header);
 
   typedef uint32_t checksum_t;
 

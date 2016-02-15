@@ -109,7 +109,7 @@ uint8_t* lbne::PennMilliSlice::get_next_payload(uint32_t& index,
 	current_payload_ += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_checksum;
 	break;
       default:
-	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+//	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
 	return nullptr;
 	break;
       }//switch(type)
@@ -149,7 +149,7 @@ uint8_t* lbne::PennMilliSlice::get_next_payload(uint32_t& index,
       payload_size = lbne::PennMicroSlice::payload_size_checksum;
       break;
     default:
-      std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+      //std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
       payload_size = 0;
       break;
     }//switch(type)
@@ -194,7 +194,7 @@ uint8_t* lbne::PennMilliSlice::get_next_payload(uint32_t &index,lbne::PennMicroS
         current_payload_ += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_checksum;
         break;
       default:
-        std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+        //std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
         return nullptr;
         break;
       }//switch(type)
@@ -256,7 +256,7 @@ uint8_t* lbne::PennMilliSlice::get_next_timestamp(lbne::PennMicroSlice::Payload_
         pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_checksum;
         break;
       default:
-        std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+        //std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
         data_header = nullptr;
         return nullptr;
         break;
@@ -301,7 +301,7 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
         pl_ptr += lbne::PennMicroSlice::payload_size_checksum;
         break;
       default:
-        std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+        //std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
         return nullptr;
         break;
       }//switch(type)
@@ -353,7 +353,7 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
     payload_size = lbne::PennMicroSlice::payload_size_checksum;
     break;
   default:
-    std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+    //std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
     payload_size = 0;
     break;
   }//switch(type)
@@ -377,7 +377,7 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
   pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_checksum;
   break;
       default:
-  std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+  //std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
   return nullptr;
   break;
       }//switch(type)

@@ -388,11 +388,12 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
   return nullptr;
 }
 
+#ifdef ENABLE_PENNMILLISLICE_CHECKSUM
 
 lbne::PennMilliSlice::checksum_t lbne::PennMilliSlice::calculateChecksum() const
 {
   try {
-    //NFB: This is not the right algorithm to calculate the checksum, I think
+    //NFB: Is the checksum actually used anywhere? It certainly complicates the calculations.
     boost::crc_32_type checksum;
     checksum.process_bytes(buffer_, this->size());
     return checksum.checksum();
@@ -413,6 +414,7 @@ lbne::PennMilliSlice::Header const* lbne::PennMilliSlice::header_() const
 {
   return reinterpret_cast<Header const*>(buffer_);
 }
+#endif
 
 // returns a pointer to the requested MicroSlice
 uint8_t* lbne::PennMilliSlice::data_(int index) const

@@ -415,6 +415,7 @@ lbne::PennMilliSlice::Header const* lbne::PennMilliSlice::header_() const
 {
   return reinterpret_cast<Header const*>(buffer_);
 }
+#endif
 
 // returns a pointer to the requested MicroSlice
 uint8_t* lbne::PennMilliSlice::data_(int index) const

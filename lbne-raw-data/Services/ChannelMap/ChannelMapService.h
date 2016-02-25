@@ -1,15 +1,15 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-// Class:       ChannelMappingService
+// Class:       ChannelMapService
 // Module type: service
-// File:        ChannelMappingService.h
+// File:        ChannelMapService.h
 // Author:      Mike Wallbank (m.wallbank@sheffield.ac.uk), February 2016
 //              Based on the service written for use in LArSoft by David Adams
 //
 // Implementation of online-offline channel mapping reading from a file.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ChannelMappingService_H
-#define ChannelMappingService_H
+#ifndef ChannelMapService_H
+#define ChannelMapService_H
 
 #include <map>
 #include <vector>
@@ -20,12 +20,16 @@
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Services/Registry/ServiceMacros.h"
 
-class ChannelMappingService {
+namespace lbne {
+  class ChannelMapService;
+}
+
+class lbne::ChannelMapService {
 
 public:
 
-  ChannelMappingService(fhicl::ParameterSet const& pset);
-  ChannelMappingService(fhicl::ParameterSet const& pset, art::ActivityRegistry&);
+  ChannelMapService(fhicl::ParameterSet const& pset);
+  ChannelMapService(fhicl::ParameterSet const& pset, art::ActivityRegistry&);
 
   /// Map online to offline
   unsigned int Offline(unsigned int onlineChannel) const;
@@ -50,11 +54,8 @@ private:
   std::map<unsigned int, unsigned int> fPlaneMap;
   std::map<unsigned int, unsigned int> fAPAMap;
 
-  // Parameters
-  std::string fChannelMapFile;
-
 };
 
-DECLARE_ART_SERVICE(ChannelMappingService, LEGACY)
+DECLARE_ART_SERVICE(lbne::ChannelMapService, LEGACY)
 
 #endif

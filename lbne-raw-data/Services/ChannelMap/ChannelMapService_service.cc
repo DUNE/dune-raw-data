@@ -1,15 +1,14 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-// Class:       ChannelMappingService
+// Class:       ChannelMapService
 // Module type: service
-// File:        ChannelMappingService_service.cc
+// File:        ChannelMapService_service.cc
 // Author:      Mike Wallbank (m.wallbank@sheffield.ac.uk), February 2016
 //              Based on the service written for use in LArSoft by David Adams
 //
 // Implementation of online-offline channel mapping reading from a file.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include <limits>
-#include <fstream>
+#include "ChannelMapService.h"
 
 // Bad channel value
 unsigned int bad() {
@@ -17,17 +16,21 @@ unsigned int bad() {
   return val;
 }
 
-ChannelMappingService::ChannelMappingService(fhicl::ParameterSet const& pset) {
+lbne::ChannelMapService::ChannelMapService(fhicl::ParameterSet const& pset) {
 
-  fChannelMapFile = pset.get<std::string>("ChannelMapFile");
+  std::string channelMapFile = pset.get<std::string>("FileName");
 
-  std::ifstream inFile(fChannelMapFile.Data(), std::ios::in);
-  std::string line;
+  std::string fullname;
+  cet::search_path sp("FW_SEARCH_PATH");
+  sp.find_file(channelMapFile, fullname);
 
-  if (!inFile) {
-    std::cout << "Input file " << fChannelMapFile << " not found" << std::endl;
+  if (fullname.empty()) {
+    std::cout << "Input file " << channelMapFile << " not found" << std::endl;
     throw cet::exception("File not found");
   }
+
+  std::ifstream inFile(fullname, std::ios::in);
+  std::string line;
 
   while (std::getline(inFile,line)) {
     unsigned int onlineChannel, rce, rcechannel, apa, plane, offlineChannel;
@@ -43,36 +46,40 @@ ChannelMappingService::ChannelMappingService(fhicl::ParameterSet const& pset) {
 
 }
 
-ChannelMappingService::ChannelMappingService(fhicl::ParameterSet const& pset, art::ActivityRegistry&) : ChannelMappingService(pset) {
+lbne::ChannelMapService::ChannelMapService(fhicl::ParameterSet const& pset, art::ActivityRegistry&) : ChannelMapService(pset) {
 }
 
-unsigned int ChannelMappingService::Offline(unsigned int onlineChannel) const {
+unsigned int lbne::ChannelMapService::Offline(unsigned int onlineChannel) const {
 
   unsigned int offlineChannel = bad();
 
-  if (fOnlineToOffline.count(offlineChannel) == 0) {
+  if (fOnlineToOffline.count(onlineChannel) == 0) {
     std::cout << "Error: no offline channel mapped to online channel " << onlineChannel << std::endl;
     throw cet::exception("Online channel not found");
   }
+  else
+    offlineChannel = fOnlineToOffline.at(onlineChannel);
 
-  return fOnlineToOffline.at(offlineChannel);
+  return offlineChannel;
 
 }
 
-unsigned int ChannelMappingService::Online(unsigned int offlineChannel) const {
+unsigned int lbne::ChannelMapService::Online(unsigned int offlineChannel) const {
 
   unsigned int onlineChannel = bad();
 
-  if (fOfflineToOnline.count(onlineChannel) == 0) {
+  if (fOfflineToOnline.count(offlineChannel) == 0) {
     std::cout << "Error: no online channel mapped to offline channel " << offlineChannel << std::endl;
     throw cet::exception("Offline channel not found");
   }
+  else
+    onlineChannel = fOfflineToOnline.at(offlineChannel);
 
-  return fOfflineToOnline.at(onlineChannel);
+  return onlineChannel;
 
 }
 
-unsigned int ChannelMappingService::APAFromOnlineChannel(unsigned int onlineChannel) const {
+unsigned int lbne::ChannelMapService::APAFromOnlineChannel(unsigned int onlineChannel) const {
 
   if (fAPAMap.count(onlineChannel) == 0) {
     std::cout << "Error: no APA information for online channel " << onlineChannel << std::endl;
@@ -83,14 +90,14 @@ unsigned int ChannelMappingService::APAFromOnlineChannel(unsigned int onlineChan
 
 }
 
-unsigned int ChannelMappingService::APAFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int lbne::ChannelMapService::APAFromOfflineChannel(unsigned int offlineChannel) const {
 
   unsigned int onlineChannel = this->Online(offlineChannel);
   return this->APAFromOnlineChannel(onlineChannel);
 
 }
 
-unsigned int ChannelMappingService::PlaneFromOnlineChannel(unsigned int onlineChannel) const {
+unsigned int lbne::ChannelMapService::PlaneFromOnlineChannel(unsigned int onlineChannel) const {
 
   if (fPlaneMap.count(onlineChannel) == 0) {
     std::cout << "Error: no plane information for online channel " << onlineChannel << std::endl;
@@ -101,11 +108,11 @@ unsigned int ChannelMappingService::PlaneFromOnlineChannel(unsigned int onlineCh
 
 }
 
-unsigned int ChannelMappingService::PlaneFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int lbne::ChannelMapService::PlaneFromOfflineChannel(unsigned int offlineChannel) const {
 
   unsigned int onlineChannel = this->Online(offlineChannel);
   return this->PlaneFromOnlineChannel(onlineChannel);
 
 }
 
-DEFINE_ART_SERVICE(ChannelMappingService);
+DEFINE_ART_SERVICE(lbne::ChannelMapService)

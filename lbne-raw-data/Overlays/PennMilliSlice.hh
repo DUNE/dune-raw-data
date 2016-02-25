@@ -266,6 +266,7 @@ public:
   // NFB: Returns the nearest timestamp payload after the current_word_id_
   uint8_t* get_next_timestamp(lbne::PennMicroSlice::Payload_Header*& data_header);
 
+#ifdef ENABLE_PENNMILLISLICE_CHECKSUM
   typedef uint32_t checksum_t;
 
   // Calculate a checksum for this millslice
@@ -273,6 +274,7 @@ public:
 
   // Returns the checksum
   checksum_t checksum() const;
+#endif
 
 protected:
 

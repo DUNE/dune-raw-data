@@ -109,7 +109,7 @@ uint8_t* lbne::PennMilliSlice::get_next_payload(uint32_t& index,
 	current_payload_ += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_checksum;
 	break;
       default:
-	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+//	std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
 	return nullptr;
 	break;
       }//switch(type)
@@ -149,7 +149,7 @@ uint8_t* lbne::PennMilliSlice::get_next_payload(uint32_t& index,
       payload_size = lbne::PennMicroSlice::payload_size_checksum;
       break;
     default:
-      std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+      //std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
       payload_size = 0;
       break;
     }//switch(type)
@@ -194,7 +194,7 @@ uint8_t* lbne::PennMilliSlice::get_next_payload(uint32_t &index,lbne::PennMicroS
         current_payload_ += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_checksum;
         break;
       default:
-        std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+        //std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
         return nullptr;
         break;
       }//switch(type)
@@ -256,7 +256,7 @@ uint8_t* lbne::PennMilliSlice::get_next_timestamp(lbne::PennMicroSlice::Payload_
         pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_checksum;
         break;
       default:
-        std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+        //std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
         data_header = nullptr;
         return nullptr;
         break;
@@ -301,7 +301,7 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
         pl_ptr += lbne::PennMicroSlice::payload_size_checksum;
         break;
       default:
-        std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+        //std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
         return nullptr;
         break;
       }//switch(type)
@@ -353,7 +353,7 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
     payload_size = lbne::PennMicroSlice::payload_size_checksum;
     break;
   default:
-    std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+    //std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
     payload_size = 0;
     break;
   }//switch(type)
@@ -377,7 +377,7 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
   pl_ptr += lbne::PennMicroSlice::Payload_Header::size_bytes + lbne::PennMicroSlice::payload_size_checksum;
   break;
       default:
-  std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
+  //std::cerr << "Unknown data packet type found 0x" << std::hex << (unsigned int)type << std::endl;
   return nullptr;
   break;
       }//switch(type)
@@ -388,11 +388,12 @@ uint8_t* lbne::PennMilliSlice::payload(uint32_t index,
   return nullptr;
 }
 
+#ifdef ENABLE_PENNMILLISLICE_CHECKSUM
 
 lbne::PennMilliSlice::checksum_t lbne::PennMilliSlice::calculateChecksum() const
 {
   try {
-    //NFB: This is not the right algorithm to calculate the checksum, I think
+    //NFB: Is the checksum actually used anywhere? It certainly complicates the calculations.
     boost::crc_32_type checksum;
     checksum.process_bytes(buffer_, this->size());
     return checksum.checksum();
@@ -408,6 +409,7 @@ lbne::PennMilliSlice::checksum_t lbne::PennMilliSlice::checksum() const
 {
   return *(reinterpret_cast<lbne::PennMilliSlice::checksum_t*>(buffer_ + this->size() - sizeof(lbne::PennMilliSlice::checksum_t)));
 }
+#endif
 
 lbne::PennMilliSlice::Header const* lbne::PennMilliSlice::header_() const
 {

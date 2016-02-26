@@ -15,6 +15,12 @@ incdir      product_dir include
 libdir      fq_dir      lib
 bindir      fq_dir      bin
 
+# table fragment to set FW_SEARCH_PATH needed
+# needed for channel map
+table_fragment_begin
+    pathPrepend(FW_SEARCH_PATH, ${LBNE_RAW_DATA_DIR}/files)
+table_fragment_end
+
 #
 product		version		optional
 artdaq_core	v1_04_28	nu

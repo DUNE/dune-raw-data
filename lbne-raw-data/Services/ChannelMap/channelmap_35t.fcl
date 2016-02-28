@@ -1,0 +1,20 @@
+#
+# Mike Wallbank
+# February 2016
+#
+# Channel mapping service,
+# based on the one in LArSoft
+# written by David Adams
+#
+
+BEGIN_PROLOG
+
+# 35-ton online/offline channel mapping.
+
+channelmap35t: {
+  service_provider: ChannelMapService
+  FileName:         "35tTPCChannelMap_v3.txt"
+  LogLevel:         1
+}
+
+END_PROLOG

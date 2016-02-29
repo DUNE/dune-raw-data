@@ -1,6 +1,6 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
-parent lbne_raw_data	v1_03_19
+parent lbne_raw_data	v1_03_21
 defaultqual	e9:nu:s30
 
 # These optional lines define the installed directories where
@@ -14,6 +14,12 @@ defaultqual	e9:nu:s30
 incdir      product_dir include
 libdir      fq_dir      lib
 bindir      fq_dir      bin
+
+# table fragment to set FW_SEARCH_PATH needed
+# needed for channel map
+table_fragment_begin
+    pathPrepend(FW_SEARCH_PATH, ${LBNE_RAW_DATA_DIR}/files)
+table_fragment_end
 
 #
 product		version		optional

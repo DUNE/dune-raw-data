@@ -232,7 +232,7 @@ struct Payload_Counter {
   // position boundaries for the different counter types
   // it also works as a sort of enumerator for the different counter types
   // so that they can be uniquely identified
-  // the value is the last element that belongs to the type
+  // the value is the first element outside the type
   static data_size_t const counter_type_tsu_wu    = 10;
   static data_size_t const counter_type_tsu_el    = 20;
   static data_size_t const counter_type_tsu_extra = 24;
@@ -362,19 +362,21 @@ struct Payload_Trigger {
   typedef uint16_t data_size_t;
 
   // The 16 lsb are padding. No information is passed there
-  trigger_type_t padding_low : 16;
+  trigger_type_t padding_low : 8;
 
   // This is to be remapped so that calib words can be OR-ed with
   // calibration words
   // [8 : t_type][4 : muon_type][4 : calib type]
+  trigger_type_t trigger_id_ext  : 4;
   trigger_type_t trigger_id_calib: 4; // which of the calibration channels
-  trigger_type_t trigger_id_muon : 4; // which of the muon triggers
+  trigger_type_t trigger_id_muon : 8; // which of the muon triggers
   trigger_type_t trigger_type    : 5; // the 5 msb are the trigger type
   trigger_type_t padding_high    : 3; // this makes the information byte aligned
 
-  static data_size_t const num_bits_padding_low     = 16;
+  static data_size_t const num_bits_padding_low     = 8;
+  static data_size_t const num_bits_trigger_id_ext  = 4;
   static data_size_t const num_bits_trigger_id_calib= 4;
-  static data_size_t const num_bits_trigger_id_muon = 4;
+  static data_size_t const num_bits_trigger_id_muon = 8;
   static data_size_t const num_bits_trigger_type    = 5;
   static data_size_t const num_bits_padding_high    = 3;
 
@@ -384,17 +386,32 @@ struct Payload_Trigger {
 
 
   // ID the trigger types for figure reference
-  static trigger_type_t const calibration = 0x00;
-  static trigger_type_t const muon        = 0x10;
-  static trigger_type_t const ssp         = 0x08;
+  // The logic is flawed. Need to look at this otherwise
+  /** Old map
+  static trigger_type_t const calibration = 0x00; //00000
+  static trigger_type_t const muon        = 0x10; //10000
+  static trigger_type_t const ssp         = 0x08; //01000
   // -- This should probably be split into RCE and then RCE types
-  static trigger_type_t const rce_1       = 0x01;
-  static trigger_type_t const rce_2       = 0x02;
-  static trigger_type_t const rce_12      = 0x03;
-  static trigger_type_t const rce_3       = 0x04;
-  static trigger_type_t const rce_13      = 0x05;
-  static trigger_type_t const rce_23      = 0x06;
-  static trigger_type_t const rce_123     = 0x07;
+  static trigger_type_t const rce_1       = 0x01; //00001
+  static trigger_type_t const rce_2       = 0x02; //00010
+  static trigger_type_t const rce_12      = 0x03; //00011
+  static trigger_type_t const rce_3       = 0x04; //00100
+  static trigger_type_t const rce_13      = 0x05; //00101
+  static trigger_type_t const rce_23      = 0x06; //00110
+  static trigger_type_t const rce_123     = 0x07; //00111
+   **/
+  static trigger_type_t const muon        = 0x10; //10000
+  static trigger_type_t const external    = 0x08; //01000
+  static trigger_type_t const calibration = 0x04; //00100
+
+  // -- This should probably be split into RCE and then RCE types
+  // External trigger types
+  static trigger_type_t const I01_08      = 0x8; //1000
+  static trigger_type_t const ssp         = 0x8; //1000
+  static trigger_type_t const I09         = 0x4; //0100
+  static trigger_type_t const I10         = 0x2; //0010
+  static trigger_type_t const I12         = 0x1; //0001
+  // NOTE: There is no I11. It is a adead channel.
 
   // C1 : 1000 : 0x8
   // C2 : 0100 : 0x4
@@ -405,15 +422,27 @@ struct Payload_Trigger {
   static trigger_type_t const C3 = 0x2;
   static trigger_type_t const C4 = 0x1;
 
-  // TA : 1000
-  // TB : 0100
-  // TC : 0010
-  // TD : 0001
-  static trigger_type_t const TA = 0x8;
-  static trigger_type_t const TB = 0x4;
-  static trigger_type_t const TC = 0x2;
-  static trigger_type_t const TD = 0x1;
+  // TA : BSU RM/CL : 10000000
+  // TB : TSU SL/NU : 01000000
+  // TC : TSU SU/NL : 00100000
+  // TD : TSU EL/WU : 00010000
+  // TE : ????????? : 00001000 <-- Not implemented in FW
+  // TF : ????????? : 00000100 <-- Not implemented in FW
+  // TG : ????????? : 00000010 <-- Not implemented in FW
+  // TH : ????????? : 00000001 <-- Not implemented in FW
+  static trigger_type_t const TA = 0x80;
+  static trigger_type_t const TB = 0x40;
+  static trigger_type_t const TC = 0x20;
+  static trigger_type_t const TD = 0x10;
+  static trigger_type_t const TE = 0x08;
+  static trigger_type_t const TF = 0x04;
+  static trigger_type_t const TG = 0x02;
+  static trigger_type_t const TH = 0x01;
 
+  static trigger_type_t const bsu_rm_cl = 0x80;
+  static trigger_type_t const tsu_sl_nu = 0x40;
+  static trigger_type_t const tsu_su_nl = 0x20;
+  static trigger_type_t const tsu_el_wu = 0x10;
 
   static size_t const size_bytes = sizeof(uint32_t);
   static size_t const size_u32 = size_bytes/sizeof(uint32_t);
@@ -424,7 +453,7 @@ struct Payload_Trigger {
   static size_t const ptb_offset_bytes = ptb_offset_u32*sizeof(uint32_t);
 
   // The payload position offset from the top of the frame (header + discard)
-  static size_t const payload_offset_u32 = 1;
+  static size_t const payload_offset_u32 = 1+ptb_offset_u32;
   static size_t const payload_offset_bytes = payload_offset_u32*sizeof(uint32_t);
 
 
@@ -434,26 +463,40 @@ struct Payload_Trigger {
   bool has_muon_trigger() {
     return ((trigger_type & muon) != 0x0);
   }
-  bool has_rce_trigger() {
-    return ((trigger_type & rce_123) != 0x0);
-  }
-  bool has_ssp_trigger() {
-    return ((trigger_type & ssp) != 0x0);
+  bool has_external_trigger() {
+    return ((trigger_type & external) != 0x0);
   }
   bool has_calibration() {
     return ((trigger_type & calibration) != 0x0);
   }
 
+  // -- External trigger types
+
+  bool has_external_trigger(trigger_type_t t) {
+    return ((trigger_id_ext & t) != 0x0);
+  }
+
+  bool has_ssp_trigger() {
+    return ((trigger_id_ext & ssp) != 0x0);
+  }
+  bool has_I09() {
+    return ((trigger_id_ext & I09) != 0x0);
+  }
+  bool has_I10() {
+    return ((trigger_id_ext & I10) != 0x0);
+  }
+  bool has_I12() {
+    return ((trigger_id_ext & I12) != 0x0);
+  }
+
+  // calibration trigger types
+  /// Test for the different calibration types
+  ///
+
   bool has_calibration(trigger_type_t t) {
     return ((trigger_id_calib & t) != 0x0);
   }
 
-  bool has_muon_trigger(trigger_type_t t) {
-    return ((trigger_id_muon & t) != 0x0);
-  }
-
-  /// Test for the different calibration types
-  ///
   bool has_C1() {
     return ((trigger_id_calib & C1) != 0);
   }
@@ -469,6 +512,10 @@ struct Payload_Trigger {
 
   /// Test the different muon trigger types
   ///
+  bool has_muon_trigger(trigger_type_t t) {
+    return ((trigger_id_muon & t) != 0x0);
+  }
+  ///
   bool has_muon_TA() {
     return ((trigger_id_muon & TA) != 0);
   }
@@ -481,51 +528,56 @@ struct Payload_Trigger {
   bool has_muon_TD() {
     return ((trigger_id_muon & TD) != 0);
   }
+  bool has_muon_TE() {
+    return ((trigger_id_muon & TE) != 0);
+  }
+  bool has_muon_TF() {
+    return ((trigger_id_muon & TF) != 0);
+  }
+  bool has_muon_TG() {
+    return ((trigger_id_muon & TG) != 0);
+  }
+  bool has_muon_TH() {
+    return ((trigger_id_muon & TH) != 0);
+  }
+
+  /// Test the different muon trigger types
+  ///
+  bool has_muon_bsu_rm_cl() {
+    return ((trigger_id_muon & bsu_rm_cl) != 0);
+  }
+  bool has_muon_tsu_sl_nu() {
+    return ((trigger_id_muon & tsu_sl_nu) != 0);
+  }
+  bool has_muon_tsu_su_nl() {
+    return ((trigger_id_muon & tsu_su_nl) != 0);
+  }
+  bool has_muon_tsu_el_wu() {
+    return ((trigger_id_muon & tsu_el_wu) != 0);
+  }
 
 
   // Add a function that can be used to parse the trigger payload
   //FIXME: This should be considered obsolete and removed
   // in a near future
 
-  static std::string getTriggerName(trigger_type_t trigger_type) {
+  static std::string getTriggerTypeName(trigger_type_t trigger_type) {
     switch (trigger_type) {
-    case calibration:
-return "calibration";
-break;
-    case rce_1:
-return "rce_1";
-break;
-    case rce_2:
-return "rce_2";
-break;
-    case rce_3:
-return "rce_3";
-break;
-    case rce_12:
-return "rce_12";
-break;
-    case rce_13:
-return "rce_13";
-break;
-    case rce_23:
-return "rce_23";
-break;
-    case rce_123:
-return "rce_123";
-break;
-    case ssp  :
-return "ssp";
-break;
-    case muon :
-return "muon";
-break;
-    default:
-return "unknown";
-break;
+      case calibration:
+        return "calibration";
+        break;
+      case external:
+        return "external";
+        break;
+      case muon :
+        return "muon";
+        break;
+      default:
+        return "unknown";
+        break;
     }
     return "";
   }
-
 };
 
 struct Payload_Timestamp {

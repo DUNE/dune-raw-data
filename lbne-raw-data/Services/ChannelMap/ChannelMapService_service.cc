@@ -40,6 +40,7 @@ lbne::ChannelMapService::ChannelMapService(fhicl::ParameterSet const& pset) {
     fOnlineToOffline[onlineChannel] = offlineChannel;
     fAPAMap[onlineChannel] = apa;
     fPlaneMap[onlineChannel] = plane;
+    fRCEMap[onlineChannel] = rce;
   }
 
   inFile.close();
@@ -112,6 +113,24 @@ unsigned int lbne::ChannelMapService::PlaneFromOfflineChannel(unsigned int offli
 
   unsigned int onlineChannel = this->Online(offlineChannel);
   return this->PlaneFromOnlineChannel(onlineChannel);
+
+}
+
+unsigned int lbne::ChannelMapService::RCEFromOnlineChannel(unsigned int onlineChannel) const {
+
+  if (fRCEMap.count(onlineChannel) == 0) {
+    std::cout << "Error: no RCE information for online channel " << onlineChannel << std::endl;
+    throw cet::exception("RCE information not found");
+  }
+
+  return fRCEMap.at(onlineChannel);
+
+}
+
+unsigned int lbne::ChannelMapService::RCEFromOfflineChannel(unsigned int offlineChannel) const {
+
+  unsigned int onlineChannel = this->Online(offlineChannel);
+  return this->RCEFromOnlineChannel(onlineChannel);
 
 }
 

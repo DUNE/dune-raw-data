@@ -49,6 +49,10 @@ public:
   unsigned int RCEFromOnlineChannel(unsigned int onlineChannel) const;
   unsigned int RCEFromOfflineChannel(unsigned int offlineChannel) const;
 
+  /// Returns RCE channel number
+  unsigned int RCEChannelFromOnlineChannel(unsigned int onlineChannel) const;
+  unsigned int RCEChannelFromOfflineChannel(unsigned int offlineChannel) const;
+
 private:
  
   // Maps
@@ -58,6 +62,7 @@ private:
   std::map<unsigned int, unsigned int> fPlaneMap;
   std::map<unsigned int, unsigned int> fAPAMap;
   std::map<unsigned int, unsigned int> fRCEMap;
+  std::map<unsigned int, unsigned int> fRCEChannelMap;
 
 };
 

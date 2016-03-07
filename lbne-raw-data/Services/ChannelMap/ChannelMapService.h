@@ -53,6 +53,22 @@ public:
   unsigned int RCEChannelFromOnlineChannel(unsigned int onlineChannel) const;
   unsigned int RCEChannelFromOfflineChannel(unsigned int offlineChannel) const;
 
+  /// Returns regulator number
+  unsigned int RegulatorFromOnlineChannel(unsigned int onlineChannel) const;
+  unsigned int RegulatorFromOfflineChannel(unsigned int offlineChannel) const;
+
+  /// Returns regulator pin number
+  unsigned int RegulatorPinFromOnlineChannel(unsigned int onlineChannel) const;
+  unsigned int RegulatorPinFromOfflineChannel(unsigned int offlineChannel) const;
+
+  /// Returns ASIC number
+  unsigned int ASICFromOnlineChannel(unsigned int onlineChannel) const;
+  unsigned int ASICFromOfflineChannel(unsigned int offlineChannel) const;
+
+  /// Returns ASIC channel number
+  unsigned int ASICChannelFromOnlineChannel(unsigned int onlineChannel) const;
+  unsigned int ASICChannelFromOfflineChannel(unsigned int offlineChannel) const;
+
 private:
  
   // Maps
@@ -63,6 +79,10 @@ private:
   std::map<unsigned int, unsigned int> fAPAMap;
   std::map<unsigned int, unsigned int> fRCEMap;
   std::map<unsigned int, unsigned int> fRCEChannelMap;
+  std::map<unsigned int, unsigned int> fRegulatorMap;
+  std::map<unsigned int, unsigned int> fRegulatorPinMap;
+  std::map<unsigned int, unsigned int> fASICMap;
+  std::map<unsigned int, unsigned int> fASICChannelMap;
 
 };
 

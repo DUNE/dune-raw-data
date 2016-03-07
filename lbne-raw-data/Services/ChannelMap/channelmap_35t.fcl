@@ -13,7 +13,7 @@ BEGIN_PROLOG
 
 channelmap35t: {
   service_provider: ChannelMapService
-  FileName:         "35tTPCChannelMap_v4.txt"
+  FileName:         "35tTPCChannelMap_v5.txt"
   LogLevel:         1
 }
 

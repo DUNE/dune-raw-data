@@ -28,19 +28,26 @@ lbne::ChannelMapService::ChannelMapService(fhicl::ParameterSet const& pset) {
     std::cout << "Input file " << channelMapFile << " not found" << std::endl;
     throw cet::exception("File not found");
   }
+  else
+    std::cout << "TPC Channel Map: Building TPC map from file " << channelMapFile << std::endl;
 
   std::ifstream inFile(fullname, std::ios::in);
   std::string line;
 
   while (std::getline(inFile,line)) {
-    unsigned int onlineChannel, rce, rcechannel, apa, plane, offlineChannel;
+    unsigned int onlineChannel, rce, rcechannel, regulator, regulatorpin, asic, asicchannel, apa, plane, offlineChannel;
     std::stringstream linestream(line);
-    linestream >> onlineChannel >> rce >> rcechannel >> apa >> plane >> offlineChannel;
+    linestream >> onlineChannel >> rce >> rcechannel >> regulator >> regulatorpin >> asic >> asicchannel >> apa >> plane >> offlineChannel;
     fOfflineToOnline[offlineChannel] = onlineChannel;
     fOnlineToOffline[onlineChannel] = offlineChannel;
     fAPAMap[onlineChannel] = apa;
     fPlaneMap[onlineChannel] = plane;
     fRCEMap[onlineChannel] = rce;
+    fRCEChannelMap[onlineChannel] = rcechannel;
+    fRegulatorMap[onlineChannel] = regulator;
+    fRegulatorPinMap[onlineChannel] = regulatorpin;
+    fASICMap[onlineChannel] = asic;
+    fASICChannelMap[onlineChannel] = asicchannel;
   }
 
   inFile.close();
@@ -131,6 +138,96 @@ unsigned int lbne::ChannelMapService::RCEFromOfflineChannel(unsigned int offline
 
   unsigned int onlineChannel = this->Online(offlineChannel);
   return this->RCEFromOnlineChannel(onlineChannel);
+
+}
+
+unsigned int lbne::ChannelMapService::RCEChannelFromOnlineChannel(unsigned int onlineChannel) const {
+
+  if (fRCEChannelMap.count(onlineChannel) == 0) {
+    std::cout << "Error: no RCE channel information for online channel " << onlineChannel << std::endl;
+    throw cet::exception("RCE channel information not found");
+  }
+
+  return fRCEChannelMap.at(onlineChannel);
+
+}
+
+unsigned int lbne::ChannelMapService::RCEChannelFromOfflineChannel(unsigned int offlineChannel) const {
+
+  unsigned int onlineChannel = this->Online(offlineChannel);
+  return this->RCEChannelFromOnlineChannel(onlineChannel);
+
+}
+
+unsigned int lbne::ChannelMapService::RegulatorFromOnlineChannel(unsigned int onlineChannel) const {
+
+  if (fRegulatorMap.count(onlineChannel) == 0) {
+    std::cout << "Error: no regulator information for online channel " << onlineChannel << std::endl;
+    throw cet::exception("Regulator information not found");
+  }
+
+  return fRegulatorMap.at(onlineChannel);
+
+}
+
+unsigned int lbne::ChannelMapService::RegulatorFromOfflineChannel(unsigned int offlineChannel) const {
+
+  unsigned int onlineChannel = this->Online(offlineChannel);
+  return this->RegulatorFromOnlineChannel(onlineChannel);
+
+}
+
+unsigned int lbne::ChannelMapService::RegulatorPinFromOnlineChannel(unsigned int onlineChannel) const {
+
+  if (fRegulatorPinMap.count(onlineChannel) == 0) {
+    std::cout << "Error: no regulator pin information for online channel " << onlineChannel << std::endl;
+    throw cet::exception("Regulator pin information not found");
+  }
+
+  return fRegulatorPinMap.at(onlineChannel);
+
+}
+
+unsigned int lbne::ChannelMapService::RegulatorPinFromOfflineChannel(unsigned int offlineChannel) const {
+
+  unsigned int onlineChannel = this->Online(offlineChannel);
+  return this->RegulatorPinFromOnlineChannel(onlineChannel);
+
+}
+
+unsigned int lbne::ChannelMapService::ASICFromOnlineChannel(unsigned int onlineChannel) const {
+
+  if (fASICMap.count(onlineChannel) == 0) {
+    std::cout << "Error: no ASIC information for online channel " << onlineChannel << std::endl;
+    throw cet::exception("ASIC information not found");
+  }
+
+  return fASICMap.at(onlineChannel);
+
+}
+
+unsigned int lbne::ChannelMapService::ASICFromOfflineChannel(unsigned int offlineChannel) const {
+
+  unsigned int onlineChannel = this->Online(offlineChannel);
+  return this->ASICFromOnlineChannel(onlineChannel);
+
+}
+
+unsigned int lbne::ChannelMapService::ASICChannelFromOnlineChannel(unsigned int onlineChannel) const {
+
+  if (fASICChannelMap.count(onlineChannel) == 0) {
+    std::cout << "Error: no ASIC channel information for online channel " << onlineChannel << std::endl;
+    throw cet::exception("ASIC channel information not found");
+  }
+
+  return fASICChannelMap.at(onlineChannel);
+
+}
+
+unsigned int lbne::ChannelMapService::ASICChannelFromOfflineChannel(unsigned int offlineChannel) const {
+
+  unsigned int onlineChannel = this->Online(offlineChannel);
+  return this->ASICChannelFromOnlineChannel(onlineChannel);
 
 }
 

@@ -1,7 +1,7 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
-parent lbne_raw_data	v1_03_22
-defaultqual	e9:nu:s30
+parent lbne_raw_data	v1_03_23
+defaultqual	e9:nu:s31
 
 # These optional lines define the installed directories where
 # headers, libraries, and executables will be found
@@ -23,9 +23,9 @@ table_fragment_end
 
 #
 product		version		optional
-artdaq_core	v1_04_28	nu
+artdaq_core	v1_04_29	nu
 artdaq_core	v1_04_23	online
-cetbuildtools	v4_17_01	-	only_for_build
+cetbuildtools	v4_19_04	-	only_for_build
 end_product_list
 
 # e6  - with gcc 4.9.1 and -std=c++1y
@@ -41,6 +41,7 @@ end_product_list
 # s24 - with art v1_17_04
 # s26 - with art v1_17_05
 # s30 - with art v1_17_07
+# s31 - with art v1_18_05
 
 # -nq- here means there is no qualifier
 # a "-" here means the dependent product is not required by the parent and will not be setup
@@ -98,6 +99,8 @@ nu:e9:s28:debug		nu:e9:s28:debug
 nu:e9:s28:prof		nu:e9:s28:prof
 nu:e9:s30:debug		nu:e9:s30:debug
 nu:e9:s30:prof		nu:e9:s30:prof
+nu:e9:s31:debug		nu:e9:s31:debug
+nu:e9:s31:prof		nu:e9:s31:prof
 
 # Preserve tabs and formatting in emacs and vi / vim:
 

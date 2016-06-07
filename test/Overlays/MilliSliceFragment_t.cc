@@ -14,7 +14,12 @@
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
 #define BOOST_TEST_MODULE(MilliSliceFragment_t)
+#ifdef HAVE_CANVAS
+ #include "cetlib/quiet_unit_test.hpp"
+#else
 #include "boost/test/auto_unit_test.hpp"
+#endif
+
 
 BOOST_AUTO_TEST_SUITE(MilliSliceFragment_test)
 

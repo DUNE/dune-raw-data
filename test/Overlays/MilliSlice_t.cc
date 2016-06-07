@@ -17,7 +17,12 @@
 
 
 #define BOOST_TEST_MODULE(MilliSlice_t)
+#ifdef HAVE_CANVAS
+ #include "cetlib/quiet_unit_test.hpp"
+#else
 #include "boost/test/auto_unit_test.hpp"
+#endif
+
 
 BOOST_AUTO_TEST_SUITE(MilliSlice_test)
 

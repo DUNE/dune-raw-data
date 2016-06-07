@@ -10,28 +10,45 @@
 # use cmake 2.8 or later
 cmake_minimum_required (VERSION 2.8)
 
+project(lbne_raw_data)
+
 # cetbuildtools contains our cmake modules
 SET ( CETBUILDTOOLS_VERSION $ENV{CETBUILDTOOLS_VERSION} )
 IF (NOT CETBUILDTOOLS_VERSION)
     MESSAGE (FATAL_ERROR "ERROR: setup cetbuildtools to get the cmake modules")
 ENDIF()
 
+if( DEFINED ENV{CANVAS_DIR} )
 set(CMAKE_MODULE_PATH 
+	$ENV{CANVAS_DIR}/Modules
+	 $ENV{CETBUILDTOOLS_DIR}/Modules
+	  ${CMAKE_MODULE_PATH})
+else()
+set(CMAKE_MODULE_PATH
         $ENV{ART_DIR}/Modules
-        $ENV{CETBUILDTOOLS_DIR}/Modules
-        ${CMAKE_MODULE_PATH})
-
+	$ENV{CETBUILDTOOLS_DIR}/Modules
+	${CMAKE_MODULE_PATH})
+endif()
 
 include(CetCMakeEnv)
 cet_cmake_env()
 
+
+if( DEFINED ENV{CANVAS_DIR} )
+cet_set_compiler_flags(DIAGS VIGILANT
+  WERROR
+  NO_UNDEFINED
+  EXTRA_FLAGS -pedantic
+  EXTRA_DEFINITIONS -DHAVE_CANVAS -D_GLIBCXX_USE_NANOSLEEP
+)
+else()
 cet_set_compiler_flags(DIAGS VIGILANT
  WERROR
  NO_UNDEFINED
  EXTRA_FLAGS -pedantic
-# EXTRA_CXX_FLAGS -std=c++11 -D_GLIBCXX_USE_NANOSLEEP
  EXTRA_CXX_FLAGS -D_GLIBCXX_USE_NANOSLEEP
  )
+endif()
 
 cet_report_compiler_flags()
 

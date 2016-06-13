@@ -22,7 +22,7 @@ endif()
 simple_plugin(ChannelMapService "service"
 	      ${ART_PERSISTENCY_ROOTDB}
 	      ${ART_FRAMEWORK_SERVICES_REGISTRY}
-	      art_Utilities canvas_Utilities
+	      ${persistency_lib}
 	      ${SQLITE3}
 	      ${MF_MESSAGELOGGER}
 	      ${MF_UTILITIES}

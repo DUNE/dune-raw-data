@@ -1,6 +1,6 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
-parent lbne_raw_data	v1_04_00
+parent lbne_raw_data	v1_04_01
 defaultqual	e10:nu:s36
 
 # These optional lines define the installed directories where
@@ -24,7 +24,7 @@ table_fragment_end
 #
 product		version		optional
 artdaq_core	v1_05_01	nu
-artdaq_core	v1_04_23	online
+artdaq_core	v1_05_00	online
 cetbuildtools	v5_04_01	-	only_for_build
 end_product_list
 
@@ -76,6 +76,10 @@ online:e7:s24:debug	e7:s24:debug
 online:e7:s24:prof	e7:s24:prof
 online:e9:s24:debug	e9:s24:debug
 online:e9:s24:prof	e9:s24:prof
+online:e9:s35:debug	e9:s35:debug
+online:e9:s35:prof	e9:s35:prof
+online:e10:s35:debug	e10:s35:debug
+online:e10:s35:prof	e10:s35:prof
 nu:e7:s11:prof		nu:e7:s11:prof
 nu:e7:s11:debug		nu:e7:s11:debug
 nu:e7:s15:prof		nu:e7:s15:prof

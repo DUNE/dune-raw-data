@@ -1,7 +1,7 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
-parent lbne_raw_data	v1_04_04
-defaultqual	e10:nu:s41
+parent lbne_raw_data	v1_04_05
+defaultqual	e10:nu:s42
 
 # These optional lines define the installed directories where
 # headers, libraries, and executables will be found
@@ -23,8 +23,8 @@ table_fragment_end
 
 #
 product		version		optional
-artdaq_core	v1_05_05	nu
-artdaq_core	v1_05_00	online
+artdaq_core	v1_05_07	nu
+artdaq_core	v1_05_07	online
 cetbuildtools	v5_04_03	-	only_for_build
 end_product_list
 
@@ -50,27 +50,12 @@ end_product_list
 # s38 - with art v2_02_01
 # s39 - with art v2_02_02
 # s41 - with art v2_03_00
+# s42 - with art v2_04_00
 
 # -nq- here means there is no qualifier
 # a "-" here means the dependent product is not required by the parent and will not be setup
 
 qualifier	        artdaq_core      notes
-online:e7:s11:prof	e7:s11:prof
-online:e7:s11:debug	e7:s11:debug
-online:e7:s11:prof	e7:s11:prof
-online:e7:s11:debug	e7:s11:debug
-online:e7:s15:prof	e7:s15:prof
-online:e7:s15:debug	e7:s15:debug
-online:e7:s16:debug	e7:s16:debug
-online:e7:s16:prof	e7:s16:prof
-online:e7:s18:debug	e7:s18:debug
-online:e7:s18:prof	e7:s18:prof
-online:e9:s18:debug	e9:s18:debug
-online:e9:s18:prof	e9:s18:prof
-online:e7:s20:debug	e7:s20:debug
-online:e7:s20:prof	e7:s20:prof
-online:e9:s20:debug	e9:s20:debug
-online:e9:s20:prof	e9:s20:prof
 online:e7:s21:debug	e7:s21:debug
 online:e7:s21:prof	e7:s21:prof
 online:e9:s21:debug	e9:s21:debug
@@ -83,20 +68,10 @@ online:e9:s35:debug	e9:s35:debug
 online:e9:s35:prof	e9:s35:prof
 online:e10:s35:debug	e10:s35:debug
 online:e10:s35:prof	e10:s35:prof
-nu:e7:s11:prof		nu:e7:s11:prof
-nu:e7:s11:debug		nu:e7:s11:debug
-nu:e7:s15:prof		nu:e7:s15:prof
-nu:e7:s15:debug		nu:e7:s15:debug
-nu:e7:s16:debug		nu:e7:s16:debug
-nu:e7:s16:prof		nu:e7:s16:prof
-nu:e7:s18:debug		nu:e7:s18:debug
-nu:e7:s18:prof		nu:e7:s18:prof
-nu:e9:s18:debug		nu:e9:s18:debug
-nu:e9:s18:prof		nu:e9:s18:prof
-nu:e7:s20:debug		nu:e7:s20:debug
-nu:e7:s20:prof		nu:e7:s20:prof
-nu:e9:s20:debug		nu:e9:s20:debug
-nu:e9:s20:prof		nu:e9:s20:prof
+online:e9:s42:debug	e9:s42:debug
+online:e9:s42:prof	e9:s42:prof
+online:e10:s42:debug	e10:s42:debug
+online:e10:s42:prof	e10:s42:prof
 nu:e7:s21:debug		nu:e7:s21:debug
 nu:e7:s21:prof		nu:e7:s21:prof
 nu:e9:s21:debug		nu:e9:s21:debug
@@ -139,6 +114,10 @@ nu:e9:s41:debug		nu:e9:s41:debug
 nu:e9:s41:prof		nu:e9:s41:prof
 nu:e10:s41:debug	nu:e10:s41:debug
 nu:e10:s41:prof		nu:e10:s41:prof
+nu:e9:s42:debug		nu:e9:s42:debug
+nu:e9:s42:prof		nu:e9:s42:prof
+nu:e10:s42:debug	nu:e10:s42:debug
+nu:e10:s42:prof		nu:e10:s42:prof
 
 # Preserve tabs and formatting in emacs and vi / vim:
 

@@ -1,4 +1,4 @@
-#include "lbne-raw-data/Overlays/MicroSliceWriter.hh"
+#include "dune-raw-data/Overlays/MicroSliceWriter.hh"
 #include <vector>
 #include <stdint.h>
 #include <memory>
@@ -35,15 +35,15 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
   const uint16_t SAMPLE4 = 0xfe87;
   const uint16_t SAMPLE5 = 0x5a5a;
   std::vector<uint8_t> work_buffer(MS_BUFFER_SIZE);
-  std::unique_ptr<lbne::NanoSlice> nslice_ptr;
-  std::shared_ptr<lbne::NanoSliceWriter> ns_writer_ptr;
+  std::unique_ptr<dune::NanoSlice> nslice_ptr;
+  std::shared_ptr<dune::NanoSliceWriter> ns_writer_ptr;
   uint16_t value;
 
   // *** Use a MicroSliceWriter to build up a MicroSlice, checking
   // *** that everything looks good as we go.
 
-  lbne::MicroSliceWriter ms_writer(&work_buffer[0], MS_BUFFER_SIZE);
-  BOOST_REQUIRE_EQUAL(ms_writer.size(), sizeof(lbne::MicroSlice::Header));
+  dune::MicroSliceWriter ms_writer(&work_buffer[0], MS_BUFFER_SIZE);
+  BOOST_REQUIRE_EQUAL(ms_writer.size(), sizeof(dune::MicroSlice::Header));
   BOOST_REQUIRE_EQUAL(ms_writer.nanoSliceCount(), 0);
   nslice_ptr = ms_writer.nanoSlice(0);
   BOOST_REQUIRE(nslice_ptr.get() == 0);
@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
   ns_writer_ptr = ms_writer.reserveNanoSlice(NS_BUFFER_SIZE);
   BOOST_REQUIRE(ns_writer_ptr.get() != 0);
   BOOST_REQUIRE_EQUAL(ms_writer.size(),
-                      sizeof(lbne::MicroSlice::Header) + NS_BUFFER_SIZE);
+                      sizeof(dune::MicroSlice::Header) + NS_BUFFER_SIZE);
   BOOST_REQUIRE_EQUAL(ms_writer.nanoSliceCount(), 1);
   if (ns_writer_ptr.get() != 0) {
     ns_writer_ptr->setChannelNumber(CHANNEL_NUMBER);
@@ -64,8 +64,8 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
     ns_writer_ptr->addSample(SAMPLE5);
 
     uint32_t size_diff = ms_writer.finalize();
-    BOOST_REQUIRE_EQUAL(size_diff, MS_BUFFER_SIZE - sizeof(lbne::MicroSlice::Header) -
-                        sizeof(lbne::NanoSlice::Header) - 5*sizeof(uint16_t));
+    BOOST_REQUIRE_EQUAL(size_diff, MS_BUFFER_SIZE - sizeof(dune::MicroSlice::Header) -
+                        sizeof(dune::NanoSlice::Header) - 5*sizeof(uint16_t));
 
     nslice_ptr = ms_writer.nanoSlice(1);
     BOOST_REQUIRE(nslice_ptr.get() == 0);
@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
     BOOST_REQUIRE(nslice_ptr.get() != 0);
     if (nslice_ptr.get() != 0) {
       BOOST_REQUIRE_EQUAL(nslice_ptr->size(),
-                          sizeof(lbne::MicroSlice::Header) + 5*sizeof(uint16_t));
+                          sizeof(dune::MicroSlice::Header) + 5*sizeof(uint16_t));
       BOOST_REQUIRE_EQUAL(nslice_ptr->sampleCount(), 5);
       BOOST_REQUIRE(nslice_ptr->sampleValue(0, value));
       BOOST_REQUIRE_EQUAL(value, SAMPLE1);
@@ -100,18 +100,18 @@ BOOST_AUTO_TEST_CASE(MultipleNanoSliceTest)
   const uint16_t SAMPLE4 = 0xfe87;
   const uint16_t SAMPLE5 = 0x5a5a;
   std::vector<uint8_t> work_buffer(MS_BUFFER_SIZE);
-  std::unique_ptr<lbne::NanoSlice> nslice_ptr;
-  std::shared_ptr<lbne::NanoSliceWriter> ns_writer_ptr;
+  std::unique_ptr<dune::NanoSlice> nslice_ptr;
+  std::shared_ptr<dune::NanoSliceWriter> ns_writer_ptr;
   uint16_t value;
 
-  lbne::MicroSliceWriter ms_writer(&work_buffer[0], MS_BUFFER_SIZE);
-  BOOST_REQUIRE_EQUAL(ms_writer.size(), sizeof(lbne::MicroSlice::Header));
+  dune::MicroSliceWriter ms_writer(&work_buffer[0], MS_BUFFER_SIZE);
+  BOOST_REQUIRE_EQUAL(ms_writer.size(), sizeof(dune::MicroSlice::Header));
   BOOST_REQUIRE_EQUAL(ms_writer.nanoSliceCount(), 0);
 
   ns_writer_ptr = ms_writer.reserveNanoSlice(NS_BUFFER_SIZE);
   BOOST_REQUIRE(ns_writer_ptr.get() != 0);
   BOOST_REQUIRE_EQUAL(ms_writer.size(),
-                      sizeof(lbne::MicroSlice::Header) + NS_BUFFER_SIZE);
+                      sizeof(dune::MicroSlice::Header) + NS_BUFFER_SIZE);
   BOOST_REQUIRE_EQUAL(ms_writer.nanoSliceCount(), 1);
   if (ns_writer_ptr.get() != 0) {
     ns_writer_ptr->setChannelNumber(CHANNEL_NUMBER);
@@ -131,8 +131,8 @@ BOOST_AUTO_TEST_CASE(MultipleNanoSliceTest)
 
   ns_writer_ptr = ms_writer.reserveNanoSlice(NS_BUFFER_SIZE);
   BOOST_REQUIRE(ns_writer_ptr.get() != 0);
-  BOOST_REQUIRE_EQUAL(ms_writer.size(), sizeof(lbne::MicroSlice::Header) +
-                      sizeof(lbne::NanoSlice::Header) + 5*sizeof(uint16_t) +
+  BOOST_REQUIRE_EQUAL(ms_writer.size(), sizeof(dune::MicroSlice::Header) +
+                      sizeof(dune::NanoSlice::Header) + 5*sizeof(uint16_t) +
                       NS_BUFFER_SIZE);
   BOOST_REQUIRE_EQUAL(ms_writer.nanoSliceCount(), 2);
   if (ns_writer_ptr.get() != 0) {
@@ -155,8 +155,8 @@ BOOST_AUTO_TEST_CASE(MultipleNanoSliceTest)
 
   ns_writer_ptr = ms_writer.reserveNanoSlice(NS_BUFFER_SIZE);
   BOOST_REQUIRE(ns_writer_ptr.get() != 0);
-  BOOST_REQUIRE_EQUAL(ms_writer.size(), sizeof(lbne::MicroSlice::Header) +
-                      2*sizeof(lbne::NanoSlice::Header) + 8*sizeof(uint16_t) +
+  BOOST_REQUIRE_EQUAL(ms_writer.size(), sizeof(dune::MicroSlice::Header) +
+                      2*sizeof(dune::NanoSlice::Header) + 8*sizeof(uint16_t) +
                       NS_BUFFER_SIZE);
   BOOST_REQUIRE_EQUAL(ms_writer.nanoSliceCount(), 3);
   if (ns_writer_ptr.get() != 0) {
@@ -180,22 +180,22 @@ BOOST_AUTO_TEST_CASE(MultipleNanoSliceTest)
   // *** add any more NanoSlices after it is finalized
 
   int32_t size_diff = ms_writer.finalize();
-  BOOST_REQUIRE_EQUAL(size_diff, MS_BUFFER_SIZE - sizeof(lbne::MicroSlice::Header) -
-                      3*sizeof(lbne::NanoSlice::Header) - 10*sizeof(uint16_t));
+  BOOST_REQUIRE_EQUAL(size_diff, MS_BUFFER_SIZE - sizeof(dune::MicroSlice::Header) -
+                      3*sizeof(dune::NanoSlice::Header) - 10*sizeof(uint16_t));
   ns_writer_ptr = ms_writer.reserveNanoSlice(NS_BUFFER_SIZE);
   BOOST_REQUIRE(ns_writer_ptr.get() == 0);
 
   // *** Now we construct an instance of a read-only MicroSlice from
   // *** the work buffer and verify that everything still looks good
 
-  lbne::MicroSlice mslice(&work_buffer[0]);
-  BOOST_REQUIRE_EQUAL(mslice.size(), sizeof(lbne::MicroSlice::Header) +
-                      3*sizeof(lbne::NanoSlice::Header) + 10*sizeof(uint16_t));
+  dune::MicroSlice mslice(&work_buffer[0]);
+  BOOST_REQUIRE_EQUAL(mslice.size(), sizeof(dune::MicroSlice::Header) +
+                      3*sizeof(dune::NanoSlice::Header) + 10*sizeof(uint16_t));
   BOOST_REQUIRE_EQUAL(mslice.nanoSliceCount(), 3);
 
   nslice_ptr = ms_writer.nanoSlice(0);
   BOOST_REQUIRE(nslice_ptr.get() != 0);
-  BOOST_REQUIRE_EQUAL(nslice_ptr->size(), sizeof(lbne::NanoSlice::Header) +
+  BOOST_REQUIRE_EQUAL(nslice_ptr->size(), sizeof(dune::NanoSlice::Header) +
                       5*sizeof(uint16_t));
   BOOST_REQUIRE_EQUAL(nslice_ptr->channelNumber(), CHANNEL_NUMBER);
   BOOST_REQUIRE_EQUAL(nslice_ptr->sampleCount(), 5);
@@ -214,7 +214,7 @@ BOOST_AUTO_TEST_CASE(MultipleNanoSliceTest)
 
   nslice_ptr = ms_writer.nanoSlice(1);
   BOOST_REQUIRE(nslice_ptr.get() != 0);
-  BOOST_REQUIRE_EQUAL(nslice_ptr->size(), sizeof(lbne::NanoSlice::Header) +
+  BOOST_REQUIRE_EQUAL(nslice_ptr->size(), sizeof(dune::NanoSlice::Header) +
                       3*sizeof(uint16_t));
   BOOST_REQUIRE_EQUAL(nslice_ptr->channelNumber(), CHANNEL_NUMBER+1);
   BOOST_REQUIRE_EQUAL(nslice_ptr->sampleCount(), 3);
@@ -228,7 +228,7 @@ BOOST_AUTO_TEST_CASE(MultipleNanoSliceTest)
 
   nslice_ptr = ms_writer.nanoSlice(2);
   BOOST_REQUIRE(nslice_ptr.get() != 0);
-  BOOST_REQUIRE_EQUAL(nslice_ptr->size(), sizeof(lbne::NanoSlice::Header) +
+  BOOST_REQUIRE_EQUAL(nslice_ptr->size(), sizeof(dune::NanoSlice::Header) +
                       2*sizeof(uint16_t));
   BOOST_REQUIRE_EQUAL(nslice_ptr->channelNumber(), CHANNEL_NUMBER+2);
   BOOST_REQUIRE_EQUAL(nslice_ptr->sampleCount(), 2);

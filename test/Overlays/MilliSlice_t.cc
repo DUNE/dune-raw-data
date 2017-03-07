@@ -1,4 +1,4 @@
-#include "lbne-raw-data/Overlays/MilliSliceWriter.hh"
+#include "dune-raw-data/Overlays/MilliSliceWriter.hh"
 #include <vector>
 #include <stdint.h>
 #include <memory>
@@ -38,16 +38,16 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
   const uint16_t SAMPLE4 = 0xfe87;
   const uint16_t SAMPLE5 = 0x5a5a;
   std::vector<uint8_t> work_buffer(MILLISLICE_BUFFER_SIZE);
-  std::unique_ptr<lbne::MicroSlice> microslice_ptr;
-  std::shared_ptr<lbne::MicroSliceWriter> microslice_writer_ptr;
-  std::shared_ptr<lbne::NanoSliceWriter> nanoslice_writer_ptr;
+  std::unique_ptr<dune::MicroSlice> microslice_ptr;
+  std::shared_ptr<dune::MicroSliceWriter> microslice_writer_ptr;
+  std::shared_ptr<dune::NanoSliceWriter> nanoslice_writer_ptr;
   uint16_t value;
 
   // *** Use a MilliSliceWriter to build up a MilliSlice, checking
   // *** that everything looks good as we go.
 
-  lbne::MilliSliceWriter millislice_writer(&work_buffer[0], MILLISLICE_BUFFER_SIZE);
-  BOOST_REQUIRE_EQUAL(millislice_writer.size(), sizeof(lbne::MilliSlice::Header));
+  dune::MilliSliceWriter millislice_writer(&work_buffer[0], MILLISLICE_BUFFER_SIZE);
+  BOOST_REQUIRE_EQUAL(millislice_writer.size(), sizeof(dune::MilliSlice::Header));
   BOOST_REQUIRE_EQUAL(millislice_writer.microSliceCount(), 0);
   microslice_ptr = millislice_writer.microSlice(0);
   BOOST_REQUIRE(microslice_ptr.get() == 0);
@@ -63,13 +63,13 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
   microslice_writer_ptr = millislice_writer.reserveMicroSlice(MICROSLICE_BUFFER_SIZE);
   BOOST_REQUIRE(microslice_writer_ptr.get() != 0);
   BOOST_REQUIRE_EQUAL(millislice_writer.size(),
-                      sizeof(lbne::MilliSlice::Header) + MICROSLICE_BUFFER_SIZE);
+                      sizeof(dune::MilliSlice::Header) + MICROSLICE_BUFFER_SIZE);
   BOOST_REQUIRE_EQUAL(millislice_writer.microSliceCount(), 1);
   if (microslice_writer_ptr.get() != 0) {
     nanoslice_writer_ptr = microslice_writer_ptr->reserveNanoSlice(NANOSLICE_BUFFER_SIZE);
     BOOST_REQUIRE(nanoslice_writer_ptr.get() != 0);
     BOOST_REQUIRE_EQUAL(microslice_writer_ptr->size(),
-                        sizeof(lbne::MicroSlice::Header) + NANOSLICE_BUFFER_SIZE);
+                        sizeof(dune::MicroSlice::Header) + NANOSLICE_BUFFER_SIZE);
     BOOST_REQUIRE_EQUAL(microslice_writer_ptr->nanoSliceCount(), 1);
     if (nanoslice_writer_ptr.get() != 0) {
       nanoslice_writer_ptr->setChannelNumber(CHANNEL_NUMBER);
@@ -79,15 +79,15 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
 
   microslice_writer_ptr = millislice_writer.reserveMicroSlice(MICROSLICE_BUFFER_SIZE);
   BOOST_REQUIRE(microslice_writer_ptr.get() != 0);
-  BOOST_REQUIRE_EQUAL(millislice_writer.size(), sizeof(lbne::MilliSlice::Header) +
-                      sizeof(lbne::MicroSlice::Header) + sizeof(lbne::NanoSlice::Header) +
+  BOOST_REQUIRE_EQUAL(millislice_writer.size(), sizeof(dune::MilliSlice::Header) +
+                      sizeof(dune::MicroSlice::Header) + sizeof(dune::NanoSlice::Header) +
                       sizeof(uint16_t) + MICROSLICE_BUFFER_SIZE);
   BOOST_REQUIRE_EQUAL(millislice_writer.microSliceCount(), 2);
   if (microslice_writer_ptr.get() != 0) {
     nanoslice_writer_ptr = microslice_writer_ptr->reserveNanoSlice(NANOSLICE_BUFFER_SIZE);
     BOOST_REQUIRE(nanoslice_writer_ptr.get() != 0);
     BOOST_REQUIRE_EQUAL(microslice_writer_ptr->size(),
-                        sizeof(lbne::MicroSlice::Header) + NANOSLICE_BUFFER_SIZE);
+                        sizeof(dune::MicroSlice::Header) + NANOSLICE_BUFFER_SIZE);
     BOOST_REQUIRE_EQUAL(microslice_writer_ptr->nanoSliceCount(), 1);
     if (nanoslice_writer_ptr.get() != 0) {
       nanoslice_writer_ptr->setChannelNumber(CHANNEL_NUMBER+1);
@@ -96,8 +96,8 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
 
     nanoslice_writer_ptr = microslice_writer_ptr->reserveNanoSlice(NANOSLICE_BUFFER_SIZE);
     BOOST_REQUIRE(nanoslice_writer_ptr.get() != 0);
-    BOOST_REQUIRE_EQUAL(microslice_writer_ptr->size(), sizeof(lbne::MicroSlice::Header) +
-                        sizeof(lbne::MicroSlice::Header) + sizeof(uint16_t) +
+    BOOST_REQUIRE_EQUAL(microslice_writer_ptr->size(), sizeof(dune::MicroSlice::Header) +
+                        sizeof(dune::MicroSlice::Header) + sizeof(uint16_t) +
                         NANOSLICE_BUFFER_SIZE);
     BOOST_REQUIRE_EQUAL(microslice_writer_ptr->nanoSliceCount(), 2);
     if (nanoslice_writer_ptr.get() != 0) {
@@ -108,15 +108,15 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
 
   microslice_writer_ptr = millislice_writer.reserveMicroSlice(MICROSLICE_BUFFER_SIZE);
   BOOST_REQUIRE(microslice_writer_ptr.get() != 0);
-  BOOST_REQUIRE_EQUAL(millislice_writer.size(), sizeof(lbne::MilliSlice::Header) +
-                      2*sizeof(lbne::MicroSlice::Header) + 3*sizeof(lbne::NanoSlice::Header) +
+  BOOST_REQUIRE_EQUAL(millislice_writer.size(), sizeof(dune::MilliSlice::Header) +
+                      2*sizeof(dune::MicroSlice::Header) + 3*sizeof(dune::NanoSlice::Header) +
                       3*sizeof(uint16_t) + MICROSLICE_BUFFER_SIZE);
   BOOST_REQUIRE_EQUAL(millislice_writer.microSliceCount(), 3);
   if (microslice_writer_ptr.get() != 0) {
     nanoslice_writer_ptr = microslice_writer_ptr->reserveNanoSlice(NANOSLICE_BUFFER_SIZE);
     BOOST_REQUIRE(nanoslice_writer_ptr.get() != 0);
     BOOST_REQUIRE_EQUAL(microslice_writer_ptr->size(),
-                        sizeof(lbne::MicroSlice::Header) + NANOSLICE_BUFFER_SIZE);
+                        sizeof(dune::MicroSlice::Header) + NANOSLICE_BUFFER_SIZE);
     BOOST_REQUIRE_EQUAL(microslice_writer_ptr->nanoSliceCount(), 1);
     if (nanoslice_writer_ptr.get() != 0) {
       nanoslice_writer_ptr->setChannelNumber(CHANNEL_NUMBER+2);
@@ -130,26 +130,26 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
 
   int32_t size_diff = millislice_writer.finalize();
   BOOST_REQUIRE_EQUAL(size_diff, MILLISLICE_BUFFER_SIZE -
-                      sizeof(lbne::MilliSlice::Header) -
-                      3*sizeof(lbne::MicroSlice::Header) - 
-                      4*sizeof(lbne::NanoSlice::Header) - 5*sizeof(uint16_t));
+                      sizeof(dune::MilliSlice::Header) -
+                      3*sizeof(dune::MicroSlice::Header) - 
+                      4*sizeof(dune::NanoSlice::Header) - 5*sizeof(uint16_t));
   microslice_writer_ptr = millislice_writer.reserveMicroSlice(MICROSLICE_BUFFER_SIZE);
   BOOST_REQUIRE(microslice_writer_ptr.get() == 0);
 
   // *** Now we construct an instance of a read-only MicroSlice from
   // *** the fragment and verify that everything still looks good
 
-  lbne::MilliSlice millislice(&work_buffer[0]);
-  BOOST_REQUIRE_EQUAL(millislice.size(), sizeof(lbne::MilliSlice::Header) +
-                      3*sizeof(lbne::MicroSlice::Header) +
-                      4*sizeof(lbne::NanoSlice::Header) + 5*sizeof(uint16_t));
+  dune::MilliSlice millislice(&work_buffer[0]);
+  BOOST_REQUIRE_EQUAL(millislice.size(), sizeof(dune::MilliSlice::Header) +
+                      3*sizeof(dune::MicroSlice::Header) +
+                      4*sizeof(dune::NanoSlice::Header) + 5*sizeof(uint16_t));
   BOOST_REQUIRE_EQUAL(millislice.microSliceCount(), 3);
 
   microslice_ptr = millislice.microSlice(1);
   BOOST_REQUIRE(microslice_ptr.get() != 0);
   if (microslice_ptr.get() != 0) {
     BOOST_REQUIRE_EQUAL(microslice_ptr->nanoSliceCount(), 2);
-    std::unique_ptr<lbne::NanoSlice> nanoslice_ptr = microslice_ptr->nanoSlice(1);
+    std::unique_ptr<dune::NanoSlice> nanoslice_ptr = microslice_ptr->nanoSlice(1);
     BOOST_REQUIRE(nanoslice_ptr.get() != 0);
     if (nanoslice_ptr.get() != 0) {
       BOOST_REQUIRE_EQUAL(nanoslice_ptr->sampleCount(), 1);
@@ -162,7 +162,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
   BOOST_REQUIRE(microslice_ptr.get() != 0);
   if (microslice_ptr.get() != 0) {
     BOOST_REQUIRE_EQUAL(microslice_ptr->nanoSliceCount(), 1);
-    std::unique_ptr<lbne::NanoSlice> nanoslice_ptr = microslice_ptr->nanoSlice(0);
+    std::unique_ptr<dune::NanoSlice> nanoslice_ptr = microslice_ptr->nanoSlice(0);
     BOOST_REQUIRE(nanoslice_ptr.get() != 0);
     if (nanoslice_ptr.get() != 0) {
       BOOST_REQUIRE_EQUAL(nanoslice_ptr->sampleCount(), 2);

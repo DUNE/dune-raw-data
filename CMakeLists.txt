@@ -2,7 +2,7 @@
 #  darkart main build file
 #
 #  cd .../path/to/build/directory
-#  source ../path/to/lbne-raw-data/ups/setup_for_development
+#  source ../path/to/dune-raw-data/ups/setup_for_development
 #  buildtool
 # ======================================================================
 
@@ -10,7 +10,7 @@
 # use cmake 2.8 or later
 cmake_minimum_required (VERSION 2.8)
 
-project(lbne_raw_data)
+project(dune_raw_data)
 
 # cetbuildtools contains our cmake modules
 SET ( CETBUILDTOOLS_VERSION $ENV{CETBUILDTOOLS_VERSION} )
@@ -73,7 +73,7 @@ include(BuildPlugins)
 include(CetTest)
 
 # source
-add_subdirectory(lbne-raw-data)
+add_subdirectory(dune-raw-data)
 
 # testing
 add_subdirectory(test)

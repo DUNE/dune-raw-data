@@ -1,4 +1,4 @@
-#include "lbne-raw-data/Overlays/NanoSliceWriter.hh"
+#include "dune-raw-data/Overlays/NanoSliceWriter.hh"
 #include <vector>
 #include <stdint.h>
 
@@ -40,8 +40,8 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
   // *** Use a NanoSliceWriter to build up a NanoSlice, checking
   // *** that everything looks good as we go.
 
-  lbne::NanoSliceWriter ns_writer(&work_buffer[0], BUFFER_SIZE, 0);
-  BOOST_REQUIRE_EQUAL(ns_writer.size(), sizeof(lbne::NanoSlice::Header));
+  dune::NanoSliceWriter ns_writer(&work_buffer[0], BUFFER_SIZE, 0);
+  BOOST_REQUIRE_EQUAL(ns_writer.size(), sizeof(dune::NanoSlice::Header));
   BOOST_REQUIRE_EQUAL(ns_writer.sampleCount(), 0);
   BOOST_REQUIRE_EQUAL(ns_writer.channelNumber(), 0);
   BOOST_REQUIRE(! ns_writer.sampleValue(0, value));
@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
 
   BOOST_REQUIRE(ns_writer.addSample(SAMPLE1));
   BOOST_REQUIRE_EQUAL(ns_writer.size(),
-                      sizeof(lbne::NanoSlice::Header) + sizeof(uint16_t));
+                      sizeof(dune::NanoSlice::Header) + sizeof(uint16_t));
   BOOST_REQUIRE_EQUAL(ns_writer.sampleCount(), 1);
   BOOST_REQUIRE(ns_writer.sampleValue(0, value));
   BOOST_REQUIRE_EQUAL(value, SAMPLE1);
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
 
   BOOST_REQUIRE(ns_writer.addSample(SAMPLE2));
   BOOST_REQUIRE_EQUAL(ns_writer.size(),
-                      sizeof(lbne::NanoSlice::Header) + 2*sizeof(uint16_t));
+                      sizeof(dune::NanoSlice::Header) + 2*sizeof(uint16_t));
   BOOST_REQUIRE_EQUAL(ns_writer.sampleCount(), 2);
   BOOST_REQUIRE(ns_writer.sampleValue(0, value));
   BOOST_REQUIRE_EQUAL(value, SAMPLE1);
@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
 
   BOOST_REQUIRE(ns_writer.addSample(SAMPLE3));
   BOOST_REQUIRE_EQUAL(ns_writer.size(),
-                      sizeof(lbne::NanoSlice::Header) + 3*sizeof(uint16_t));
+                      sizeof(dune::NanoSlice::Header) + 3*sizeof(uint16_t));
   BOOST_REQUIRE_EQUAL(ns_writer.sampleCount(), 3);
   BOOST_REQUIRE(ns_writer.sampleValue(0, value));
   BOOST_REQUIRE_EQUAL(value, SAMPLE1);
@@ -85,7 +85,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
 
   BOOST_REQUIRE(ns_writer.addSample(SAMPLE4));
   BOOST_REQUIRE_EQUAL(ns_writer.size(),
-                      sizeof(lbne::NanoSlice::Header) + 4*sizeof(uint16_t));
+                      sizeof(dune::NanoSlice::Header) + 4*sizeof(uint16_t));
   BOOST_REQUIRE_EQUAL(ns_writer.sampleCount(), 4);
   BOOST_REQUIRE(ns_writer.sampleValue(0, value));
   BOOST_REQUIRE_EQUAL(value, SAMPLE1);
@@ -103,15 +103,15 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
 
   int32_t size_diff = ns_writer.finalize();
   BOOST_REQUIRE_EQUAL(size_diff, BUFFER_SIZE -
-                      sizeof(lbne::NanoSlice::Header) - 4*sizeof(uint16_t));
+                      sizeof(dune::NanoSlice::Header) - 4*sizeof(uint16_t));
   BOOST_REQUIRE(! ns_writer.addSample(SAMPLE5));
 
   // *** Now let's construct an instance of a read-only NanoSlice from
   // *** the work buffer and verify that everything still looks good
 
-  lbne::NanoSlice nslice(&work_buffer[0]);
+  dune::NanoSlice nslice(&work_buffer[0]);
   BOOST_REQUIRE_EQUAL(nslice.size(),
-                      sizeof(lbne::NanoSlice::Header) + 4*sizeof(uint16_t));
+                      sizeof(dune::NanoSlice::Header) + 4*sizeof(uint16_t));
   BOOST_REQUIRE_EQUAL(nslice.channelNumber(), CHANNEL_NUMBER);
   BOOST_REQUIRE_EQUAL(nslice.sampleCount(), 4);
   BOOST_REQUIRE(nslice.sampleValue(0, value));
@@ -137,15 +137,15 @@ BOOST_AUTO_TEST_CASE(TinyBufferTest)
 
   // *** Test a buffer that is too small for even the header
 
-  lbne::NanoSliceWriter ns_writer(&work_buffer[0], SMALL_SIZE1, CHANNEL_NUMBER);
-  BOOST_REQUIRE_EQUAL(ns_writer.size(), sizeof(lbne::NanoSlice::Header));
+  dune::NanoSliceWriter ns_writer(&work_buffer[0], SMALL_SIZE1, CHANNEL_NUMBER);
+  BOOST_REQUIRE_EQUAL(ns_writer.size(), sizeof(dune::NanoSlice::Header));
   BOOST_REQUIRE_EQUAL(ns_writer.sampleCount(), 0);
   BOOST_REQUIRE_EQUAL(ns_writer.channelNumber(), CHANNEL_NUMBER);
   BOOST_REQUIRE(! ns_writer.sampleValue(0, value));
   BOOST_REQUIRE(! ns_writer.sampleValue(999, value));
 
   BOOST_REQUIRE(! ns_writer.addSample(SAMPLE1));
-  BOOST_REQUIRE_EQUAL(ns_writer.size(), sizeof(lbne::NanoSlice::Header));
+  BOOST_REQUIRE_EQUAL(ns_writer.size(), sizeof(dune::NanoSlice::Header));
   BOOST_REQUIRE_EQUAL(ns_writer.sampleCount(), 0);
   BOOST_REQUIRE_EQUAL(ns_writer.channelNumber(), CHANNEL_NUMBER);
   BOOST_REQUIRE(! ns_writer.sampleValue(0, value));
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE(SmallBufferTest)
 {
   const uint16_t CHANNEL_NUMBER = 456;
   const uint32_t BUFFER_SIZE = 4096;
-  const uint32_t SMALL_SIZE2 = sizeof(lbne::NanoSlice::Header) + sizeof(uint16_t) + 1;
+  const uint32_t SMALL_SIZE2 = sizeof(dune::NanoSlice::Header) + sizeof(uint16_t) + 1;
   const uint16_t SAMPLE1 = 0x1234;
   const uint16_t SAMPLE2 = 0xc3c3;
   std::vector<uint8_t> work_buffer(BUFFER_SIZE);
@@ -167,8 +167,8 @@ BOOST_AUTO_TEST_CASE(SmallBufferTest)
 
   // *** Test a buffer that is too small for two values
 
-  lbne::NanoSliceWriter ns_writer(&work_buffer[0], SMALL_SIZE2, CHANNEL_NUMBER);
-  BOOST_REQUIRE_EQUAL(ns_writer.size(), sizeof(lbne::NanoSlice::Header));
+  dune::NanoSliceWriter ns_writer(&work_buffer[0], SMALL_SIZE2, CHANNEL_NUMBER);
+  BOOST_REQUIRE_EQUAL(ns_writer.size(), sizeof(dune::NanoSlice::Header));
   BOOST_REQUIRE_EQUAL(ns_writer.sampleCount(), 0);
   BOOST_REQUIRE_EQUAL(ns_writer.channelNumber(), CHANNEL_NUMBER);
   BOOST_REQUIRE(! ns_writer.sampleValue(0, value));
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(SmallBufferTest)
 
   BOOST_REQUIRE(ns_writer.addSample(SAMPLE1));
   BOOST_REQUIRE_EQUAL(ns_writer.size(),
-                      sizeof(lbne::NanoSlice::Header) + sizeof(uint16_t));
+                      sizeof(dune::NanoSlice::Header) + sizeof(uint16_t));
   BOOST_REQUIRE_EQUAL(ns_writer.sampleCount(), 1);
   BOOST_REQUIRE(ns_writer.sampleValue(0, value));
   BOOST_REQUIRE_EQUAL(value, SAMPLE1);
@@ -185,7 +185,7 @@ BOOST_AUTO_TEST_CASE(SmallBufferTest)
 
   BOOST_REQUIRE(! ns_writer.addSample(SAMPLE2));
   BOOST_REQUIRE_EQUAL(ns_writer.size(),
-                      sizeof(lbne::NanoSlice::Header) + sizeof(uint16_t));
+                      sizeof(dune::NanoSlice::Header) + sizeof(uint16_t));
   BOOST_REQUIRE_EQUAL(ns_writer.sampleCount(), 1);
   BOOST_REQUIRE(ns_writer.sampleValue(0, value));
   BOOST_REQUIRE_EQUAL(value, SAMPLE1);
@@ -208,8 +208,8 @@ BOOST_AUTO_TEST_CASE(CopyTest)
   std::vector<uint8_t> work_buffer(BUFFER_SIZE);
   uint16_t value;
 
-  lbne::NanoSliceWriter ns_writer(&work_buffer[0], BUFFER_SIZE, CHANNEL_NUMBER);
-  BOOST_REQUIRE_EQUAL(ns_writer.size(), sizeof(lbne::NanoSlice::Header));
+  dune::NanoSliceWriter ns_writer(&work_buffer[0], BUFFER_SIZE, CHANNEL_NUMBER);
+  BOOST_REQUIRE_EQUAL(ns_writer.size(), sizeof(dune::NanoSlice::Header));
   BOOST_REQUIRE_EQUAL(ns_writer.sampleCount(), 0);
   BOOST_REQUIRE_EQUAL(ns_writer.channelNumber(), CHANNEL_NUMBER);
   BOOST_REQUIRE(ns_writer.addSample(SAMPLE1));
@@ -220,9 +220,9 @@ BOOST_AUTO_TEST_CASE(CopyTest)
 
   int32_t size_diff = ns_writer.finalize();
   BOOST_REQUIRE_EQUAL(size_diff, BUFFER_SIZE -
-                      sizeof(lbne::NanoSlice::Header) - 5*sizeof(uint16_t));
+                      sizeof(dune::NanoSlice::Header) - 5*sizeof(uint16_t));
 
-  lbne::NanoSliceWriter ns_writer_copy = ns_writer;
+  dune::NanoSliceWriter ns_writer_copy = ns_writer;
   BOOST_REQUIRE_EQUAL(ns_writer_copy.sampleCount(), 5);
   BOOST_REQUIRE(ns_writer_copy.sampleValue(0, value));
   BOOST_REQUIRE_EQUAL(value, SAMPLE1);
@@ -236,10 +236,10 @@ BOOST_AUTO_TEST_CASE(CopyTest)
   BOOST_REQUIRE_EQUAL(value, SAMPLE5);
   BOOST_REQUIRE(! ns_writer.addSample(SAMPLE5));
 
-  lbne::NanoSlice nslice(&work_buffer[0]);
-  lbne::NanoSlice nslice_copy = nslice;
+  dune::NanoSlice nslice(&work_buffer[0]);
+  dune::NanoSlice nslice_copy = nslice;
   BOOST_REQUIRE_EQUAL(nslice_copy.size(),
-                      sizeof(lbne::NanoSlice::Header) + 5*sizeof(uint16_t));
+                      sizeof(dune::NanoSlice::Header) + 5*sizeof(uint16_t));
   BOOST_REQUIRE_EQUAL(nslice_copy.channelNumber(), CHANNEL_NUMBER);
   BOOST_REQUIRE_EQUAL(nslice_copy.sampleCount(), 5);
   BOOST_REQUIRE(nslice_copy.sampleValue(0, value));
@@ -266,8 +266,8 @@ BOOST_AUTO_TEST_CASE(BufferReuseTest)
   std::vector<uint8_t> work_buffer(BUFFER_SIZE);
   uint16_t value;
 
-  lbne::NanoSliceWriter ns_writer(&work_buffer[0], BUFFER_SIZE, CHANNEL_NUMBER);
-  BOOST_REQUIRE_EQUAL(ns_writer.size(), sizeof(lbne::NanoSlice::Header));
+  dune::NanoSliceWriter ns_writer(&work_buffer[0], BUFFER_SIZE, CHANNEL_NUMBER);
+  BOOST_REQUIRE_EQUAL(ns_writer.size(), sizeof(dune::NanoSlice::Header));
   BOOST_REQUIRE_EQUAL(ns_writer.sampleCount(), 0);
   BOOST_REQUIRE_EQUAL(ns_writer.channelNumber(), CHANNEL_NUMBER);
   BOOST_REQUIRE(ns_writer.addSample(SAMPLE1));
@@ -276,13 +276,13 @@ BOOST_AUTO_TEST_CASE(BufferReuseTest)
 
   int32_t size_diff = ns_writer.finalize();
   BOOST_REQUIRE_EQUAL(size_diff, BUFFER_SIZE -
-                      sizeof(lbne::NanoSlice::Header) - 3*sizeof(uint16_t));
+                      sizeof(dune::NanoSlice::Header) - 3*sizeof(uint16_t));
 
   // *** If we reuse a buffer, then all history of the earlier NanoSlice
   // *** should be gone
 
-  lbne::NanoSliceWriter ns_writer2(&work_buffer[0], BUFFER_SIZE, 0);
-  BOOST_REQUIRE_EQUAL(ns_writer2.size(), sizeof(lbne::NanoSlice::Header));
+  dune::NanoSliceWriter ns_writer2(&work_buffer[0], BUFFER_SIZE, 0);
+  BOOST_REQUIRE_EQUAL(ns_writer2.size(), sizeof(dune::NanoSlice::Header));
   BOOST_REQUIRE_EQUAL(ns_writer2.sampleCount(), 0);
   BOOST_REQUIRE_EQUAL(ns_writer2.channelNumber(), 0);
   BOOST_REQUIRE(ns_writer2.addSample(SAMPLE3));

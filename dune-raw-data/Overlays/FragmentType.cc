@@ -5,10 +5,6 @@
 #include <string>
 #include <vector>
 
-namespace {
-  static std::vector<std::string> const
-  names { "MISSED", "TPC", "PHOTON", "TRIGGER", "TOY1", "TOY2", "UNKNOWN" };
-}
 
 dune::FragmentType
 dune::toFragmentType(std::string t_string)

@@ -4,6 +4,9 @@
 
 namespace dune {
 
+  static std::vector<std::string> const
+  names { "MISSED", "TPC", "PHOTON", "TRIGGER", "TOY1", "TOY2", "UNKNOWN" };
+
   namespace detail {
     enum FragmentType : artdaq::Fragment::type_t
     { MISSED = artdaq::Fragment::FirstUserFragmentType,

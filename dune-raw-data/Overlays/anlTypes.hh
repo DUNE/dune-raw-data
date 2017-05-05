@@ -57,8 +57,10 @@ enum statusConstants {
    unsigned long endTime;
    unsigned int	length;				// Packet Length in unsigned ints (including header)
    unsigned int nTriggers;
+   unsigned int triggerType;
    
-   static const size_t sizeInUInts = 6;
+   static const size_t sizeInUInts = 7;
+   
  };
 
   //Structure defined by hardware, i.e. hardware output can be written straight into this struct

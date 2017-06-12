@@ -1,7 +1,7 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
 parent dune_raw_data	v1_05_00
-defaultqual	e14:online:s46
+defaultqual	e14:online:s48
 
 # These optional lines define the installed directories where
 # headers, libraries, and executables will be found
@@ -35,13 +35,14 @@ end_product_list
 # s43 - with art v2_05_00
 # s44 - with art v2_04_01
 # s46 - with art v2_06_01
+# s48 - with art v2_06_03
 
 # -nq- here means there is no qualifier
 # a "-" here means the dependent product is not required by the parent and will not be setup
 
 qualifier	        artdaq_core      notes
-online:e14:s46:debug	e14:s46:debug
-online:e14:s46:prof	e14:s46:prof
+online:e14:s48:debug	e14:s48:debug
+online:e14:s48:prof	e14:s48:prof
 
 # Preserve tabs and formatting in emacs and vi / vim:
 

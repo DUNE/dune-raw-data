@@ -14,7 +14,7 @@ install(FILES ${channel_map_file} DESTINATION ${${product}_file_dir})
 # Add plugin for each service
 
 if( DEFINED ENV{CANVAS_DIR} )
-  set( persistency_lib art_Utilities canvas_Utilities)
+  set( persistency_lib art_Utilities canvas)
 else()
   set( persistency_lib art_Utilities)
 endif()
@@ -26,7 +26,7 @@ simple_plugin(ChannelMapService "service"
 	      ${SQLITE3}
 	      ${MF_MESSAGELOGGER}
 	      ${MF_UTILITIES}
-	      ${CETLIB}
+	      ${CETLIB_LIBS}
 	      ${ROOT_BASIC_LIB_LIST}
 )
 

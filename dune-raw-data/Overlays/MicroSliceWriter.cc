@@ -1,4 +1,5 @@
 #include "dune-raw-data/Overlays/MicroSliceWriter.hh"
+#include "cetlib/exception.h"
 
 dune::MicroSliceWriter::MicroSliceWriter(uint8_t* address, uint32_t max_size_bytes) :
   MicroSlice(address), max_size_bytes_(max_size_bytes)
@@ -17,7 +18,7 @@ dune::MicroSliceWriter::reserveNanoSlice(uint32_t ns_max_bytes)
 
   // test if this new NanoSlice could overflow our maximum size
   if ((size() + ns_max_bytes) > max_size_bytes_) {
-    return false;
+    throw cet::exception("MicroSliceWriter") << "Slice overflow error";
   }
 
   // create the next NanoSlice in our buffer, and update our

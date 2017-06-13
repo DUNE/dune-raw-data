@@ -53,10 +53,19 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
   BOOST_REQUIRE(microslice_ptr.get() == 0);
 
   // test a request for a microslice that is too large
-  microslice_writer_ptr =
-    millislice_writer.reserveMicroSlice(MILLISLICE_BUFFER_WORDS *
-                                        sizeof(artdaq::RawDataType));
-  BOOST_REQUIRE(microslice_writer_ptr.get() == 0);
+
+  {
+    bool threw_exception = false;
+
+    try {
+      millislice_writer.reserveMicroSlice(MILLISLICE_BUFFER_WORDS *
+					  +                                         sizeof(artdaq::RawDataType));
+    } catch (const cet::exception& ) {
+      threw_exception = true;
+    }
+
+    BOOST_REQUIRE_EQUAL(threw_exception, true);
+  }
 
   // resume the building of the microslices in the millislice
   microslice_writer_ptr = millislice_writer.reserveMicroSlice(MICROSLICE_BUFFER_SIZE);
@@ -132,8 +141,18 @@ BOOST_AUTO_TEST_CASE(BaselineTest)
                       sizeof(dune::MilliSlice::Header) -
                       3*sizeof(dune::MicroSlice::Header) - 
                       4*sizeof(dune::NanoSlice::Header) - 5*sizeof(uint16_t));
-  microslice_writer_ptr = millislice_writer.reserveMicroSlice(MICROSLICE_BUFFER_SIZE);
-  BOOST_REQUIRE(microslice_writer_ptr.get() == 0);
+
+  {
+    bool threw_exception = false;
+    
+    try {
+      millislice_writer.reserveMicroSlice(MICROSLICE_BUFFER_SIZE);
+    } catch (const cet::exception& ) {
+      threw_exception = true;
+    }
+    
+    BOOST_REQUIRE_EQUAL(threw_exception, true);
+  }
 
   // *** Now we construct an instance of a read-only MicroSlice from
   // *** the fragment and verify that everything still looks good

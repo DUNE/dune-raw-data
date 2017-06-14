@@ -1,4 +1,5 @@
 #include "dune-raw-data/Overlays/MilliSliceWriter.hh"
+#include "cetlib/exception.h"
 
 dune::MilliSliceWriter::
 MilliSliceWriter(uint8_t* address, uint32_t max_size_bytes) :
@@ -18,7 +19,7 @@ dune::MilliSliceWriter::reserveMicroSlice(uint32_t ms_max_bytes)
 
   // test if this new MicroSlice could overflow our maximum size
   if ((size() + ms_max_bytes) > max_size_bytes_) {
-    return false;
+    throw cet::exception("MilliSliceWriter") << "Slice overflow error";
   }
 
   // create the next MicroSlice in our buffer, and update our

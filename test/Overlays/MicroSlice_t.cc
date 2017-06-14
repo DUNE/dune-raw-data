@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <memory>
 
+#include "cetlib/exception.h"
 
 // JCF, 9/29/14
 
@@ -182,8 +183,18 @@ BOOST_AUTO_TEST_CASE(MultipleNanoSliceTest)
   int32_t size_diff = ms_writer.finalize();
   BOOST_REQUIRE_EQUAL(size_diff, MS_BUFFER_SIZE - sizeof(dune::MicroSlice::Header) -
                       3*sizeof(dune::NanoSlice::Header) - 10*sizeof(uint16_t));
-  ns_writer_ptr = ms_writer.reserveNanoSlice(NS_BUFFER_SIZE);
-  BOOST_REQUIRE(ns_writer_ptr.get() == 0);
+
+  {
+    bool threw_exception = false;
+
+    try {
+      ms_writer.reserveNanoSlice(NS_BUFFER_SIZE);
+    } catch (const cet::exception& ) {
+      threw_exception = true;
+    }
+    
+    BOOST_REQUIRE_EQUAL(threw_exception, true);
+  }
 
   // *** Now we construct an instance of a read-only MicroSlice from
   // *** the work buffer and verify that everything still looks good

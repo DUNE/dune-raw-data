@@ -8,8 +8,26 @@
 #include <ostream>
 #include <vector>
 
-// Implementation of "TimingFragment", an artdaq::Fragment overlay class
-// used for pedagogical purposes
+// Implementation of "TimingFragment".
+//
+// From Dave Newbold mail May 2017
+// The data words (uint32_t) given by the hardware are
+//    d(0) <= X"aa000600";          -- DAQ word 0 (cookie)
+//    d(1) <= X"0000000" & scmd;    -- DAQ word 1 (scmd = trigger type, tcmd = the reserved zero bits)
+//    d(2) <= tstamp(31 downto 0);  -- DAQ word 2 (tstampl = low bits of timestamp)
+//    d(3) <= tstamp(63 downto 32); -- DAQ word 3 (tstamph = high bits of time stamp)
+//    d(4) <= evtctr;               -- DAQ word 4 (evtctr = event counter)
+//    d(5) <= X"000000000";         -- Dummy checksum, not implemented yet (cksum)
+//
+// These are stored in the fragment exactly as received and are manipulated
+// to be readable by the getters in this class.
+//
+// The definition of the timing commands (scmd) in the DAQ word 1 are
+//  0: spill_start
+//  1: spill_end
+//  2: calib
+//  3: trigger
+//  4: time_sync
 
 namespace dune {
   class TimingFragment;
@@ -19,142 +37,58 @@ namespace dune {
 }
 
 class dune::TimingFragment {
-  public:
+  // There is no metadata in the timing block
 
-  // The TimingFragment represents its data through the adc_t type, which
-  // is a typedef of an unsigned 16-bit integer. Note that since there
-  // are two types of TimingFragment ("TOY1" and "TOY2", declared in
-  // FragmentType.hh), the ADC type needs to be large enough to hold
-  // the ADC count with the highest number of bits.
-
-  typedef uint16_t adc_t;
-
-  // The "Metadata" struct is used to store info primarily related to
-  // the upstream hardware environment from where the fragment came
-
-  // "data_t" is a typedef of the fundamental unit of data the
-  // metadata structure thinks of itself as consisting of; it can give
-  // its size via the static "size_words" variable (
-  // TimingFragment::Metadata::size_words )
-
-  struct Metadata {
-
-    typedef uint32_t data_t;
-
-    data_t board_serial_number : 16;
-    data_t num_adc_bits : 8;
-    data_t unused : 8; // 16 + 8 + 8 == 32 bits
-    
-    static size_t const size_words = 1ul; // Units of Metadata::data_t
-  };
-
-  static_assert (sizeof (Metadata) == Metadata::size_words * sizeof (Metadata::data_t), "TimingFragment::Metadata size changed");
-
-
-  // The "Header" struct contains "metadata" specific to the fragment
-  // which is not hardware-related
-
-  // Header::data_t -- not to be confused with Metadata::data_t ! --
-  // describes the standard size of a data type not just for the
-  // header data, but ALSO the physics data beyond it; the size of the
-  // header in units of Header::data_t is given by "size_words", and
-  // the size of the fragment beyond the header in units of
-  // Header::data_t is given by "event_size"
-
-  // Notice only the first 28 bits of the first 32-bit unsigned
-  // integer in the Header is used to hold the event_size ; this means
-  // that you can't represent a fragment larger than 2**28 units of
-  // data_t, or 1,073,741,824 bytes
-
-  struct Header {
-    typedef uint32_t data_t;
-
-    typedef uint32_t event_size_t;  
-    typedef uint32_t run_number_t;
-
-    event_size_t event_size : 28;
-    event_size_t unused_1   :  4;
-
-    run_number_t run_number : 32;
-
-    static size_t const size_words = 2ul; // Units of Header::data_t
-  };
-
-  static_assert (sizeof (Header) == Header::size_words * sizeof (Header::data_t), "TimingFragment::Header size changed");
-
-  // The constructor simply sets its const private member "artdaq_Fragment_"
-  // to refer to the artdaq::Fragment object
-
+  // Constructor.  This class keeps a copy of a pointer to the fragment.
+  // Basically that is how it works.
+  public: 
   TimingFragment(artdaq::Fragment const & f ) : artdaq_Fragment_(f) {}
 
-  // const getter functions for the data in the header
+  // The following structure is overlayed onto the data in the fragment, starting
+  // at the beginning.
+  struct Body {
+    uint32_t cookie  : 32;
+    uint32_t scmd    :  4;
+    uint32_t tcmd    : 28;
+    uint32_t tstampl : 32;
+    uint32_t tstamph : 32;
+    uint32_t evtctr  : 32;
+    uint32_t cksum   : 32;
 
-  Header::event_size_t hdr_event_size() const { return header_()->event_size; } 
-  Header::run_number_t hdr_run_number() const { return header_()->run_number; }
-  static constexpr size_t hdr_size_words() { return Header::size_words; }
-
-  // The number of ADC values describing data beyond the header
-  size_t total_adc_values() const {
-    return (hdr_event_size() - hdr_size_words()) * adcs_per_word_();
-  }
-
-  // Start of the ADC values, returned as a pointer to the ADC type
-  adc_t const * dataBegin() const {
-    return reinterpret_cast<adc_t const *>(header_() + 1);
-  }
-
-  // End of the ADC values, returned as a pointer to the ADC type
-  adc_t const * dataEnd() const {
-    return dataBegin() + total_adc_values();
-  }
-
-  // Functions to check if any ADC values are corrupt
-
-  // findBadADC() checks to make sure that the ADC type (adc_t) variable
-  // holding the ADC value doesn't contain bits beyond the expected
-  // range, i.e., can't be evaluated to a larger value than the max
-  // permitted ADC value
-
-  adc_t const * findBadADC(int daq_adc_bits) const {
-    return std::find_if(dataBegin(), dataEnd(), 
-			[&](adc_t const adc) -> bool { 
-			  return (adc >> daq_adc_bits); });
-  }
-
-  bool fastVerify(int daq_adc_bits) const {
-    return (findBadADC(daq_adc_bits) == dataEnd());
+    static size_t const size = 6ul;   // Units of header uint32_t
   };
 
-  // Defined in TimingFragment.cc, this throws if any ADC appears corrupt
-  void checkADCData(int daq_adc_bits) const; 
+  // Here are the getters
+  uint32_t get_cookie() const  { return body_()->cookie;  }
+  uint32_t get_scmd() const    { return body_()->scmd;    }
+  uint32_t get_tcmd() const    { return body_()->tcmd;    }
+  uint32_t get_tstampl() const { return body_()->tstampl; }
+  uint32_t get_tstamph() const { return body_()->tstamph; }
+  uint32_t get_evtctr() const  { return body_()->evtctr;  }
+  uint32_t get_cksum() const   { return body_()->cksum;   }
 
+  uint64_t get_tstamp() const { 
+     uint64_t l = body_()->tstampl;
+     uint64_t h = body_()->tstamph;
+     return (l | (h<<32));
+  } 
 
-  // Largest ADC value possible
-  size_t adc_range(int daq_adc_bits) {
-    return (1ul << daq_adc_bits );
+  static size_t size() { return Body::size; /* body_()->size; */}    
+         // This returns the constant size of the block (cureently 6 uint32_ts)
+
+protected:
+  // This function allows the getter classes below to be simple.  
+  // It is modelled after header_() in ToyFragment.hh
+  // header_() in ToyFragment.hh is protected as well.
+  Body const * body_() const {
+    return reinterpret_cast<TimingFragment::Body const *>( artdaq_Fragment_.dataBeginBytes());
   }
 
-  protected:
-
-  // Functions to translate between size (in bytes) of an ADC, size of
-  // this fragment overlay's concept of a unit of data (i.e.,
-  // Header::data_t) and size of an artdaq::Fragment's concept of a
-  // unit of data (the artdaq::Fragment::value_type).
-
-  static constexpr size_t adcs_per_word_() {
-    return sizeof(Header::data_t) / sizeof(adc_t);
-  }
-
-  // header_() simply takes the address of the start of this overlay's
-  // data (i.e., where the TimingFragment::Header object begins) and
-  // casts it as a pointer to TimingFragment::Header
-
-  Header const * header_() const {
-    return reinterpret_cast<TimingFragment::Header const *>( artdaq_Fragment_.dataBeginBytes());
-  }
+  // This asks the compiler to check if we change te format that we didn't forget to cheange the size as well
+  // However if we do change the format, we must figure out how to make this class backward compatible.
+  static_assert (sizeof (Body) == Body::size * sizeof (uint32_t), "TimingFragment::Data block size changed");
 
 private:
-
   artdaq::Fragment const & artdaq_Fragment_;
 };
 

@@ -5,7 +5,7 @@
 namespace dune {
 
   static std::vector<std::string> const
-  names { "MISSED", "TPC", "PHOTON", "TRIGGER", "TOY1", "TOY2", "UNKNOWN" };
+  names { "MISSED", "TPC", "PHOTON", "TRIGGER", "TIMING", "TOY1", "TOY2", "UNKNOWN" };
 
   namespace detail {
     enum FragmentType : artdaq::Fragment::type_t
@@ -13,6 +13,7 @@ namespace dune {
         TPC,
         PHOTON,
         TRIGGER,
+        TIMING,
         TOY1,
         TOY2,
         INVALID // Should always be last.

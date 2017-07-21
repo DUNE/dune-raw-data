@@ -61,7 +61,7 @@ find_ups_boost( v1_50_0 filesystem
                         program_options
                         unit_test_framework
  )
-find_ups_product( TRACE v3_07_00 )
+
 # have to make sure cmake doesn't select the system libraries
 # define libsigc
 cet_find_library( SIGC    NAMES sigc-2.0  PATHS ENV LIBSIGCPP_LIB NO_DEFAULT_PATH )

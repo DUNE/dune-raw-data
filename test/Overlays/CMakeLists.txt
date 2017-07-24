@@ -1,21 +1,21 @@
 
 
-cet_test(NanoSlice_t USE_BOOST_UNIT
+cet_test(DUNE_NanoSlice_t USE_BOOST_UNIT
   LIBRARIES dune-raw-data_Overlays 
   ${ARTDAQ-CORE_DATA}
 )
 
-cet_test(MicroSlice_t USE_BOOST_UNIT
+cet_test(DUNE_MicroSlice_t USE_BOOST_UNIT
   LIBRARIES dune-raw-data_Overlays
   ${ARTDAQ-CORE_DATA}
 )
 
-cet_test(MilliSlice_t USE_BOOST_UNIT
+cet_test(DUNE_MilliSlice_t USE_BOOST_UNIT
   LIBRARIES dune-raw-data_Overlays
   ${ARTDAQ-CORE_DATA}
 )
 
-cet_test(MilliSliceFragment_t USE_BOOST_UNIT
+cet_test(DUNE_MilliSliceFragment_t USE_BOOST_UNIT
   LIBRARIES dune-raw-data_Overlays
   ${ARTDAQ-CORE_DATA} 
 )

@@ -55,11 +55,12 @@ enum statusConstants {
  struct MillisliceHeader {
    unsigned long startTime;
    unsigned long endTime;
+   unsigned long triggerTime;
    unsigned int	length;				// Packet Length in unsigned ints (including header)
    unsigned int nTriggers;
    unsigned int triggerType;
    
-   static const size_t sizeInUInts = 7;
+   static const size_t sizeInUInts = 9;
    
  };
 

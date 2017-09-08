@@ -189,8 +189,8 @@ else
     build_type="prof"
 fi
 
-artdaq_core_version=v1_07_06
-art_version=v2_06_03
+artdaq_core_version=v1_07_08
+art_version=v2_07_03
 TRACE_version=v3_08_01
 cetbuildtools_version=v5_08_01
 

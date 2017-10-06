@@ -209,7 +209,7 @@ if ! $bad_network; then
 
     detectAndPull mrb noarch
 
-    curl -O http://scisoft.fnal.gov/scisoft/packages/artdaq_core/$artdaq_core_version/artdaq_core-${artdaq_core_version_dot}-${os}-x86_64-${equalifier}-${squalifier}-${build_type}.tar.bz2
+#    curl -O http://scisoft.fnal.gov/scisoft/packages/artdaq_core/$artdaq_core_version/artdaq_core-${artdaq_core_version_dot}-${os}-x86_64-${equalifier}-${squalifier}-${build_type}.tar.bz2
     curl -O http://scisoft.fnal.gov/scisoft/packages/cetbuildtools/$cetbuildtools_version/cetbuildtools-${cetbuildtools_version_dot}-noarch.tar.bz2
     curl -O http://scisoft.fnal.gov/scisoft/packages/TRACE/$TRACE_version/TRACE-${TRACE_version_dot}-${os}-x86_64.tar.bz2
 fi
@@ -250,6 +250,13 @@ fi
 
 
 if ! $bad_network; then
+    
+    mrb gitCheckout -t $artdaq_core_version http://cdcvs.fnal.gov/projects/artdaq-core
+
+    if [[ "$?" != "0" ]]; then
+	echo "Unable to perform checkout of artdaq-core"
+	exit 1
+    fi
 
     mrb gitCheckout $dune_raw_data_checkout_arg $dune_raw_data_repo
 

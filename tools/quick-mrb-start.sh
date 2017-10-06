@@ -1,12 +1,5 @@
 #! /bin/bash
-# quick-mrb-start.sh - Eric Flumerfelt, May 20, 2016
-# Downloads, installs, and runs the artdaq_demo as an MRB-controlled repository
-
-# JCF, Jan-1-2017
-# Modified this script to work with the lbne-artdaq package
-
-# JCF, Mar-2-2017
-# Modified it again to work with the brand new dune-artdaq package
+# Downloads and installs dune-raw-data as an MRB-controlled repository
 
 bad_network=false
 
@@ -189,9 +182,9 @@ else
     build_type="prof"
 fi
 
-artdaq_core_version=v1_07_08
+artdaq_core_version=v3_00_00
 art_version=v2_07_03
-TRACE_version=v3_08_01
+TRACE_version=v3_09_01
 cetbuildtools_version=v5_08_01
 
 artdaq_core_version_dot=$( echo $artdaq_core_version | sed -r 's/v//;s/_/./g' )

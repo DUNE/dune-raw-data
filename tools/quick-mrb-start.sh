@@ -251,7 +251,7 @@ fi
 
 if ! $bad_network; then
     
-    mrb gitCheckout -t $artdaq_core_version http://cdcvs.fnal.gov/projects/artdaq-core
+    mrb gitCheckout -t $artdaq_core_version -d artdaq_core  http://cdcvs.fnal.gov/projects/artdaq-core
 
     if [[ "$?" != "0" ]]; then
 	echo "Unable to perform checkout of artdaq-core"
@@ -266,6 +266,8 @@ if ! $bad_network; then
     fi
 
 fi
+
+sed -i -r 's/^\s*defaultqual(\s+).*/defaultqual\1'$equalifier':'$squalifier'/' artdaq_core/ups/product_deps
 
 ARTDAQ_DEMO_DIR=$Base/srcs/dune_raw_data
 cd $Base

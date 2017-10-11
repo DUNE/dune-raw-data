@@ -25,7 +25,7 @@ table_fragment_end
 product		version		optional
 artdaq_core	v3_00_00	online
 art		v2_07_03	online
-artdaq_core	v3_00_00	nu
+artdaq_core	v1_07_08	nu
 art		v2_07_03	nu
 TRACE		v3_09_01	-
 cetbuildtools	v5_08_01	-	only_for_build

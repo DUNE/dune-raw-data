@@ -182,7 +182,7 @@ else
     build_type="prof"
 fi
 
-artdaq_core_version=v3_00_00
+artdaq_core_version=v1_07_08
 art_version=v2_07_03
 TRACE_version=v3_09_01
 cetbuildtools_version=v5_08_01
@@ -199,7 +199,7 @@ cetbuildtools_version_dot=$( echo $cetbuildtools_version | sed -r 's/v//;s/_/./g
 if ! $bad_network; then
     wget http://scisoft.fnal.gov/scisoft/bundles/tools/pullProducts
     chmod +x pullProducts
-    #./pullProducts $Base/products ${os} artdaq-${artdaq_version} ${squalifier}-${equalifier} ${build_type}
+
     ./pullProducts $Base/products ${os} art-${art_version} ${equalifier} ${build_type}
 
     if [ $? -ne 0 ]; then
@@ -209,7 +209,7 @@ if ! $bad_network; then
 
     detectAndPull mrb noarch
 
-#    curl -O http://scisoft.fnal.gov/scisoft/packages/artdaq_core/$artdaq_core_version/artdaq_core-${artdaq_core_version_dot}-${os}-x86_64-${equalifier}-${squalifier}-${build_type}.tar.bz2
+    curl -O http://scisoft.fnal.gov/scisoft/packages/artdaq_core/$artdaq_core_version/artdaq_core-${artdaq_core_version_dot}-${os}-x86_64-${equalifier}-${squalifier}-${build_type}.tar.bz2
     curl -O http://scisoft.fnal.gov/scisoft/packages/cetbuildtools/$cetbuildtools_version/cetbuildtools-${cetbuildtools_version_dot}-noarch.tar.bz2
     curl -O http://scisoft.fnal.gov/scisoft/packages/TRACE/$TRACE_version/TRACE-${TRACE_version_dot}-${os}-x86_64.tar.bz2
 fi
@@ -251,12 +251,6 @@ fi
 
 if ! $bad_network; then
     
-    mrb gitCheckout -t $artdaq_core_version -d artdaq_core  http://cdcvs.fnal.gov/projects/artdaq-core
-
-    if [[ "$?" != "0" ]]; then
-	echo "Unable to perform checkout of artdaq-core"
-	exit 1
-    fi
 
     mrb gitCheckout $dune_raw_data_checkout_arg $dune_raw_data_repo
 
@@ -267,7 +261,6 @@ if ! $bad_network; then
 
 fi
 
-sed -i -r 's/^\s*defaultqual(\s+).*/defaultqual\1'$equalifier':'$squalifier'/' artdaq_core/ups/product_deps
 
 ARTDAQ_DEMO_DIR=$Base/srcs/dune_raw_data
 cd $Base

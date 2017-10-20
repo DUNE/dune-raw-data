@@ -261,6 +261,7 @@ if ! $bad_network; then
 
 fi
 
+sed -i -r '/^defaultqual/s/online/nu/' $Base/srcs/dune_raw_data/ups/product_deps
 
 ARTDAQ_DEMO_DIR=$Base/srcs/dune_raw_data
 cd $Base

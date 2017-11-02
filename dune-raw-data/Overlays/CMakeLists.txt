@@ -12,6 +12,7 @@ art_make(BASENAME_ONLY
   ${FHICLCPP}
   ${MF_MESSAGELOGGER}
   ${MF_MESSAGEUTILITIES}
+  $ENV{NETIO_LIB}/libnetio.so
   )
 
 install_headers()

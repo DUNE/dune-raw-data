@@ -1,15 +1,15 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-// Class:       ChannelMapService
+// Class:       PdChannelMapService
 // Module type: service
-// File:        ChannelMapService.h
+// File:        PdChannelMapService.h
 // Author:      Mike Wallbank (m.wallbank@sheffield.ac.uk), February 2016
 //              Based on the service written for use in LArSoft by David Adams
 //
 // Implementation of online-offline channel mapping reading from a file.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef ChannelMapService_H
-#define ChannelMapService_H
+#ifndef PdChannelMapService_H
+#define PdChannelMapService_H
 
 #include <map>
 #include <vector>
@@ -21,15 +21,18 @@
 #include "art/Framework/Services/Registry/ServiceMacros.h"
 
 namespace dune {
-  class ChannelMapService;
+  class PdChannelMapService;
 }
 
-class dune::ChannelMapService {
+class dune::PdChannelMapService {
 
 public:
 
-  ChannelMapService(fhicl::ParameterSet const& pset);
-  ChannelMapService(fhicl::ParameterSet const& pset, art::ActivityRegistry&);
+  PdChannelMapService(fhicl::ParameterSet const& pset);
+  PdChannelMapService(fhicl::ParameterSet const& pset, art::ActivityRegistry&);
+  
+  /// Map RCE fragment ID and RCE internal channel number to online channel number
+  unsigned int OnlineFromRCE(unsigned int rceID, unsigned int rceChannel) const;
 
   /// Map online to offline
   unsigned int Offline(unsigned int onlineChannel) const;
@@ -72,6 +75,7 @@ public:
 private:
  
   // Maps
+  std::map<unsigned int, std::map<unsigned int, unsigned int> > fRCEToOnline;
   std::map<unsigned int, unsigned int> fOnlineToOffline;
   std::map<unsigned int, unsigned int> fOfflineToOnline;
 
@@ -86,6 +90,6 @@ private:
 
 };
 
-DECLARE_ART_SERVICE(dune::ChannelMapService, LEGACY)
+DECLARE_ART_SERVICE(dune::PdChannelMapService, LEGACY)
 
 #endif

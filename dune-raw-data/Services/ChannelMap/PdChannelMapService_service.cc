@@ -1,14 +1,14 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-// Class:       ChannelMapService
+// Class:       PdChannelMapService
 // Module type: service
-// File:        ChannelMapService_service.cc
+// File:        PdChannelMapService_service.cc
 // Author:      Mike Wallbank (m.wallbank@sheffield.ac.uk), February 2016
 //              Based on the service written for use in LArSoft by David Adams
 //
 // Implementation of online-offline channel mapping reading from a file.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-#include "ChannelMapService.h"
+#include "PdChannelMapService.h"
 
 // Bad channel value
 unsigned int bad() {
@@ -16,7 +16,7 @@ unsigned int bad() {
   return val;
 }
 
-dune::ChannelMapService::ChannelMapService(fhicl::ParameterSet const& pset) {
+dune::PdChannelMapService::PdChannelMapService(fhicl::ParameterSet const& pset) {
 
   std::string channelMapFile = pset.get<std::string>("FileName");
 
@@ -38,6 +38,7 @@ dune::ChannelMapService::ChannelMapService(fhicl::ParameterSet const& pset) {
     unsigned int onlineChannel, rce, rcechannel, regulator, regulatorpin, asic, asicchannel, apa, plane, offlineChannel;
     std::stringstream linestream(line);
     linestream >> onlineChannel >> rce >> rcechannel >> regulator >> regulatorpin >> asic >> asicchannel >> apa >> plane >> offlineChannel;
+    fRCEToOnline[rce][rcechannel] = onlineChannel;
     fOfflineToOnline[offlineChannel] = onlineChannel;
     fOnlineToOffline[onlineChannel] = offlineChannel;
     fAPAMap[onlineChannel] = apa;
@@ -54,10 +55,22 @@ dune::ChannelMapService::ChannelMapService(fhicl::ParameterSet const& pset) {
 
 }
 
-dune::ChannelMapService::ChannelMapService(fhicl::ParameterSet const& pset, art::ActivityRegistry&) : ChannelMapService(pset) {
+dune::PdChannelMapService::PdChannelMapService(fhicl::ParameterSet const& pset, art::ActivityRegistry&) : PdChannelMapService(pset) {
 }
 
-unsigned int dune::ChannelMapService::Offline(unsigned int onlineChannel) const {
+unsigned int dune::PdChannelMapService::OnlineFromRCE(unsigned int rceID, unsigned int rceChannel) const {
+  unsigned int onlineChannel = bad();
+  if (fRCEToOnline.count(rceID) == 0 || fRCEToOnline.at(rceID).count(rceChannel) == 0) {
+    std::cout << "Error: no online channel mapped to RCE ID" << rceID << "or its internal channel " << rceChannel << std::endl;
+    throw cet::exception("RCE ID or RCE channel not found");
+  }
+  else
+    onlineChannel = fRCEToOnline.at(rceID).at(rceChannel);
+
+  return onlineChannel;  
+}
+
+unsigned int dune::PdChannelMapService::Offline(unsigned int onlineChannel) const {
 
   unsigned int offlineChannel = bad();
 
@@ -72,7 +85,7 @@ unsigned int dune::ChannelMapService::Offline(unsigned int onlineChannel) const 
 
 }
 
-unsigned int dune::ChannelMapService::Online(unsigned int offlineChannel) const {
+unsigned int dune::PdChannelMapService::Online(unsigned int offlineChannel) const {
 
   unsigned int onlineChannel = bad();
 
@@ -87,7 +100,7 @@ unsigned int dune::ChannelMapService::Online(unsigned int offlineChannel) const 
 
 }
 
-unsigned int dune::ChannelMapService::APAFromOnlineChannel(unsigned int onlineChannel) const {
+unsigned int dune::PdChannelMapService::APAFromOnlineChannel(unsigned int onlineChannel) const {
 
   if (fAPAMap.count(onlineChannel) == 0) {
     std::cout << "Error: no APA information for online channel " << onlineChannel << std::endl;
@@ -98,14 +111,14 @@ unsigned int dune::ChannelMapService::APAFromOnlineChannel(unsigned int onlineCh
 
 }
 
-unsigned int dune::ChannelMapService::APAFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdChannelMapService::APAFromOfflineChannel(unsigned int offlineChannel) const {
 
   unsigned int onlineChannel = this->Online(offlineChannel);
   return this->APAFromOnlineChannel(onlineChannel);
 
 }
 
-unsigned int dune::ChannelMapService::PlaneFromOnlineChannel(unsigned int onlineChannel) const {
+unsigned int dune::PdChannelMapService::PlaneFromOnlineChannel(unsigned int onlineChannel) const {
 
   if (fPlaneMap.count(onlineChannel) == 0) {
     std::cout << "Error: no plane information for online channel " << onlineChannel << std::endl;
@@ -116,14 +129,14 @@ unsigned int dune::ChannelMapService::PlaneFromOnlineChannel(unsigned int online
 
 }
 
-unsigned int dune::ChannelMapService::PlaneFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdChannelMapService::PlaneFromOfflineChannel(unsigned int offlineChannel) const {
 
   unsigned int onlineChannel = this->Online(offlineChannel);
   return this->PlaneFromOnlineChannel(onlineChannel);
 
 }
 
-unsigned int dune::ChannelMapService::RCEFromOnlineChannel(unsigned int onlineChannel) const {
+unsigned int dune::PdChannelMapService::RCEFromOnlineChannel(unsigned int onlineChannel) const {
 
   if (fRCEMap.count(onlineChannel) == 0) {
     std::cout << "Error: no RCE information for online channel " << onlineChannel << std::endl;
@@ -134,14 +147,14 @@ unsigned int dune::ChannelMapService::RCEFromOnlineChannel(unsigned int onlineCh
 
 }
 
-unsigned int dune::ChannelMapService::RCEFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdChannelMapService::RCEFromOfflineChannel(unsigned int offlineChannel) const {
 
   unsigned int onlineChannel = this->Online(offlineChannel);
   return this->RCEFromOnlineChannel(onlineChannel);
 
 }
 
-unsigned int dune::ChannelMapService::RCEChannelFromOnlineChannel(unsigned int onlineChannel) const {
+unsigned int dune::PdChannelMapService::RCEChannelFromOnlineChannel(unsigned int onlineChannel) const {
 
   if (fRCEChannelMap.count(onlineChannel) == 0) {
     std::cout << "Error: no RCE channel information for online channel " << onlineChannel << std::endl;
@@ -152,14 +165,14 @@ unsigned int dune::ChannelMapService::RCEChannelFromOnlineChannel(unsigned int o
 
 }
 
-unsigned int dune::ChannelMapService::RCEChannelFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdChannelMapService::RCEChannelFromOfflineChannel(unsigned int offlineChannel) const {
 
   unsigned int onlineChannel = this->Online(offlineChannel);
   return this->RCEChannelFromOnlineChannel(onlineChannel);
 
 }
 
-unsigned int dune::ChannelMapService::RegulatorFromOnlineChannel(unsigned int onlineChannel) const {
+unsigned int dune::PdChannelMapService::RegulatorFromOnlineChannel(unsigned int onlineChannel) const {
 
   if (fRegulatorMap.count(onlineChannel) == 0) {
     std::cout << "Error: no regulator information for online channel " << onlineChannel << std::endl;
@@ -170,14 +183,14 @@ unsigned int dune::ChannelMapService::RegulatorFromOnlineChannel(unsigned int on
 
 }
 
-unsigned int dune::ChannelMapService::RegulatorFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdChannelMapService::RegulatorFromOfflineChannel(unsigned int offlineChannel) const {
 
   unsigned int onlineChannel = this->Online(offlineChannel);
   return this->RegulatorFromOnlineChannel(onlineChannel);
 
 }
 
-unsigned int dune::ChannelMapService::RegulatorPinFromOnlineChannel(unsigned int onlineChannel) const {
+unsigned int dune::PdChannelMapService::RegulatorPinFromOnlineChannel(unsigned int onlineChannel) const {
 
   if (fRegulatorPinMap.count(onlineChannel) == 0) {
     std::cout << "Error: no regulator pin information for online channel " << onlineChannel << std::endl;
@@ -188,14 +201,14 @@ unsigned int dune::ChannelMapService::RegulatorPinFromOnlineChannel(unsigned int
 
 }
 
-unsigned int dune::ChannelMapService::RegulatorPinFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdChannelMapService::RegulatorPinFromOfflineChannel(unsigned int offlineChannel) const {
 
   unsigned int onlineChannel = this->Online(offlineChannel);
   return this->RegulatorPinFromOnlineChannel(onlineChannel);
 
 }
 
-unsigned int dune::ChannelMapService::ASICFromOnlineChannel(unsigned int onlineChannel) const {
+unsigned int dune::PdChannelMapService::ASICFromOnlineChannel(unsigned int onlineChannel) const {
 
   if (fASICMap.count(onlineChannel) == 0) {
     std::cout << "Error: no ASIC information for online channel " << onlineChannel << std::endl;
@@ -206,14 +219,14 @@ unsigned int dune::ChannelMapService::ASICFromOnlineChannel(unsigned int onlineC
 
 }
 
-unsigned int dune::ChannelMapService::ASICFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdChannelMapService::ASICFromOfflineChannel(unsigned int offlineChannel) const {
 
   unsigned int onlineChannel = this->Online(offlineChannel);
   return this->ASICFromOnlineChannel(onlineChannel);
 
 }
 
-unsigned int dune::ChannelMapService::ASICChannelFromOnlineChannel(unsigned int onlineChannel) const {
+unsigned int dune::PdChannelMapService::ASICChannelFromOnlineChannel(unsigned int onlineChannel) const {
 
   if (fASICChannelMap.count(onlineChannel) == 0) {
     std::cout << "Error: no ASIC channel information for online channel " << onlineChannel << std::endl;
@@ -224,11 +237,11 @@ unsigned int dune::ChannelMapService::ASICChannelFromOnlineChannel(unsigned int 
 
 }
 
-unsigned int dune::ChannelMapService::ASICChannelFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdChannelMapService::ASICChannelFromOfflineChannel(unsigned int offlineChannel) const {
 
   unsigned int onlineChannel = this->Online(offlineChannel);
   return this->ASICChannelFromOnlineChannel(onlineChannel);
 
 }
 
-DEFINE_ART_SERVICE(dune::ChannelMapService)
+DEFINE_ART_SERVICE(dune::PdChannelMapService)

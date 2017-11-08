@@ -61,7 +61,7 @@ dune::PdChannelMapService::PdChannelMapService(fhicl::ParameterSet const& pset, 
 unsigned int dune::PdChannelMapService::OnlineFromRCE(unsigned int rceID, unsigned int rceChannel) const {
   unsigned int onlineChannel = bad();
   if (fRCEToOnline.count(rceID) == 0 || fRCEToOnline.at(rceID).count(rceChannel) == 0) {
-    std::cout << "Error: no online channel mapped to RCE ID" << rceID << "or its internal channel " << rceChannel << std::endl;
+    std::cout << "Error: no online channel mapped to RCE ID " << rceID << "or its internal channel " << rceChannel << std::endl;
     throw cet::exception("RCE ID or RCE channel not found");
   }
   else

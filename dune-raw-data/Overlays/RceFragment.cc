@@ -6,21 +6,29 @@
 #include <iostream>
 #include <fstream>
 
-dune::RceFragment::RceFragment(artdaq::Fragment const & fragment ) :
-    _artdaq_fragment(fragment)
+dune::RceFragment::RceFragment(const uint64_t* data_ptr) : _data_ptr(data_ptr)
 {
-    uint64_t const *buf = reinterpret_cast<uint64_t const*>(
-            _artdaq_fragment.dataBeginBytes() + 12);
+    _init();
+}
 
+dune::RceFragment::RceFragment(artdaq::Fragment const& afrag) 
+{
+    _data_ptr = (uint64_t const*)(afrag.dataBeginBytes() + 12);
+    _init();
+
+    auto* buf = _data_ptr;
     std::cout << "RCE Fragment ";
     for (int i = 0; i < 5; ++i)
         std::cout << std::hex << *(buf + i) << ' ';
     std::cout << std::dec << std::endl;
+}
 
-    HeaderFragmentUnpack const header (buf);
+void dune::RceFragment::_init()
+{
+    HeaderFragmentUnpack const header (_data_ptr);
     if ( header.isData() )
     {
-        _data_fragment = std::make_unique<DataFragmentUnpack>(buf);
+        _data_fragment = std::make_unique<DataFragmentUnpack>(_data_ptr);
         if (_data_fragment->isTpcNormal())
         {
             _tpc_fragment = std::make_unique<TpcFragmentUnpack>(*_data_fragment);
@@ -41,15 +49,10 @@ dune::RceFragment::get_stream(int i) const
     return _tpc_fragment->getStream(i);
 }
 
-void dune::RceFragment::dump(std::string const& outfilename) const
+void dune::RceFragment::hexdump(std::ostream& out, int n_words) const
 {
-    std::ofstream b_stream(outfilename.c_str(),
-            std::fstream::out | std::fstream::binary);
-
-    size_t bytes = _artdaq_fragment.dataSizeBytes() - 12;
-    char const* data = reinterpret_cast<decltype(data)>(
-            _artdaq_fragment.dataBeginBytes() + 12);
-
-    b_stream.write(data, bytes);
-    b_stream.close();
+    out << std::hex;
+    for (int i = 0; i < n_words; ++i)
+        out << *(_data_ptr + i) << " ";
+    out << std::dec << std::endl;
 }

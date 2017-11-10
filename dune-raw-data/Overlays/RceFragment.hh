@@ -11,6 +11,7 @@
 namespace dune
 {
     class RceFragment;
+    typedef std::vector<dune::RceFragment> RceFragments;
 }
 
 class TpcStreamUnpack;
@@ -18,11 +19,15 @@ class TpcStreamUnpack;
 class dune::RceFragment
 {
     public:
+
         RceFragment(artdaq::Fragment const & fragment );
-        RceFragment(const uint64_t* data_ptr);
+        RceFragment(const uint64_t* data_ptr, size_t bytes);
         int size() const { return _n_streams; }
         TpcStreamUnpack const * get_stream(int i) const;
         void hexdump(std::ostream& out, int n_words=10) const;
+        void save(const std::string& filepath) const;
+
+        static RceFragments from_container_frags(const artdaq::Fragments& frags);
 
     private:
         void _init();
@@ -31,5 +36,6 @@ class dune::RceFragment
         std::unique_ptr<TpcFragmentUnpack> _tpc_fragment;
         int _n_streams = 0;
         const uint64_t* _data_ptr;
+        const size_t _bytes;
 };
 #endif 

@@ -76,6 +76,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
   std::cout << "  -> Total adc values: " << reordflxfrg.total_adc_values() << '\n';
 
   std::cout << "### MEOW -> Comparing " << ifile_size / 468 << " frames.\n";
+  auto comp_begin = std::chrono::high_resolution_clock::now();
   for (unsigned i = 0; i < ifile_size / 468; ++i) {
     BOOST_REQUIRE_EQUAL(flxfrg.sof(i), reordflxfrg.sof(i));
     BOOST_REQUIRE_EQUAL(flxfrg.version(i), reordflxfrg.version(i));
@@ -103,7 +104,16 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
       BOOST_REQUIRE_EQUAL(flxfrg.get_ADC(i, ch), reordflxfrg.get_ADC(i, ch));
     }
   }
+  auto comp_end = std::chrono::high_resolution_clock::now();
   std::cout << "### MEOW -> Tests successful.\n";
+  std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(comp_end-comp_begin).count() << " ms.\n";
+
+  // Write reordered fragment to file for compression testing.
+  std::ofstream ofile("/home/felixdev/milo/QATframes/Channel_Previous.dat");
+  ofile.write(reinterpret_cast<char const*>(reordflxfrg.head),
+              reordflxfrg.total_words() * 4);
+  ofile.close();
+
   delete[] buffer;
 
   std::cout << "### WOOF WOOF -> Done...\n";

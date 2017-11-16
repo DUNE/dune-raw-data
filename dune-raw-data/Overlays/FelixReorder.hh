@@ -4,17 +4,14 @@
 #ifndef artdaq_dune_Overlays_FelixReorder_hh
 #define artdaq_dune_Overlays_FelixReorder_hh
 
-// Uncomment this to utilise previous value subtraction instead of pedestal
-// subtraction. This improves compression but makes the reading of ADC values
-// after reordering very costly.
-// #define PREVIOUS_SUBTRACTION
-
 #include <chrono>
 #include <fstream>
 #include <thread>
 #include <vector>
 
 #include "artdaq-core/Data/Fragment.hh"
+
+#define NUMBER_THREADS 6
 
 namespace dune {
 
@@ -73,8 +70,11 @@ class FelixReorderer {
       adc_begin + (num_frames - 1) * num_adcs_per_frame * adc_size;
 
   void reorder_copy(uint8_t* dest);
-  friend void t_adc_copy(FelixReorderer* reord, uint8_t* dest,
-                         const unsigned& t_inst, const unsigned& t_tot);
+  friend void t_adc_copy_by_tick(FelixReorderer* reord, uint8_t* dest,
+                                 const unsigned& t_inst, const unsigned& t_tot);
+  friend void t_adc_copy_by_channel(FelixReorderer* reord, uint8_t* dest,
+                                    const unsigned& t_inst,
+                                    const unsigned& t_tot);
   void single_frame_from_buffer(const uint8_t* src, uint8_t* dest,
                                 const size_t& i);
   void frames_from_buffer(const uint8_t* src, uint8_t* dest,
@@ -128,8 +128,33 @@ void FelixReorderer::initial_adc_copy(uint8_t* dest) {
 }
 
 // ADC copy function to be executed by individual threads.
-void t_adc_copy(FelixReorderer* reord, uint8_t* dest, const unsigned& t_inst,
-                const unsigned& t_tot) {
+void t_adc_copy_by_tick(FelixReorderer* reord, uint8_t* dest,
+                        const unsigned& t_inst, const unsigned& t_tot) {
+  // Thread starting point and range in ADC channel space.
+  unsigned t_ch_range = reord->num_adcs_per_frame / t_tot;
+  unsigned t_ch_begin = t_ch_range * t_inst;
+  // The last thread should clean up the remainder of the channels.
+  if (t_inst == t_tot - 1 && reord->num_adcs_per_frame % t_tot != 0) {
+    t_ch_range = reord->num_adcs_per_frame - t_ch_begin;
+  }
+  
+  // Store all ADC values in uint16_t.
+  const dune::FelixFragment::WIBFrame* src =
+      reinterpret_cast<dune::FelixFragment::WIBFrame const*>(
+          reord->head + reord->netio_header_size);
+  for (unsigned fr = 1; fr < reord->num_frames; ++fr) {
+    for (unsigned ch = t_ch_begin; ch < t_ch_begin + t_ch_range; ++ch) {
+      uint16_t reduced_adc = (src + fr)->channel(ch);
+      const size_t dest_offset =
+          ((fr - 1) * reord->num_adcs_per_frame + ch) * reord->adc_size;
+      memcpy(dest + dest_offset, &reduced_adc, reord->adc_size);
+    }
+  }
+}
+
+// ADC copy function to be executed by individual threads.
+void t_adc_copy_by_channel(FelixReorderer* reord, uint8_t* dest,
+                           const unsigned& t_inst, const unsigned& t_tot) {
   // Thread starting point and range in ADC channel space.
   unsigned t_ch_range = reord->num_adcs_per_frame / t_tot;
   unsigned t_ch_begin = t_ch_range * t_inst;
@@ -138,38 +163,28 @@ void t_adc_copy(FelixReorderer* reord, uint8_t* dest, const unsigned& t_inst,
     t_ch_range = reord->num_adcs_per_frame - t_ch_begin;
   }
 
-  // Copy initial ADCs for thread use.
-  uint16_t t_initial_adcs[reord->num_adcs_per_frame];
-  for (unsigned i = 0; i < reord->num_adcs_per_frame; ++i) {
-    t_initial_adcs[i] = reord->initial_adcs[i];
-  }
   // Store all ADC values in uint16_t.
   const dune::FelixFragment::WIBFrame* src =
       reinterpret_cast<dune::FelixFragment::WIBFrame const*>(
           reord->head + reord->netio_header_size);
-  for (unsigned i = 1; i < reord->num_frames; ++i) {
+  for (unsigned fr = 0; fr < reord->num_frames; ++fr) {
     for (unsigned ch = t_ch_begin; ch < t_ch_begin + t_ch_range; ++ch) {
-      // Enter the difference between the current value and the previous one.
-      uint16_t reduced_adc = (src + i)->channel(ch) - t_initial_adcs[ch];
-      const size_t dest_offset =
-          ((i - 1) * reord->num_adcs_per_frame + ch) * reord->adc_size;
-      memcpy(dest + dest_offset, &reduced_adc, reord->adc_size);
-#ifdef PREVIOUS_SUBTRACTION
-      // Update the initial ADC values to the new values.
-      t_initial_adcs[ch] += reduced_adc;
-#endif
+      dune::FelixFragment::adc_t curr_val = (src + fr)->channel(ch);
+      memcpy(dest + (ch * reord->num_frames + fr) * reord->adc_size, &curr_val,
+             reord->adc_size);
     }
   }
 }
 
 void FelixReorderer::adc_copy(uint8_t* dest) {
-  const unsigned t_tot = 8;
+  const unsigned t_tot = NUMBER_THREADS;
   std::thread* t_vec = new std::thread[t_tot - 1];
 
   for (unsigned i = 0; i < t_tot - 1; ++i) {
-    t_vec[i] = std::thread(t_adc_copy, this, dest, i, t_tot);
+    t_vec[i] = std::thread(t_adc_copy_by_channel, this, dest, i, t_tot);
   }
-  t_adc_copy(this, dest, t_tot - 1, t_tot);
+  // Choose either channel or tick, but the overlays need to be adjusted for this.
+  t_adc_copy_by_channel(this, dest, t_tot - 1, t_tot);
   for (unsigned i = 0; i < t_tot - 1; ++i) {
     t_vec[i].join();
   }
@@ -182,10 +197,8 @@ void FelixReorderer::reorder_copy(uint8_t* dest) {
   crc32_copy(dest + crc32_begin);
   auto colhead_start = std::chrono::high_resolution_clock::now();
   coldata_header_copy(dest + coldata_headers_begin);
-  auto iadc_start = std::chrono::high_resolution_clock::now();
-  initial_adc_copy(dest + initial_adc_begin);
   auto adc_start = std::chrono::high_resolution_clock::now();
-  adc_copy(dest + adc_begin);
+  adc_copy(dest + initial_adc_begin);
   auto end = std::chrono::high_resolution_clock::now();
 
   std::cout
@@ -201,13 +214,8 @@ void FelixReorderer::reorder_copy(uint8_t* dest) {
              .count()
       << "usec\n"
       << "COLDATA header copy time: "
-      << std::chrono::duration_cast<std::chrono::microseconds>(iadc_start -
-                                                               crc32_start)
-             .count()
-      << "usec\n"
-      << "Initial ADC copy time: "
       << std::chrono::duration_cast<std::chrono::microseconds>(adc_start -
-                                                               iadc_start)
+                                                               colhead_start)
              .count()
       << "usec\n"
       << "ADC copy time: "
@@ -220,8 +228,10 @@ void FelixReorderer::reorder_copy(uint8_t* dest) {
       << "usec\n\n";
 }
 
-// The following section of code generates frame from a reordered buffer, but requires FrameGen to work.
-// void FelixReorderer::single_frame_from_buffer(const uint8_t* src, uint8_t* dest,
+// The following section of code generates frames from a reordered buffer, but
+// requires FrameGen to work.
+// void FelixReorderer::single_frame_from_buffer(const uint8_t* src, uint8_t*
+// dest,
 //                                               const size_t& i) {
 //   framegen::Frame frame;
 //   // Install WIB header.
@@ -279,9 +289,6 @@ void FelixReorderer::reorder_copy(uint8_t* dest) {
 //       const uint16_t* abegin = reinterpret_cast<uint16_t const*>(
 //           src + adc_begin + num_adcs_per_frame * adc_size * (i - 1));
 //       frame.set_channel(j, *(abegin + j) + initial_adcs[j]);
-// #ifdef PREVIOUS_SUBTRACTION
-//       initial_adcs[j] = *(abegin + j) + initial_adcs[j];
-// #endif
 //     }
 //   }
 

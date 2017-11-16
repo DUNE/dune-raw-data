@@ -20,6 +20,7 @@ class dune::FelixFragmentReordered {
   FelixFragmentReordered(artdaq::Fragment const& fragment)
       : artdaq_Fragment_(fragment) {
     std::cout << "Attempting to create a reordered FELIX Fragment.\n";
+    head = reinterpret_cast<uint8_t const*>(artdaq_Fragment_.dataBeginBytes());
   }
 
   /* Define a public typedef for marking the WIB word size. */
@@ -96,28 +97,10 @@ class dune::FelixFragmentReordered {
     return blockhead_(frame_ID, block_num)->HDR(HDR_num);
   }
 
-  // Due to the way ADC values are stored in the previous subtraction case,
-  // accessing one in the nth frame requires reading that channel's values in
-  // all the previous n frames.
   adc_t get_ADC(const unsigned& frame_ID, const unsigned& channel_ID) const {
-    adc_t result = *reinterpret_cast<adc_t const*>(
+    return *reinterpret_cast<adc_t const*>(
         artdaq_Fragment_.dataBeginBytes() + initial_adc_begin +
-        channel_ID * adc_size);
-#ifdef PREVIOUS_SUBTRACTION
-    const adc_t* begin = reinterpret_cast<adc_t const*>(
-        artdaq_Fragment_.dataBeginBytes() + adc_begin);
-    for (unsigned i = 0; i < frame_ID; ++i) {
-      result += *(begin + i * num_adcs_per_frame + channel_ID);
-    }
-#else
-    if (frame_ID > 0) {
-      result += *reinterpret_cast<adc_t const*>(
-          artdaq_Fragment_.dataBeginBytes() + adc_begin +
-          ((frame_ID - 1) * num_adcs_per_frame + channel_ID) * adc_size);
-    }
-#endif
-
-    return result;
+        (channel_ID * total_frames() + frame_ID) * adc_size);
   }
 
   adc_t get_ADC(const unsigned& channel_ID) const {
@@ -133,10 +116,11 @@ class dune::FelixFragmentReordered {
   }
 
   adc_v get_ADCs_by_channel(uint8_t channel_ID) const {
-    adc_v output(total_frames());
-    for (unsigned i = 0; i < total_frames(); ++i) {
-      output[i] = get_ADC(i, channel_ID);
-    }
+    adc_v output;
+    const adc_t* offset = reinterpret_cast<adc_t const*>(
+        artdaq_Fragment_.dataBeginBytes() + initial_adc_begin +
+        channel_ID * total_frames() * adc_size);
+    output.insert(output.begin(), offset, offset + total_frames());
     return output;
   }
 
@@ -146,6 +130,8 @@ class dune::FelixFragmentReordered {
                     stream_ID * num_adcs_per_stream + channel_ID;
     return get_ADCs_by_channel(ch_ID);
   }
+
+  const uint8_t* head;
 
  private:
   artdaq::Fragment const& artdaq_Fragment_;

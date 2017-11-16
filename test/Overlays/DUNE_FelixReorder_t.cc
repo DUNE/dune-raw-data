@@ -21,8 +21,8 @@ BOOST_AUTO_TEST_SUITE(FelixReorder_test)
 
 BOOST_AUTO_TEST_CASE(BaselineTest) {
   std::cout << "Reordering frames in files." << std::endl;
-  for (unsigned plane = 0; plane < 3; ++plane) {
-    for (unsigned link = 1; link < 11; ++link) {
+  for (unsigned plane = 0; plane < 1/* 3 */; ++plane) {
+    for (unsigned link = 1; link < 2/* 11 */; ++link) {
       // Open the relevant files.
       std::string filepath = "/home/felixdev/milo/uBframes/Plane_" +
                              std::to_string(plane) + "-Link_" +
@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
 
       // Fill a fragment with the reordered output and save it to file.
       artdaq::Fragment reord_frag(
-          dune::FelixReorder(frag.dataBeginBytes(), 9600));
+          dune::FelixReorder(frag.dataBeginBytes(), ifile_size/468));
       std::cout << "Reordered fragment data size: "
                 << reord_frag.dataSizeBytes() << '\n';
 
@@ -58,43 +58,43 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
                   reord_frag.dataSizeBytes());
       ofile.close();
 
-      // Create the two FelixFragments.
+      // Create the two FelixFragments: one unchanged and one reordered.
       dune::FelixFragment flxfrg(frag);
       dune::FelixFragmentReordered reordflxfrg(reord_frag);
 
       // Compare the two fragments.
       std::cout << "\nComparing the untouched and reordered fragments.\n";
       auto comp_start = std::chrono::high_resolution_clock::now();
-      for (unsigned i = 0; i < flxfrg.total_frames(); ++i) {
-        BOOST_REQUIRE_EQUAL(flxfrg.sof(i), reordflxfrg.sof(i));
-        BOOST_REQUIRE_EQUAL(flxfrg.version(i), reordflxfrg.version(i));
-        BOOST_REQUIRE_EQUAL(flxfrg.fiber_no(i), reordflxfrg.fiber_no(i));
-        BOOST_REQUIRE_EQUAL(flxfrg.slot_no(i), reordflxfrg.slot_no(i));
-        BOOST_REQUIRE_EQUAL(flxfrg.crate_no(i), reordflxfrg.crate_no(i));
-        BOOST_REQUIRE_EQUAL(flxfrg.timestamp(i), reordflxfrg.timestamp(i));
-        BOOST_REQUIRE_EQUAL(flxfrg.CRC32(i), reordflxfrg.CRC32(i));
-        for (unsigned j = 0; j < dune::FelixReorderer::num_blocks_per_frame;
-             ++j) {
-          BOOST_REQUIRE_EQUAL(flxfrg.s1_error(i, j),
-                              reordflxfrg.s1_error(i, j));
-          BOOST_REQUIRE_EQUAL(flxfrg.s2_error(i, j),
-                              reordflxfrg.s2_error(i, j));
-          BOOST_REQUIRE_EQUAL(flxfrg.checksum_a(i, j),
-                              reordflxfrg.checksum_a(i, j));
-          BOOST_REQUIRE_EQUAL(flxfrg.checksum_b(i, j),
-                              reordflxfrg.checksum_b(i, j));
-          BOOST_REQUIRE_EQUAL(flxfrg.coldata_convert_count(i, j),
-                              reordflxfrg.coldata_convert_count(i, j));
-          BOOST_REQUIRE_EQUAL(flxfrg.error_register(i, j),
-                              reordflxfrg.error_register(i, j));
+      for (unsigned fr = 0; fr < flxfrg.total_frames(); ++fr) {
+        BOOST_REQUIRE_EQUAL(flxfrg.sof(fr), reordflxfrg.sof(fr));
+        BOOST_REQUIRE_EQUAL(flxfrg.version(fr), reordflxfrg.version(fr));
+        BOOST_REQUIRE_EQUAL(flxfrg.fiber_no(fr), reordflxfrg.fiber_no(fr));
+        BOOST_REQUIRE_EQUAL(flxfrg.slot_no(fr), reordflxfrg.slot_no(fr));
+        BOOST_REQUIRE_EQUAL(flxfrg.crate_no(fr), reordflxfrg.crate_no(fr));
+        BOOST_REQUIRE_EQUAL(flxfrg.timestamp(fr), reordflxfrg.timestamp(fr));
+        BOOST_REQUIRE_EQUAL(flxfrg.CRC32(fr), reordflxfrg.CRC32(fr));
+        for (unsigned bl = 0; bl < dune::FelixReorderer::num_blocks_per_frame;
+             ++bl) {
+          BOOST_REQUIRE_EQUAL(flxfrg.s1_error(fr, bl),
+                              reordflxfrg.s1_error(fr, bl));
+          BOOST_REQUIRE_EQUAL(flxfrg.s2_error(fr, bl),
+                              reordflxfrg.s2_error(fr, bl));
+          BOOST_REQUIRE_EQUAL(flxfrg.checksum_a(fr, bl),
+                              reordflxfrg.checksum_a(fr, bl));
+          BOOST_REQUIRE_EQUAL(flxfrg.checksum_b(fr, bl),
+                              reordflxfrg.checksum_b(fr, bl));
+          BOOST_REQUIRE_EQUAL(flxfrg.coldata_convert_count(fr, bl),
+                              reordflxfrg.coldata_convert_count(fr, bl));
+          BOOST_REQUIRE_EQUAL(flxfrg.error_register(fr, bl),
+                              reordflxfrg.error_register(fr, bl));
           for (unsigned h = 0; h < 8; ++h) {
-            BOOST_REQUIRE_EQUAL(flxfrg.HDR(i, j, h), reordflxfrg.HDR(i, j, h));
+            BOOST_REQUIRE_EQUAL(flxfrg.HDR(fr, bl, h), reordflxfrg.HDR(fr, bl, h));
           }
         }
         for (unsigned ch = 0; ch < dune::FelixReorderer::num_adcs_per_frame;
              ++ch) {
-          BOOST_REQUIRE_EQUAL(flxfrg.get_ADC(i, ch),
-                              reordflxfrg.get_ADC(i, ch));
+          BOOST_REQUIRE_EQUAL(flxfrg.get_ADC(fr, ch),
+                              reordflxfrg.get_ADC(fr, ch));
         }
       }
       auto comp_end = std::chrono::high_resolution_clock::now();

@@ -8,17 +8,14 @@
 #include <iostream>
 #include <fstream>
 
-dune::RceFragment::RceFragment(const uint64_t* data_ptr, size_t bytes) : 
-    _data_ptr(data_ptr),
-    _bytes(bytes)
-
+dune::RceFragment::RceFragment(const uint64_t* data_ptr) : 
+    _data_ptr(data_ptr)
 {
     _init();
 }
 
 dune::RceFragment::RceFragment(artdaq::Fragment const& afrag) :
-    _data_ptr((uint64_t const*)(afrag.dataBeginBytes() + 12)),
-    _bytes(afrag.dataSizeBytes() - 12)
+    _data_ptr((uint64_t const*)(afrag.dataBeginBytes() + 12))
 {
     _init();
 }
@@ -59,11 +56,16 @@ void dune::RceFragment::hexdump(std::ostream& out, int n_words) const
 
 void dune::RceFragment::save(const std::string& filepath) const
 {
+    // TODO check header
+    uint64_t header = *_data_ptr;
+    size_t bytes = (header >> 8) & 0xffffff;
+    bytes *= sizeof(uint64_t);
+
     std::ofstream b_stream(filepath.c_str(),
             std::fstream::out | std::fstream::binary);
 
     char const* data = reinterpret_cast<decltype(data)>(_data_ptr);
-    b_stream.write(data, _bytes);
+    b_stream.write(data, bytes);
     b_stream.close();
 }
 
@@ -91,10 +93,9 @@ dune::RceFragment::from_container_frags(const artdaq::Fragments& frags)
             data_ptr += afrag_header_bytes;
             data_ptr += 12;
 
-            size_t data_bytes = cfrag.fragSize(ii) - afrag_header_bytes - 12;
-            dune::RceFragment rce((uint64_t*) data_ptr, data_bytes);
+            dune::RceFragment rce((uint64_t*) data_ptr);
             rces.push_back(std::move(rce));
         }
     }
-    return rces;
+    return std::move(rces);
 }

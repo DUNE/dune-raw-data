@@ -21,7 +21,7 @@ class dune::RceFragment
     public:
 
         RceFragment(artdaq::Fragment const & fragment );
-        RceFragment(const uint64_t* data_ptr, size_t bytes);
+        RceFragment(const uint64_t* data_ptr);
         int size() const { return _n_streams; }
         TpcStreamUnpack const * get_stream(int i) const;
         void hexdump(std::ostream& out, int n_words=10) const;
@@ -36,6 +36,5 @@ class dune::RceFragment
         std::unique_ptr<TpcFragmentUnpack> _tpc_fragment;
         int _n_streams = 0;
         const uint64_t* _data_ptr;
-        const size_t _bytes;
 };
 #endif 

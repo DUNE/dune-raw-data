@@ -73,6 +73,13 @@ if [[ $opt_lrd_develop -eq 0 ]]; then
     exit 1
 fi
 
+dune_repo=/cvmfs/dune.opensciencegrid.org/products/dune
+
+if [[ ! -e $dune_repo ]]; then
+    echo "This installation needs access to the CVMFS mount point for the dune repo, ${dune_repo}, in order to obtain the dunepdsprce packages. Aborting..." >&2
+    exit 1
+fi
+
 test -n "${do_help-}" -o $# -ge 2 && echo "$USAGE" && exit
 
 # JCF, 1/16/15
@@ -272,6 +279,7 @@ cd $Base
        echo # This script is intended to be sourced.                                                                    
                                                                                                                          
         sh -c "[ \`ps \$\$ | grep bash | wc -l\` -gt 0 ] || { echo 'Please switch to the bash shell before running dune-raw-data.'; exit; }" || exit                                                                                           
+        source $dune_repo/setup
         source $Base/products/setup                                                                                   
         setup mrb
         source $localproducts_setup
@@ -289,7 +297,7 @@ cd $Base
 	EOF
     #
 
-# Build artdaq_demo
+source $dune_repo/setup
 source $Base/products/setup   
 
 cd $MRB_BUILDDIR

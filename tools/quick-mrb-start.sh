@@ -157,14 +157,13 @@ if [ -z "${tag:-}" ]; then
 fi
 
 if ! $bad_network; then
-    wget https://cdcvs.fnal.gov/redmine/projects/dune-raw-data/repository/revisions/$tag/raw/ups/product_deps
+   wget https://cdcvs.fnal.gov/redmine/projects/dune-raw-data/repository/revisions/$tag/raw/ups/product_deps
 fi
 
 if [[ ! -e $Base/download/product_deps ]]; then
-    echo "You need to have a product_deps file in $Base/download" >&2
-    exit 1
+   echo "You need to have a product_deps file in $Base/download" >&2
+   exit 1
 fi
-
 
 coredemo_version=`grep "parent dune_raw_data" $Base/download/product_deps|awk '{print $3}'`
 
@@ -192,10 +191,10 @@ else
     build_type="prof"
 fi
 
-artdaq_core_version=v1_07_08
-art_version=v2_07_03
+artdaq_core_version=v1_07_12
+art_version=v2_08_04
 TRACE_version=v3_08_01
-cetbuildtools_version=v5_08_01
+cetbuildtools_version=v5_14_03
 
 artdaq_core_version_dot=$( echo $artdaq_core_version | sed -r 's/v//;s/_/./g' )
 art_version_dot=$( echo $art_version | sed -r 's/v//;s/_/./g' )
@@ -258,7 +257,6 @@ else
     dune_raw_data_repo="http://cdcvs.fnal.gov/projects/dune-raw-data"
 fi
 
-
 if ! $bad_network; then
     
 
@@ -279,8 +277,8 @@ cd $Base
        echo # This script is intended to be sourced.                                                                    
                                                                                                                          
         sh -c "[ \`ps \$\$ | grep bash | wc -l\` -gt 0 ] || { echo 'Please switch to the bash shell before running dune-raw-data.'; exit; }" || exit                                                                                           
-        source $dune_repo/setup
         source $Base/products/setup                                                                                   
+        source $dune_repo/setup
         setup mrb
         source $localproducts_setup
         source mrbSetEnv       

@@ -1,6 +1,8 @@
 #! /bin/bash
 # Downloads and installs dune-raw-data as an MRB-controlled repository
 
+# THIS WILL INSTALL THE OFFLINE, I.E., nu-QUALIFIED VERSION OF dune-raw-data
+
 bad_network=false
 
 
@@ -68,6 +70,13 @@ set -u   # complain about uninitialed shell variables - helps development
 
 if [[ $opt_lrd_develop -eq 0 ]]; then
     echo "JCF, May-12-2017: currently there isn't an official cut release of dune-raw-data; therefore you need to supply the --dune-raw-data-develop-branch argument to this script" >&2
+    exit 1
+fi
+
+dune_repo=/cvmfs/dune.opensciencegrid.org/products/dune
+
+if [[ ! -e $dune_repo ]]; then
+    echo "This installation needs access to the CVMFS mount point for the dune repo, ${dune_repo}, in order to obtain the dunepdsprce packages. Aborting..." >&2
     exit 1
 fi
 
@@ -148,18 +157,18 @@ if [ -z "${tag:-}" ]; then
 fi
 
 if ! $bad_network; then
-    wget https://cdcvs.fnal.gov/redmine/projects/dune-raw-data/repository/revisions/$tag/raw/ups/product_deps
+   wget https://cdcvs.fnal.gov/redmine/projects/dune-raw-data/repository/revisions/$tag/raw/ups/product_deps
 fi
 
 if [[ ! -e $Base/download/product_deps ]]; then
-    echo "You need to have a product_deps file in $Base/download" >&2
-    exit 1
+   echo "You need to have a product_deps file in $Base/download" >&2
+   exit 1
 fi
-
 
 coredemo_version=`grep "parent dune_raw_data" $Base/download/product_deps|awk '{print $3}'`
 
 default_quals=$( awk '/^defaultqual/ {print $2} ' $Base/download/product_deps )
+default_quals=$( echo $default_quals | sed -r 's/online/nu/' )
 
 quals=$default_quals
 
@@ -182,10 +191,10 @@ else
     build_type="prof"
 fi
 
-artdaq_core_version=v1_07_08
-art_version=v2_07_03
+artdaq_core_version=v1_07_12
+art_version=v2_08_04
 TRACE_version=v3_08_01
-cetbuildtools_version=v5_08_01
+cetbuildtools_version=v5_14_03
 
 artdaq_core_version_dot=$( echo $artdaq_core_version | sed -r 's/v//;s/_/./g' )
 art_version_dot=$( echo $art_version | sed -r 's/v//;s/_/./g' )
@@ -200,16 +209,16 @@ if ! $bad_network; then
     wget http://scisoft.fnal.gov/scisoft/bundles/tools/pullProducts
     chmod +x pullProducts
 
-    ./pullProducts $Base/products ${os} art-${art_version} ${equalifier} ${build_type}
+    ./pullProducts $Base/products ${os} art-${art_version} ${equalifier}-nu ${build_type}
 
     if [ $? -ne 0 ]; then
-	echo "Error in pullProducts. Please go to http://scisoft.fnal.gov/scisoft/bundles/artdaq/${artdaq_version}/manifest and make sure that a manifest for the specified qualifiers (${squalifier}-${equalifier}) exists."
+	echo "Error in pullProducts. Please go to http://scisoft.fnal.gov/scisoft/bundles/art/${art_version}/manifest and make sure that a manifest for the specified qualifier (${equalifier}) exists."
 	exit 1
     fi
 
     detectAndPull mrb noarch
 
-    curl -O http://scisoft.fnal.gov/scisoft/packages/artdaq_core/$artdaq_core_version/artdaq_core-${artdaq_core_version_dot}-${os}-x86_64-${equalifier}-${squalifier}-${build_type}.tar.bz2
+    curl -O http://scisoft.fnal.gov/scisoft/packages/artdaq_core/$artdaq_core_version/artdaq_core-${artdaq_core_version_dot}-${os}-x86_64-${equalifier}-nu-${squalifier}-${build_type}.tar.bz2
     curl -O http://scisoft.fnal.gov/scisoft/packages/cetbuildtools/$cetbuildtools_version/cetbuildtools-${cetbuildtools_version_dot}-noarch.tar.bz2
     curl -O http://scisoft.fnal.gov/scisoft/packages/TRACE/$TRACE_version/TRACE-${TRACE_version_dot}-${os}-x86_64.tar.bz2
 fi
@@ -248,7 +257,6 @@ else
     dune_raw_data_repo="http://cdcvs.fnal.gov/projects/dune-raw-data"
 fi
 
-
 if ! $bad_network; then
     
 
@@ -261,6 +269,7 @@ if ! $bad_network; then
 
 fi
 
+sed -i -r '/^defaultqual/s/online/nu/' $Base/srcs/dune_raw_data/ups/product_deps
 
 ARTDAQ_DEMO_DIR=$Base/srcs/dune_raw_data
 cd $Base
@@ -269,6 +278,7 @@ cd $Base
                                                                                                                          
         sh -c "[ \`ps \$\$ | grep bash | wc -l\` -gt 0 ] || { echo 'Please switch to the bash shell before running dune-raw-data.'; exit; }" || exit                                                                                           
         source $Base/products/setup                                                                                   
+        source $dune_repo/setup
         setup mrb
         source $localproducts_setup
         source mrbSetEnv       
@@ -277,17 +287,26 @@ cd $Base
                                                                                                                          
         export DUNERAWDATA_BUILD=$MRB_BUILDDIR/dune_raw_data                                                            
         export DUNERAWDATA_REPO="$ARTDAQ_DEMO_DIR"                                                                                    
-        setup TRACE $TRACE_version                           
+        setup TRACE $TRACE_version
+        setup art $art_version -q ${equalifier}:nu:${build_type}
+        setup artdaq_core $artdaq_core_version -q ${equalifier}:nu:${build_type}:${squalifier}
+
 
 	EOF
     #
 
-# Build artdaq_demo
+source $dune_repo/setup
+source $Base/products/setup   
+
 cd $MRB_BUILDDIR
 set +u
 source mrbSetEnv
 set -u
 setup TRACE $TRACE_version
+setup art $art_version -q ${equalifier}:nu:${build_type}
+setup artdaq_core $artdaq_core_version -q ${equalifier}:nu:${build_type}:${squalifier}
+
+
 export CETPKG_J=$((`cat /proc/cpuinfo|grep processor|tail -1|awk '{print $3}'` + 1))
 mrb build    # VERBOSE=1
 installStatus=$?

@@ -5,7 +5,9 @@
 #define artdaq_dune_Overlays_FelixFragment_hh
 
 // Uncomment to use the bit field ADC access method.
-// #define BITFIELD_METHOD
+// MAV 30-10-2017: The bit field ADC access method is ~twice as fast and
+// provides the same results as the alternative.
+#define BITFIELD_METHOD
 
 #include "FragmentType.hh"
 #include "artdaq-core/Data/Fragment.hh"
@@ -29,10 +31,8 @@ namespace dune {
   class FelixFragment;
 
   // Bit access function (from FrameGen).
-  inline uint32_t get32BitRange(const uint32_t& word, int begin, int end) {
-    return ( begin == 0 && end == 31 ) 
-      ? word 
-      : (word >> begin) & ((1 << (end - begin + 1)) - 1);
+  inline uint32_t get32BitRange(const uint32_t& word, const uint8_t& begin, const uint8_t& end) {
+    return (word >> begin) & ((1 << (end - begin + 1)) - 1);
   }
 }
 
@@ -356,7 +356,7 @@ public:
     }
     adc_t channel(const uint8_t& ch) const {
       uint8_t block_num = ch / num_ch_per_block;
-      uint8_t adc_num = ch / num_ch_per_stream;
+      uint8_t adc_num = (ch % num_ch_per_block) / num_ch_per_stream;
       uint8_t ch_num = ch % num_ch_per_stream;
       return channel(block_num, adc_num, ch_num);
     }
@@ -466,7 +466,7 @@ public:
               const uint8_t& HDR_num) const {
     return frame_(frame_ID)->block[block_num].head.HDR(HDR_num);
   }
-  uint8_t CRC32(const unsigned& frame_ID) const {
+  word_t CRC32(const unsigned& frame_ID) const {
     return frame_(frame_ID)->CRC32;
   }
 
@@ -504,7 +504,7 @@ public:
 
   // The number of words in the current event minus the header.
   size_t total_words() const {
-    return artdaq_Fragment_.dataSize() * 2;
+    return artdaq_Fragment_.dataSizeBytes() / sizeof(word_t);
     // artdaq::Fragments store their data in uint64_t as opposed to the uint32_t
     // used by FelixFragment.
   }

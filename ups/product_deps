@@ -1,7 +1,7 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
-parent dune_raw_data	v1_08_00
-defaultqual	e14:nu:s56
+parent dune_raw_data	v1_09_00
+defaultqual    e14:nu:s56
 
 # These optional lines define the installed directories where
 # headers, libraries, and executables will be found
@@ -27,6 +27,10 @@ artdaq_core	v3_00_00	online
 art		v2_07_03	online
 TRACE		v3_09_01	online
 cetbuildtools	v5_08_01	online	only_for_build
+artdaq_core	v1_07_08	online_monitoring
+art		v2_07_03	online_monitoring
+TRACE		v3_08_01	online_monitoring
+cetbuildtools	v5_08_01	online_monitoring	only_for_build
 artdaq_core	v1_07_12	nu
 art		v2_08_04	nu
 TRACE		v3_08_01	nu
@@ -42,11 +46,13 @@ end_product_list
 # -nq- here means there is no qualifier
 # a "-" here means the dependent product is not required by the parent and will not be setup
 
-qualifier	        artdaq_core         	art	    	       dunepdsprce		notes
-online:e14:s50:debug	e14:s50:debug	 	e14:debug	       e14:gen:debug
-online:e14:s50:prof	e14:s50:prof	 	e14:prof	       e14:gen:prof
-nu:e14:s56:debug	nu:e14:s56:debug	nu:e14:debug	       e14:gen:debug
-nu:e14:s56:prof		nu:e14:s56:prof	 	nu:e14:prof	       e14:gen:prof
+qualifier	        	 artdaq_core         	art	    	       dunepdsprce		notes
+online:e14:s50:debug		 e14:s50:debug	 	e14:debug	       e14:gen:debug
+online:e14:s50:prof		 e14:s50:prof	 	e14:prof	       e14:gen:prof
+nu:e14:s56:debug		 nu:e14:s56:debug	nu:e14:debug	       e14:gen:debug
+nu:e14:s56:prof			 nu:e14:s56:prof 	nu:e14:prof	       e14:gen:prof
+online_monitoring:e14:s50:debug	 nu:e14:s50:debug      	nu:e14:debug	       e14:gen:debug
+online_monitoring:e14:s50:prof	 nu:e14:s50:prof 	nu:e14:prof	       e14:gen:prof
 
 # Preserve tabs and formatting in emacs and vi / vim:
 

@@ -1,6 +1,6 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
-parent dune_raw_data	v1_09_00
+parent dune_raw_data	v1_10_00
 defaultqual    e14:nu:s56
 
 # These optional lines define the installed directories where

@@ -1,6 +1,6 @@
 
-# Mike Wallbank
-# February 2016
+# Jingbo Wang, John Freeman, with mods from Tom Junk
+# 2017
 
 install_fhicl()
 install_headers()
@@ -8,7 +8,7 @@ install_source()
 
 
 set(${product}_file_dir "${product}/${version}/files")
-file(GLOB channel_map_file 35tTPCChannelMap_v*.txt)
+file(GLOB channel_map_file protoDUNETPCChannelMap*.txt)
 install(FILES ${channel_map_file} DESTINATION ${${product}_file_dir})
 
 # Add plugin for each service
@@ -19,16 +19,6 @@ else()
   set( persistency_lib art_Utilities)
 endif()
 
-simple_plugin(ChannelMapService "service"
-	      ${ART_PERSISTENCY_ROOTDB}
-	      ${ART_FRAMEWORK_SERVICES_REGISTRY}
-	      ${persistency_lib}
-	      ${SQLITE3}
-	      ${MF_MESSAGELOGGER}
-	      ${MF_UTILITIES}
-	      ${CETLIB_LIBS}
-	      ${ROOT_BASIC_LIB_LIST}
-)
 simple_plugin(PdChannelMapService "service"
 	      ${ART_PERSISTENCY_ROOTDB}
 	      ${ART_FRAMEWORK_SERVICES_REGISTRY}

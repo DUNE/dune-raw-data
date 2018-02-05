@@ -191,10 +191,10 @@ else
     build_type="prof"
 fi
 
-artdaq_core_version=v1_07_12
-art_version=v2_08_04
+artdaq_core_version=v3_00_08
+art_version=v2_09_06
 TRACE_version=v3_08_01
-cetbuildtools_version=v5_14_03
+cetbuildtools_version=v6_01_01
 
 artdaq_core_version_dot=$( echo $artdaq_core_version | sed -r 's/v//;s/_/./g' )
 art_version_dot=$( echo $art_version | sed -r 's/v//;s/_/./g' )

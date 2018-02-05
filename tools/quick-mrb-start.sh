@@ -193,7 +193,7 @@ fi
 
 artdaq_core_version=v3_00_08
 art_version=v2_09_06
-TRACE_version=v3_08_01
+TRACE_version=v3_13_00
 cetbuildtools_version=v6_01_01
 
 artdaq_core_version_dot=$( echo $artdaq_core_version | sed -r 's/v//;s/_/./g' )

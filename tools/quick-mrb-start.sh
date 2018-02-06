@@ -191,10 +191,10 @@ else
     build_type="prof"
 fi
 
-artdaq_core_version=$( sed -r -n 's/artdaq_core\s+(.*)\s+nu.*/\1/p' ups/product_deps)
-art_version=$( sed -r -n 's/art\s+(.*)\s+nu.*/\1/p' ups/product_deps)
-TRACE_version=$( sed -r -n 's/TRACE\s+(.*)\s+nu.*/\1/p' ups/product_deps)
-cetbuildtools_version=$( sed -r -n 's/cetbuildtools\s+(.*)\s+nu.*/\1/p' ups/product_deps)
+artdaq_core_version=$( sed -r -n 's/artdaq_core\s+(.*)\s+nu.*/\1/p'  $Base/download/product_deps )
+art_version=$( sed -r -n 's/art\s+(.*)\s+nu.*/\1/p' $Base/download/product_deps)
+TRACE_version=$( sed -r -n 's/TRACE\s+(.*)\s+nu.*/\1/p' $Base/download/product_deps)
+cetbuildtools_version=$( sed -r -n 's/cetbuildtools\s+(.*)\s+nu.*/\1/p' $Base/download/product_deps)
 
 
 artdaq_core_version_dot=$( echo $artdaq_core_version | sed -r 's/v//;s/_/./g' )

@@ -191,10 +191,11 @@ else
     build_type="prof"
 fi
 
-artdaq_core_version=v3_00_08
-art_version=v2_09_06
-TRACE_version=v3_13_00
-cetbuildtools_version=v6_01_01
+artdaq_core_version=$( sed -r -n 's/artdaq_core\s+(.*)\s+nu.*/\1/p' ups/product_deps)
+art_version=$( sed -r -n 's/art\s+(.*)\s+nu.*/\1/p' ups/product_deps)
+TRACE_version=$( sed -r -n 's/TRACE\s+(.*)\s+nu.*/\1/p' ups/product_deps)
+cetbuildtools_version=$( sed -r -n 's/cetbuildtools\s+(.*)\s+nu.*/\1/p' ups/product_deps)
+
 
 artdaq_core_version_dot=$( echo $artdaq_core_version | sed -r 's/v//;s/_/./g' )
 art_version_dot=$( echo $art_version | sed -r 's/v//;s/_/./g' )
@@ -225,7 +226,10 @@ fi
 
 cd $Base/products
 
+echo "Unzipping downloaded archive files; this may take a while..."
+
 for archivefile in $Base/download/*.bz2; do
+    echo tar xjf $archivefile
     tar xjf $archivefile
 done
 

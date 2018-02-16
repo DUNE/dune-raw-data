@@ -30,3 +30,14 @@ simple_plugin(PdChannelMapService "service"
 	      ${ROOT_BASIC_LIB_LIST}
 )
 
+simple_plugin(PdspChannelMapService "service"
+              ${ART_PERSISTENCY_ROOTDB}
+              ${ART_FRAMEWORK_SERVICES_REGISTRY}
+              ${persistency_lib}
+              ${SQLITE3}
+              ${MF_MESSAGELOGGER}
+              ${MF_UTILITIES}
+              ${CETLIB_LIBS}
+              ${ROOT_BASIC_LIB_LIST}
+)
+

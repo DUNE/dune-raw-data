@@ -19,17 +19,6 @@ else()
   set( persistency_lib art_Utilities)
 endif()
 
-simple_plugin(PdChannelMapService "service"
-	      ${ART_PERSISTENCY_ROOTDB}
-	      ${ART_FRAMEWORK_SERVICES_REGISTRY}
-	      ${persistency_lib}
-	      ${SQLITE3}
-	      ${MF_MESSAGELOGGER}
-	      ${MF_UTILITIES}
-	      ${CETLIB_LIBS}
-	      ${ROOT_BASIC_LIB_LIST}
-)
-
 simple_plugin(PdspChannelMapService "service"
               ${ART_PERSISTENCY_ROOTDB}
               ${ART_FRAMEWORK_SERVICES_REGISTRY}

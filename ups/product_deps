@@ -27,9 +27,9 @@ artdaq_core	v3_01_03	online
 art		v2_07_03	online
 TRACE		v3_13_03	online
 cetbuildtools	v7_00_02	online	only_for_build
-artdaq_core	v1_07_08	online_monitoring
+artdaq_core	v3_01_04	online_monitoring
 art		v2_07_03	online_monitoring
-TRACE		v3_08_01	online_monitoring
+TRACE		v3_13_04	online_monitoring
 cetbuildtools	v5_08_01	online_monitoring	only_for_build
 artdaq_core	v3_00_08	nu
 art		v2_09_06	nu

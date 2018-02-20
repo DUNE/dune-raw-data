@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
           BOOST_REQUIRE_EQUAL(flxfrg.error_register(fr, bl),
                               reordflxfrg.error_register(fr, bl));
           for (unsigned h = 0; h < 8; ++h) {
-            BOOST_REQUIRE_EQUAL(flxfrg.HDR(fr, bl, h), reordflxfrg.HDR(fr, bl, h));
+            BOOST_REQUIRE_EQUAL(flxfrg.hdr(fr, bl, h), reordflxfrg.HDR(fr, bl, h));
           }
         }
         for (unsigned ch = 0; ch < dune::FelixReorderer::num_adcs_per_frame;

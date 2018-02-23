@@ -5,9 +5,9 @@
 #include <map>
 #include <memory>
 #include <vector>
+#include <string>
 #include "artdaq-core/Data/Fragment.hh"
 #include "dune-raw-data/Overlays/FelixFragment.hh"
-#include "dune-raw-data/Overlays/FelixFragmentReordered.hh"
 #include "dune-raw-data/Overlays/FelixReorder.hh"
 
 #pragma GCC diagnostic push
@@ -23,36 +23,47 @@
 BOOST_AUTO_TEST_SUITE(FelixFragment_test)
 
 BOOST_AUTO_TEST_CASE(BaselineTest) {
-  std::cout << "### WOOF -> Testing fromFile creation...\n";
-  artdaq::FragmentPtr frag = dune::FelixFragment::fromFile(
-      "/home/felixdev/milo/uBframes/Plane_0-Link_1.dat");
-  dune::FelixFragment flxfrg(*frag);
-  std::cout << "\n\n";
+  std::cout << "### WOOF -> Testing fragment creation from file...\n";
 
-  std::cout << "### WOOF -> Test for the presence of a single frame...\n";
-  const size_t words = 9600*117;
-  const size_t frames = 9600;
-  const size_t adc_values = 9600*256;
+  std::ifstream in(
+      "/afs/cern.ch/work/m/mivermeu/private/dune-raw-data/frames/"
+      "FelixCounter.frame",
+      std::ios::binary);
+  std::string contents((std::istreambuf_iterator<char>(in)),
+                       (std::istreambuf_iterator<char>()));
+
+  dune::FelixFragmentBase::Metadata meta;
+  std::unique_ptr<artdaq::Fragment> frag_ptr(artdaq::Fragment::FragmentBytes(
+      contents.size(), 1, 1, dune::toFragmentType("FELIX"), meta));
+  frag_ptr->resizeBytes(contents.size());
+  memcpy(frag_ptr->dataBeginBytes(), contents.c_str(), contents.size());
+  in.close();
+
+  dune::FelixFragment flxfrg(*frag_ptr);
+
+  // std::cout << "\n\nPrinting the first frame's contents.\n";
+  // flxfrg.print(0);
+
+  std::cout << "### WOOF -> Test for the presence of 10000 frames...\n";
+  const size_t frames = 10000;
 
   std::cout << "  -> Total words: " << flxfrg.total_words() << '\n';
   std::cout << "  -> Total frames: " << flxfrg.total_frames() << '\n';
   std::cout << "  -> Total adc values: " << flxfrg.total_adc_values() << '\n';
 
-  BOOST_REQUIRE_EQUAL(flxfrg.total_words(), words);
+  BOOST_REQUIRE_EQUAL(flxfrg.total_words(), frames*117);
   BOOST_REQUIRE_EQUAL(flxfrg.total_frames(), frames);
-  BOOST_REQUIRE_EQUAL(flxfrg.total_adc_values(), adc_values);
+  BOOST_REQUIRE_EQUAL(flxfrg.total_adc_values(), frames*256);
   std::cout << "\n\n";
 
   std::cout << "### WOOF -> WIB frame test...\n";
-  const size_t frame_size = 468;
-  BOOST_REQUIRE_EQUAL(sizeof(dune::FelixFragment::WIBFrame), frame_size);
+  BOOST_REQUIRE_EQUAL(sizeof(dune::FelixFrame), 468);
   std::cout << " -> SOF: " << unsigned(flxfrg.sof(0)) << "\n";
   std::cout << " -> Version: " << unsigned(flxfrg.version(0)) << "\n";
   std::cout << " -> FiberNo: " << unsigned(flxfrg.fiber_no(0)) << "\n";
   std::cout << " -> SlotNo: " << unsigned(flxfrg.slot_no(0)) << "\n";
   std::cout << " -> CrateNo: " << unsigned(flxfrg.crate_no(0)) << "\n";
-  std::cout << " -> Timestamp: " << std::hex << flxfrg.timestamp(0) << std::dec
-            << "\n";
+  std::cout << " -> Timestamp: " << std::hex << flxfrg.timestamp(0) << std::dec;
   std::cout << "\n\n";
 
   // std::cout << "### WOOF -> Dumping frames...\n";
@@ -61,23 +72,24 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
 
   // Test whether FelixFragment and FelixFragmentReordered correspond.
   std::cout << "### MEOW -> Reordered FELIX Fragment test.\n";
-  std::ifstream ifile("/home/felixdev/milo/uBframes/Plane_0-Link_1.dat",
-                      std::ios_base::ate);
-  const size_t ifile_size = ifile.tellg();
-  ifile.seekg(0, std::ios_base::beg);
-  uint8_t* buffer = new uint8_t[ifile_size];
-  ifile.read(reinterpret_cast<char*>(buffer), ifile_size);
 
-  artdaq::Fragment reordfrg(dune::FelixReorder(buffer, ifile_size / 468));
-  dune::FelixFragmentReordered reordflxfrg(reordfrg);
+  std::unique_ptr<artdaq::Fragment> frag_ptr2(artdaq::Fragment::FragmentBytes(
+      contents.size(), 1, 1, dune::toFragmentType("FELIX"), meta));
+  frag_ptr2->resizeBytes(contents.size());
+  memcpy(frag_ptr2->dataBeginBytes(), contents.c_str(), contents.size());
+  in.close();
+
+  artdaq::Fragment reordfrg(dune::FelixReorder(frag_ptr2->dataBeginBytes(), frames));
+  dune::FelixFragment reordflxfrg(reordfrg, 1);
 
   std::cout << "  -> Total words: " << reordflxfrg.total_words() << '\n';
   std::cout << "  -> Total frames: " << reordflxfrg.total_frames() << '\n';
-  std::cout << "  -> Total adc values: " << reordflxfrg.total_adc_values() << '\n';
+  std::cout << "  -> Total adc values: " << reordflxfrg.total_adc_values()
+            << '\n';
 
-  std::cout << "### MEOW -> Comparing " << ifile_size / 468 << " frames.\n";
+  std::cout << "### MEOW -> Comparing " << frames << " frames.\n";
   auto comp_begin = std::chrono::high_resolution_clock::now();
-  for (unsigned i = 0; i < ifile_size / 468; ++i) {
+  for (unsigned i = 0; i < frames; ++i) {
     BOOST_REQUIRE_EQUAL(flxfrg.sof(i), reordflxfrg.sof(i));
     BOOST_REQUIRE_EQUAL(flxfrg.version(i), reordflxfrg.version(i));
     BOOST_REQUIRE_EQUAL(flxfrg.fiber_no(i), reordflxfrg.fiber_no(i));
@@ -97,7 +109,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
       BOOST_REQUIRE_EQUAL(flxfrg.error_register(i, j),
                           reordflxfrg.error_register(i, j));
       for (unsigned h = 0; h < 8; ++h) {
-        BOOST_REQUIRE_EQUAL(flxfrg.HDR(i, j, h), reordflxfrg.HDR(i, j, h));
+        BOOST_REQUIRE_EQUAL(flxfrg.hdr(i, j, h), reordflxfrg.hdr(i, j, h));
       }
     }
     for (unsigned ch = 0; ch < 256; ++ch) {
@@ -108,13 +120,11 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
   std::cout << "### MEOW -> Tests successful.\n";
   std::cout << "Took " << std::chrono::duration_cast<std::chrono::milliseconds>(comp_end-comp_begin).count() << " ms.\n";
 
-  // Write reordered fragment to file for compression testing.
-  std::ofstream ofile("/home/felixdev/milo/QATframes/Channel_Previous.dat");
-  ofile.write(reinterpret_cast<char const*>(reordflxfrg.head),
-              reordflxfrg.total_words() * 4);
-  ofile.close();
-
-  delete[] buffer;
+  // // Write reordered fragment to file for compression testing.
+  // std::ofstream ofile("/afs/cern.ch/work/m/mivermeu/private/dune-raw-data/frames/reordered.dat");
+  // ofile.write(reinterpret_cast<char const*>(reordflxfrg.head),
+  //             reordflxfrg.total_words() * 4);
+  // ofile.close();
 
   std::cout << "### WOOF WOOF -> Done...\n";
 }

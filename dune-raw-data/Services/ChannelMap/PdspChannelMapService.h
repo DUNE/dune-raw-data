@@ -52,6 +52,8 @@ public:
   };
 
   typedef std::unordered_map<const key_csfc,int,key_hash,key_equal> channel_map;
+  	
+  unsigned int GetFEMBChannelFromRCEStreamChannel(unsigned int rceCh) const;
   
   // Map instrumentation numbers (crate:slot:fiber:FEMBchannel) to offline channel number
   unsigned int GetOfflineNumberFromDetectorElements(unsigned int crate, unsigned int slot, unsigned int fiber, unsigned int fembchannel) const;
@@ -69,6 +71,9 @@ public:
   
   /// Returns FEMB channel
   unsigned int FEMBChannelFromOfflineChannel(unsigned int offlineChannel) const;
+  
+  /// Returns RCE(FELIX) stream(frame) channel
+  unsigned int StreamChannelFromOfflineChannel(unsigned int offlineChannel) const;
   
   /// Returns global slot ID
   unsigned int SlotIdFromOfflineChannel(unsigned int offlineChannel) const;
@@ -102,6 +107,7 @@ private:
   std::unordered_map<unsigned int, unsigned int> fWIBMap;	// WIB(slot)
   std::unordered_map<unsigned int, unsigned int> fFEMBMap;	// FEMB(fiber)
   std::unordered_map<unsigned int, unsigned int> fFEMBChannelMap;	// FEMB internal channel
+  std::unordered_map<unsigned int, unsigned int> fStreamChannelMap;	// RCE(FELIX) internal channel
   std::unordered_map<unsigned int, unsigned int> fSlotIdMap; // global WIB(slot) ID
   std::unordered_map<unsigned int, unsigned int> fFiberIdMap; // global FEMB(fiber) ID
   std::unordered_map<unsigned int, unsigned int> fChipMap; // Chip

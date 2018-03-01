@@ -1,6 +1,6 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
-parent dune_raw_data	v1_13_01
+parent dune_raw_data	v1_14_00
 defaultqual    e15:nu:s62
 
 # These optional lines define the installed directories where
@@ -34,7 +34,7 @@ cetbuildtools	v5_08_01	online_monitoring	only_for_build
 artdaq_core	v3_00_08	nu
 art		v2_09_06	nu
 TRACE		v3_13_00	nu
-cetbuildtools	v6_01_01	nu	only_for_build
+cetbuildtools	v7_00_03	nu	only_for_build
 dunepdsprce     v0_0_4
 end_product_list
 
@@ -43,6 +43,8 @@ end_product_list
 
 # s50 - with art v2_07_03
 # s56 - with art v2_08_04
+
+# s62 - with art v2_09_06
 
 # -nq- here means there is no qualifier
 # a "-" here means the dependent product is not required by the parent and will not be setup

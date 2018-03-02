@@ -53,8 +53,8 @@ end_product_list
 qualifier	        	 artdaq_core         	art	    	       dunepdsprce		notes
 online:e14:s50:debug		 e14:s50:debug	 	e14:debug	       e14:gen:debug
 online:e14:s50:prof		 e14:s50:prof	 	e14:prof	       e14:gen:prof
-nu:e15:s65:debug		 nu:e15:s65:debug	nu:e15:debug	       e15:gen:debug
-nu:e15:s65:prof			 nu:e15:s65:prof 	nu:e15:prof	       e15:gen:prof
+nu:e15:s65:debug		 e15:s65:debug		e15:debug	       e15:gen:debug
+nu:e15:s65:prof			 e15:s65:prof 		e15:prof	       e15:gen:prof
 online_monitoring:e14:s50:debug	 nu:e14:s50:debug      	nu:e14:debug	       e14:gen:debug
 online_monitoring:e14:s50:prof	 nu:e14:s50:prof 	nu:e14:prof	       e14:gen:prof
 

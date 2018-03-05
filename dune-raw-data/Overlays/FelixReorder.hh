@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "artdaq-core/Data/Fragment.hh"
+#include "dune-raw-data/Overlays/FelixFormat.hh"
 
 #define NUMBER_THREADS 6
 
@@ -62,10 +63,9 @@ class FelixReorderer {
   const unsigned wib_headers_begin = netio_header_size;
   const unsigned crc32_begin = wib_headers_begin + num_frames * wib_header_size;
   const unsigned coldata_headers_begin = crc32_begin + num_frames * crc32_size;
-  const unsigned initial_adc_begin =
+  const unsigned adc_begin =
       coldata_headers_begin +
       num_frames * coldata_header_size * num_blocks_per_frame;
-  const unsigned adc_begin = initial_adc_begin + num_adcs_per_frame * adc_size;
   const unsigned end =
       adc_begin + (num_frames - 1) * num_adcs_per_frame * adc_size;
 
@@ -117,8 +117,8 @@ void FelixReorderer::coldata_header_copy(uint8_t* dest) {
 
 void FelixReorderer::initial_adc_copy(uint8_t* dest) {
   // Store all initial ADC values in uint16_t.
-  const dune::FelixFragment::WIBFrame* src =
-      reinterpret_cast<dune::FelixFragment::WIBFrame const*>(head +
+  const dune::FelixFrame* src =
+      reinterpret_cast<dune::FelixFrame const*>(head +
                                                              netio_header_size);
   for (unsigned i = 0; i < num_adcs_per_frame; ++i) {
     initial_adcs[i] = src->channel(i);
@@ -139,10 +139,10 @@ void t_adc_copy_by_tick(FelixReorderer* reord, uint8_t* dest,
   }
   
   // Store all ADC values in uint16_t.
-  const dune::FelixFragment::WIBFrame* src =
-      reinterpret_cast<dune::FelixFragment::WIBFrame const*>(
+  const dune::FelixFrame* src =
+      reinterpret_cast<dune::FelixFrame const*>(
           reord->head + reord->netio_header_size);
-  for (unsigned fr = 1; fr < reord->num_frames; ++fr) {
+  for (unsigned fr = 0; fr < reord->num_frames; ++fr) {
     for (unsigned ch = t_ch_begin; ch < t_ch_begin + t_ch_range; ++ch) {
       uint16_t reduced_adc = (src + fr)->channel(ch);
       const size_t dest_offset =
@@ -164,12 +164,12 @@ void t_adc_copy_by_channel(FelixReorderer* reord, uint8_t* dest,
   }
 
   // Store all ADC values in uint16_t.
-  const dune::FelixFragment::WIBFrame* src =
-      reinterpret_cast<dune::FelixFragment::WIBFrame const*>(
+  const dune::FelixFrame* src =
+      reinterpret_cast<dune::FelixFrame const*>(
           reord->head + reord->netio_header_size);
   for (unsigned fr = 0; fr < reord->num_frames; ++fr) {
     for (unsigned ch = t_ch_begin; ch < t_ch_begin + t_ch_range; ++ch) {
-      dune::FelixFragment::adc_t curr_val = (src + fr)->channel(ch);
+      adc_t curr_val = (src + fr)->channel(ch);
       memcpy(dest + (ch * reord->num_frames + fr) * reord->adc_size, &curr_val,
              reord->adc_size);
     }
@@ -183,7 +183,6 @@ void FelixReorderer::adc_copy(uint8_t* dest) {
   for (unsigned i = 0; i < t_tot - 1; ++i) {
     t_vec[i] = std::thread(t_adc_copy_by_channel, this, dest, i, t_tot);
   }
-  // Choose either channel or tick, but the overlays need to be adjusted for this.
   t_adc_copy_by_channel(this, dest, t_tot - 1, t_tot);
   for (unsigned i = 0; i < t_tot - 1; ++i) {
     t_vec[i].join();
@@ -193,29 +192,29 @@ void FelixReorderer::adc_copy(uint8_t* dest) {
 void FelixReorderer::reorder_copy(uint8_t* dest) {
   auto wib_start = std::chrono::high_resolution_clock::now();
   wib_header_copy(dest + wib_headers_begin);
-  auto crc32_start = std::chrono::high_resolution_clock::now();
-  crc32_copy(dest + crc32_begin);
   auto colhead_start = std::chrono::high_resolution_clock::now();
   coldata_header_copy(dest + coldata_headers_begin);
+  auto crc32_start = std::chrono::high_resolution_clock::now();
+  crc32_copy(dest + crc32_begin);
   auto adc_start = std::chrono::high_resolution_clock::now();
-  adc_copy(dest + initial_adc_begin);
+  adc_copy(dest + adc_begin);
   auto end = std::chrono::high_resolution_clock::now();
 
   std::cout
       << "\nMemcpy speed tests:\n"
       << "WIB header copy time: "
-      << std::chrono::duration_cast<std::chrono::microseconds>(crc32_start -
+      << std::chrono::duration_cast<std::chrono::microseconds>(colhead_start -
                                                                wib_start)
              .count()
       << "usec\n"
       << "CRC32 copy time: "
-      << std::chrono::duration_cast<std::chrono::microseconds>(colhead_start -
-                                                               crc32_start)
+      << std::chrono::duration_cast<std::chrono::microseconds>(crc32_start -
+                                                               colhead_start)
              .count()
       << "usec\n"
       << "COLDATA header copy time: "
       << std::chrono::duration_cast<std::chrono::microseconds>(adc_start -
-                                                               colhead_start)
+                                                               crc32_start)
              .count()
       << "usec\n"
       << "ADC copy time: "
@@ -306,7 +305,7 @@ void FelixReorderer::reorder_copy(uint8_t* dest) {
 //   }
 // }
 
-artdaq::Fragment FelixReorder(const uint8_t* src, const size_t& num_frames) {
+artdaq::Fragment FelixReorder(const uint8_t* src, const size_t& num_frames = 10000) {
   FelixReorderer reorderer(src, num_frames);
   artdaq::Fragment result;
   result.resizeBytes(reorderer.newSize);

@@ -29,5 +29,7 @@ namespace dune {
 
   FragmentType toFragmentType(std::string t_string);
   std::string fragmentTypeToString(FragmentType val);
+
+  std::map<artdaq::Fragment::type_t, std::string> makeFragmentTypeMap();
 }
 #endif /* dune_artdaq_Overlays_FragmentType_hh */

@@ -27,6 +27,7 @@ art_make(BASENAME_ONLY
   ${MF_MESSAGELOGGER}
   ${MF_MESSAGEUTILITIES}
   ${RCEDAMLIB}
+  pthread
   )
 
 install_headers()

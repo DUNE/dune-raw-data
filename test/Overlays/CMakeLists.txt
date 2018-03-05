@@ -26,8 +26,8 @@ cet_test(DUNE_FelixFragment_t USE_BOOST_UNIT
   pthread
 )
 
-cet_test(DUNE_FelixReorder_t USE_BOOST_UNIT
-  LIBRARIES dune-raw-data_Overlays
-  ${ARTDAQ-CORE_DATA}
-  pthread
-)
+# cet_test(DUNE_FelixReorder_t USE_BOOST_UNIT
+#   LIBRARIES dune-raw-data_Overlays
+#   ${ARTDAQ-CORE_DATA}
+#   pthread
+# )

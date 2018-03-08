@@ -80,6 +80,14 @@ if [[ ! -e $dune_repo ]]; then
     exit 1
 fi
 
+source $dune_repo/setup
+
+larsoft_repo=/cvmfs/fermilab.opensciencegrid.org/products/larsoft
+
+if [[ -e $larsoft_repo ]]; then
+    source $larsoft_repo/setup
+fi
+
 test -n "${do_help-}" -o $# -ge 2 && echo "$USAGE" && exit
 
 # JCF, 1/16/15
@@ -210,7 +218,7 @@ if ! $bad_network; then
     wget http://scisoft.fnal.gov/scisoft/bundles/tools/pullProducts
     chmod +x pullProducts
 
-    ./pullProducts $Base/products ${os} art-${art_version} ${equalifier}-nu ${build_type}
+    ./pullProducts $Base/products ${os} art-${art_version} ${equalifier} ${build_type}
 
     if [ $? -ne 0 ]; then
 	echo "Error in pullProducts. Please go to http://scisoft.fnal.gov/scisoft/bundles/art/${art_version}/manifest and make sure that a manifest for the specified qualifier (${equalifier}) exists."
@@ -219,7 +227,7 @@ if ! $bad_network; then
 
     detectAndPull mrb noarch
 
-    curl -O http://scisoft.fnal.gov/scisoft/packages/artdaq_core/$artdaq_core_version/artdaq_core-${artdaq_core_version_dot}-${os}-x86_64-${equalifier}-nu-${squalifier}-${build_type}.tar.bz2
+    curl -O http://scisoft.fnal.gov/scisoft/packages/artdaq_core/$artdaq_core_version/artdaq_core-${artdaq_core_version_dot}-${os}-x86_64-${equalifier}-${squalifier}-${build_type}.tar.bz2
     curl -O http://scisoft.fnal.gov/scisoft/packages/cetbuildtools/$cetbuildtools_version/cetbuildtools-${cetbuildtools_version_dot}-noarch.tar.bz2
     curl -O http://scisoft.fnal.gov/scisoft/packages/TRACE/$TRACE_version/TRACE-${TRACE_version_dot}-${os}-x86_64.tar.bz2
 fi
@@ -283,6 +291,11 @@ cd $Base
         sh -c "[ \`ps \$\$ | grep bash | wc -l\` -gt 0 ] || { echo 'Please switch to the bash shell before running dune-raw-data.'; exit; }" || exit                                                                                           
         source $Base/products/setup                                                                                   
         source $dune_repo/setup
+
+        if [[ -e $larsoft_repo ]]; then
+             source $larsoft_repo/setup
+        fi
+
         setup mrb
         source $localproducts_setup
         source mrbSetEnv       
@@ -292,8 +305,8 @@ cd $Base
         export DUNERAWDATA_BUILD=$MRB_BUILDDIR/dune_raw_data                                                            
         export DUNERAWDATA_REPO="$ARTDAQ_DEMO_DIR"                                                                                    
         setup TRACE $TRACE_version
-        setup art $art_version -q ${equalifier}:nu:${build_type}
-        setup artdaq_core $artdaq_core_version -q ${equalifier}:nu:${build_type}:${squalifier}
+        setup art $art_version -q ${equalifier}:${build_type}
+        setup artdaq_core $artdaq_core_version -q ${equalifier}:${build_type}:${squalifier}
 
 
 	EOF
@@ -307,8 +320,8 @@ set +u
 source mrbSetEnv
 set -u
 setup TRACE $TRACE_version
-setup art $art_version -q ${equalifier}:nu:${build_type}
-setup artdaq_core $artdaq_core_version -q ${equalifier}:nu:${build_type}:${squalifier}
+setup art $art_version -q ${equalifier}:${build_type}
+setup artdaq_core $artdaq_core_version -q ${equalifier}:${build_type}:${squalifier}
 
 
 export CETPKG_J=$((`cat /proc/cpuinfo|grep processor|tail -1|awk '{print $3}'` + 1))

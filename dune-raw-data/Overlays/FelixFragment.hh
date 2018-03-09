@@ -135,7 +135,7 @@ class dune::FelixFragmentBase {
 
   virtual void print_frames() const = 0;
 
-  FelixFragmentBase(const artdaq::Fragment fragment)
+  FelixFragmentBase(const artdaq::Fragment& fragment)
       : artdaq_Fragment_(fragment.dataBeginBytes()),
         sizeBytes_(fragment.dataSizeBytes()) {}
   virtual ~FelixFragmentBase() {}

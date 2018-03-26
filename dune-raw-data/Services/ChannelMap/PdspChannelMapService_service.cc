@@ -33,164 +33,169 @@ dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& ps
   std::ifstream inFile(fullname, std::ios::in);
   std::string line;
   int counter = 0;
+
   while (std::getline(inFile,line)) {
-  	counter++;
+    counter++;
     unsigned int crateNo, slotNo, fiberNo, FEMBChannel, StreamChannel, slotID, fiberID, chipNo, chipChannel, asicNo, asicChannel, planeType, offlineChannel;
     std::stringstream linestream(line);
     linestream >> crateNo >> slotNo >> fiberNo>> FEMBChannel >> StreamChannel >> slotID >> fiberID >> chipNo >> chipChannel >> asicNo >> asicChannel >> planeType >> offlineChannel;
-    //key_csfc csfc(crateNo, slotNo, fiberNo, FEMBChannel);
-    key_csfc csfc(crateNo, slotNo, fiberNo, StreamChannel);
-    fCsfcToOffline[csfc] = offlineChannel;    
-    fAPAMap[offlineChannel] = crateNo; 
-    fWIBMap[offlineChannel] = slotNo; 
-    fFEMBMap[offlineChannel] = fiberNo; 
-    fFEMBChannelMap[offlineChannel] = FEMBChannel; 
-    fStreamChannelMap[offlineChannel] = StreamChannel;
-    fSlotIdMap[offlineChannel] = slotID; 
-    fFiberIdMap[offlineChannel] = fiberID; 
-    fChipMap[offlineChannel] = chipNo; 
-    fChipChannelMap[offlineChannel] = chipChannel;
-    fASICMap[offlineChannel] = asicNo;
-    fASICChannelMap[offlineChannel] = asicChannel;
-    fPlaneMap[offlineChannel] = planeType;
+
+    // fill lookup tables.  Throw an exception if any number is out of expected bounds.
+    // checking for negative values produces compiler warnings as these are unsigned ints
+
+    if (offlineChannel >= fNChans)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood Offline Channel: " << offlineChannel << "\n";
+      }
+    if (crateNo >= fNCrates)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood Crate Number: " << crateNo << "\n";
+      }
+    if (slotNo >= fNSlots)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood Slot Number: " << slotNo << "\n";
+      }
+    if (fiberNo >= fNFibers)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood Fiber Number: " << fiberNo << "\n";
+      }
+    if (StreamChannel >= fNFEMBChans)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood FEMB (Stream) Channel Number: " << StreamChannel << "\n";
+      }
+
+    farrayCsfcToOffline[crateNo][slotNo][fiberNo][StreamChannel] = offlineChannel;
+    fvAPAMap[offlineChannel] = crateNo; 
+    fvWIBMap[offlineChannel] = slotNo; 
+    fvFEMBMap[offlineChannel] = fiberNo; 
+    fvFEMBChannelMap[offlineChannel] = FEMBChannel; 
+    fvStreamChannelMap[offlineChannel] = StreamChannel;
+    fvSlotIdMap[offlineChannel] = slotID; 
+    fvFiberIdMap[offlineChannel] = fiberID; 
+    fvChipMap[offlineChannel] = chipNo; 
+    fvChipChannelMap[offlineChannel] = chipChannel;
+    fvASICMap[offlineChannel] = asicNo;
+    fvASICChannelMap[offlineChannel] = asicChannel;
+    fvPlaneMap[offlineChannel] = planeType;
+
   }
   inFile.close();
+
+  fHaveWarnedAboutBadCrateNumber = false;
+  fHaveWarnedAboutBadSlotNumber = false;
+  fHaveWarnedAboutBadFiberNumber = false;
 }
 
 dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& pset, art::ActivityRegistry&) : PdspChannelMapService(pset) {
 }
 
-unsigned int dune::PdspChannelMapService::GetOfflineNumberFromDetectorElements(unsigned int crate, unsigned int slot, unsigned int fiber, unsigned int streamchannel) const {
-	unsigned int offlineChannel = bad();
-	key_csfc csfc(crate, slot, fiber, streamchannel);
-	if (fCsfcToOffline.count(csfc) == 0) {
-    std::cout << "Error: "<<crate<<":"<<slot<<":"<<fiber<<":"<<streamchannel<<" not found " << std::endl;
-    throw cet::exception("crate:slot:fiber:RCE(FELIX)Ch not found");
-  }
-	offlineChannel = fCsfcToOffline.find(csfc)->second;
-	return offlineChannel;
+unsigned int dune::PdspChannelMapService::GetOfflineNumberFromDetectorElements(unsigned int crate, unsigned int slot, unsigned int fiber, unsigned int streamchannel) {
+
+  unsigned int offlineChannel;
+  unsigned int lcrate = crate;
+  unsigned int lslot = slot;
+  unsigned int lfiber = fiber;
+
+  if (crate >= fNCrates)
+    {
+      if (!fHaveWarnedAboutBadCrateNumber)
+	{
+	  mf::LogWarning("PdspChannelMapService: Crate Number too high, using crate number zero as a fallback.  Ununderstood crate number: ") << crate;
+	  fHaveWarnedAboutBadCrateNumber = true;
+	}
+      lcrate = 0;
+    }
+
+  if (slot >= fNSlots)
+    {
+      if (!fHaveWarnedAboutBadSlotNumber)
+	{
+	  mf::LogWarning("PdspChannelMapService: Slot Number too high, using slot number zero as a fallback.  Ununderstood slot number: ") << slot;
+	  fHaveWarnedAboutBadSlotNumber = true;
+	}
+      lslot = 0;
+    }
+
+  if (fiber >= fNFibers)
+    {
+      if (!fHaveWarnedAboutBadFiberNumber)
+	{
+	  mf::LogWarning("PdspChannelMapService: Fiber Number too high, using fiber number zero as a fallback.  Ununderstood fiber number: ") << fiber;
+	  fHaveWarnedAboutBadFiberNumber = true;
+	}
+      lfiber = 0;
+    }
+
+  if (streamchannel >= fNFEMBChans)
+    {
+      throw cet::exception("PdspChannelMapService") << "Ununderstood Stream (FEMB) chan: " 
+						    << crate << " " << slot << " " << fiber << " " << streamchannel << "\n";
+    }
+
+  offlineChannel = farrayCsfcToOffline[lcrate][lslot][lfiber][streamchannel];
+  return offlineChannel;
 }
 
 unsigned int dune::PdspChannelMapService::APAFromOfflineChannel(unsigned int offlineChannel) const {
-
-  if (fAPAMap.count(offlineChannel) == 0) {
-    std::cout << "Error: no APA/Crate information for offline channel " << offlineChannel << std::endl;
-    throw cet::exception("APA/Crate information not found");
-  }
-  //std::cout<<"offline channel = "<<offlineChannel<<std::endl;
-  return fAPAMap.at(offlineChannel);
+  check_offline_channel(offlineChannel);
+  return fvAPAMap[offlineChannel];
 }
 
 unsigned int dune::PdspChannelMapService::WIBFromOfflineChannel(unsigned int offlineChannel) const {
+  check_offline_channel(offlineChannel);
+  return fvWIBMap[offlineChannel];
 
-  if (fWIBMap.count(offlineChannel) == 0) {
-    std::cout << "Error: no WIB/Slot information for offline channel " << offlineChannel << std::endl;
-    throw cet::exception("WIB/Slot information not found");
-  }
-  //std::cout<<"offline channel = "<<offlineChannel<<std::endl;
-  return fWIBMap.at(offlineChannel);
 }
 
 unsigned int dune::PdspChannelMapService::FEMBFromOfflineChannel(unsigned int offlineChannel) const {
-
-  if (fFEMBMap.count(offlineChannel) == 0) {
-    std::cout << "Error: no FEMB/Fiber information for offline channel " << offlineChannel << std::endl;
-    throw cet::exception("FEMB/Fiber information not found");
-  }
-  //std::cout<<"offline channel = "<<offlineChannel<<std::endl;
-  return fFEMBMap.at(offlineChannel);
+  check_offline_channel(offlineChannel);
+  return fvFEMBMap[offlineChannel];
 }
 
 
 unsigned int dune::PdspChannelMapService::FEMBChannelFromOfflineChannel(unsigned int offlineChannel) const {
-
-  if (fFEMBChannelMap.count(offlineChannel) == 0) {
-    std::cout << "Error: no FEMB channel information for offline channel " << offlineChannel << std::endl;
-    throw cet::exception("FEMB channel information not found");
-  }
-  //std::cout<<"offline channel = "<<offlineChannel<<std::endl;
-  return fFEMBChannelMap.at(offlineChannel);
+  check_offline_channel(offlineChannel);
+  return fvFEMBChannelMap[offlineChannel];
 }
 
 unsigned int dune::PdspChannelMapService::StreamChannelFromOfflineChannel(unsigned int offlineChannel) const {
-
-  if (fStreamChannelMap.count(offlineChannel) == 0) {
-    std::cout << "Error: no Stream channel information for offline channel " << offlineChannel << std::endl;
-    throw cet::exception("Stream channel information not found");
-  }
-  //std::cout<<"offline channel = "<<offlineChannel<<std::endl;
-  return fStreamChannelMap.at(offlineChannel);
+  check_offline_channel(offlineChannel);
+  return fvStreamChannelMap[offlineChannel];
 }
 
 unsigned int dune::PdspChannelMapService::SlotIdFromOfflineChannel(unsigned int offlineChannel) const {
-
-  if (fSlotIdMap.count(offlineChannel) == 0) {
-    std::cout << "Error: no Slot ID information for offline channel " << offlineChannel << std::endl;
-    throw cet::exception("Slot ID information not found");
-  }
-  //std::cout<<"offline channel = "<<offlineChannel<<std::endl;
-  return fSlotIdMap.at(offlineChannel);
+  check_offline_channel(offlineChannel);
+  return fvSlotIdMap[offlineChannel];
 }
 
 unsigned int dune::PdspChannelMapService::FiberIdFromOfflineChannel(unsigned int offlineChannel) const {
-
-  if (fFiberIdMap.count(offlineChannel) == 0) {
-    std::cout << "Error: no Fiber ID information for offline channel " << offlineChannel << std::endl;
-    throw cet::exception("Fiber ID information not found");
-  }
-  //std::cout<<"offline channel = "<<offlineChannel<<std::endl;
-  return fFiberIdMap.at(offlineChannel);
+  check_offline_channel(offlineChannel);
+  return fvFiberIdMap[offlineChannel];
 }
 
 unsigned int dune::PdspChannelMapService::ChipFromOfflineChannel(unsigned int offlineChannel) const {
-
-  if (fChipMap.count(offlineChannel) == 0) {
-    std::cout << "Error: no Chip information for offline channel " << offlineChannel << std::endl;
-    throw cet::exception("Chip information not found");
-  }
-  //std::cout<<"offline channel = "<<offlineChannel<<std::endl;
-  return fChipMap.at(offlineChannel);
+  check_offline_channel(offlineChannel);
+  return fvChipMap[offlineChannel];
 }
 
 unsigned int dune::PdspChannelMapService::ChipChannelFromOfflineChannel(unsigned int offlineChannel) const {
-
-  if (fChipChannelMap.count(offlineChannel) == 0) {
-    std::cout << "Error: no Chip channel information for offline channel " << offlineChannel << std::endl;
-    throw cet::exception("Chip channel information not found");
-  }
-  //std::cout<<"offline channel = "<<offlineChannel<<std::endl;
-  return fChipChannelMap.at(offlineChannel);
+  check_offline_channel(offlineChannel);
+  return fvChipChannelMap[offlineChannel];
 }
 
 unsigned int dune::PdspChannelMapService::ASICFromOfflineChannel(unsigned int offlineChannel) const {
-
-  if (fASICMap.count(offlineChannel) == 0) {
-    std::cout << "Error: no ASIC information for offline channel " << offlineChannel << std::endl;
-    throw cet::exception("ASIC information not found");
-  }
-  //std::cout<<"offline channel = "<<offlineChannel<<std::endl;
-  return fASICMap.at(offlineChannel);
+  check_offline_channel(offlineChannel);
+  return fvASICMap[offlineChannel];
 }
 
 unsigned int dune::PdspChannelMapService::ASICChannelFromOfflineChannel(unsigned int offlineChannel) const {
-
-  if (fASICChannelMap.count(offlineChannel) == 0) {
-    std::cout << "Error: no ASIC channel information for offline channel " << offlineChannel << std::endl;
-    throw cet::exception("ASIC channel information not found");
-  }
-  //std::cout<<"offline channel = "<<offlineChannel<<std::endl;
-  return fASICChannelMap.at(offlineChannel);
+  check_offline_channel(offlineChannel);
+  return fvASICChannelMap[offlineChannel];
 }
 
 unsigned int dune::PdspChannelMapService::PlaneFromOfflineChannel(unsigned int offlineChannel) const {
-
-  if (fPlaneMap.count(offlineChannel) == 0) {
-    std::cout << "Error: no plane information for offline channel " << offlineChannel << std::endl;
-    throw cet::exception("Plane information not found");
-  }
-
-  return fPlaneMap.at(offlineChannel);
-
+  check_offline_channel(offlineChannel);
+  return fvFEMBMap[offlineChannel];
 }
 
 DEFINE_ART_SERVICE(dune::PdspChannelMapService)

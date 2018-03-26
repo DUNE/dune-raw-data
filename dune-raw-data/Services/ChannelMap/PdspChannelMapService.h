@@ -31,34 +31,11 @@ public:
   PdspChannelMapService(fhicl::ParameterSet const& pset);
   PdspChannelMapService(fhicl::ParameterSet const& pset, art::ActivityRegistry&);
   
-  typedef std::tuple<int,int,int,int> key_csfc;
-   
-  struct key_hash : public std::unary_function<key_csfc, std::size_t>
-  {
-    std::size_t operator()(const key_csfc& k) const {
-      return std::get<0>(k) ^ std::get<1>(k) ^ std::get<2>(k) ^ std::get<3>(k);
-    }
-  };
-   
-  struct key_equal : public std::binary_function<key_csfc, key_csfc, bool> {
-    bool operator()(const key_csfc& v0, const key_csfc& v1) const {
-      return (
-        std::get<0>(v0) == std::get<0>(v1) &&
-        std::get<1>(v0) == std::get<1>(v1) &&
-        std::get<2>(v0) == std::get<2>(v1) &&
-        std::get<3>(v0) == std::get<3>(v1)
-      );
-    }
-  };
-
-  typedef std::unordered_map<const key_csfc,int,key_hash,key_equal> channel_map;
-  	
   unsigned int GetFEMBChannelFromRCEStreamChannel(unsigned int rceCh) const;
   
   // Map instrumentation numbers (crate:slot:fiber:FEMBchannel) to offline channel number
-  unsigned int GetOfflineNumberFromDetectorElements(unsigned int crate, unsigned int slot, unsigned int fiber, unsigned int fembchannel) const;
-  	
-  
+  unsigned int GetOfflineNumberFromDetectorElements(unsigned int crate, unsigned int slot, unsigned int fiber, unsigned int fembchannel);
+  	  
 
   /// Returns APA/crate
   unsigned int APAFromOfflineChannel(unsigned int offlineChannel) const;
@@ -100,22 +77,49 @@ public:
   unsigned int OfflineFromCSFC;
 
 private:
- 
-  // Maps
-  channel_map fCsfcToOffline;
-  std::unordered_map<unsigned int, unsigned int> fAPAMap; // APA(crate)
-  std::unordered_map<unsigned int, unsigned int> fWIBMap;	// WIB(slot)
-  std::unordered_map<unsigned int, unsigned int> fFEMBMap;	// FEMB(fiber)
-  std::unordered_map<unsigned int, unsigned int> fFEMBChannelMap;	// FEMB internal channel
-  std::unordered_map<unsigned int, unsigned int> fStreamChannelMap;	// RCE(FELIX) internal channel
-  std::unordered_map<unsigned int, unsigned int> fSlotIdMap; // global WIB(slot) ID
-  std::unordered_map<unsigned int, unsigned int> fFiberIdMap; // global FEMB(fiber) ID
-  std::unordered_map<unsigned int, unsigned int> fChipMap; // Chip
-  std::unordered_map<unsigned int, unsigned int> fChipChannelMap; //Chip internal channel 
-  std::unordered_map<unsigned int, unsigned int> fASICMap; // ASIC
-  std::unordered_map<unsigned int, unsigned int> fASICChannelMap; // ASIC internal channel
-  std::unordered_map<unsigned int, unsigned int> fPlaneMap; // Plane type
 
+  // hardcoded sizes
+
+  // Note -- we are assuming that FELIX with its two fibers per fragment knows the fiber numbers and that we aren't
+  // encoding double-size channel lists for FELIX with single fiber numbers.
+
+  size_t fNChans = 15360;
+  size_t fNCrates = 6;
+  size_t fNSlots = 5;
+  size_t fNFibers = 4;
+  size_t fNFEMBChans = 128; 
+
+  // control behavior in case we need to fall back to default behavior
+
+  bool fHaveWarnedAboutBadCrateNumber;
+  bool fHaveWarnedAboutBadSlotNumber;
+  bool fHaveWarnedAboutBadFiberNumber;
+
+  // Maps
+  unsigned int farrayCsfcToOffline[6][5][4][128];  // implement as an array.  Do our own bounds checking
+
+  // lookup tables as functions of offline channel number
+
+  unsigned int fvAPAMap[15360]; // APA(=crate)
+  unsigned int fvWIBMap[15360];	// WIB(slot)
+  unsigned int fvFEMBMap[15360];	// FEMB(fiber)
+  unsigned int fvFEMBChannelMap[15360];	// FEMB internal channel
+  unsigned int fvStreamChannelMap[15360];	// RCE(FELIX) internal channel
+  unsigned int fvSlotIdMap[15360]; // global WIB(slot) ID
+  unsigned int fvFiberIdMap[15360]; // global FEMB(fiber) ID
+  unsigned int fvChipMap[15360]; // Chip
+  unsigned int fvChipChannelMap[15360]; //Chip internal channel 
+  unsigned int fvASICMap[15360]; // ASIC
+  unsigned int fvASICChannelMap[15360]; // ASIC internal channel
+  unsigned int fvPlaneMap[15360]; // Plane type
+
+  void check_offline_channel(unsigned int offlineChannel) const
+  {
+  if (offlineChannel > fNChans)
+    {      
+      throw cet::exception("PdspChannelMapService") << "Offline Channel Number out of range: " << offlineChannel << "\n"; 
+    }
+  };
 };
 
 DECLARE_ART_SERVICE(dune::PdspChannelMapService, LEGACY)

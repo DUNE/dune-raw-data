@@ -97,5 +97,6 @@ dune::RceFragment::from_container_frags(const artdaq::Fragments& frags)
             rces.push_back(std::move(rce));
         }
     }
-    return std::move(rces);
+    //return std::move(rces);
+    return rces;
 }

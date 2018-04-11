@@ -1,4 +1,4 @@
-#ifndef dune_artdaq_Overlays_PennMillisliceWriter_hh
+#ifndef dune_artdaq_Overlays_PennMilliSliceWriter_hh
 #define dune_artdaq_Overlays_PennMilliSliceWriter_hh
 
 #include "dune-raw-data/Overlays/PennMilliSlice.hh"

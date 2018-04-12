@@ -28,14 +28,12 @@ dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& ps
     throw cet::exception("File not found");
   }
   else
-    std::cout << "TPC Channel Map: Building TPC map from file " << channelMapFile << std::endl;
+    std::cout << "PDSP Channel Map: Building TPC wiremap from file " << channelMapFile << std::endl;
 
   std::ifstream inFile(fullname, std::ios::in);
   std::string line;
-  int counter = 0;
 
   while (std::getline(inFile,line)) {
-    counter++;
     unsigned int crateNo, slotNo, fiberNo, FEMBChannel, StreamChannel, slotID, fiberID, chipNo, chipChannel, asicNo, asicChannel, planeType, offlineChannel;
     std::stringstream linestream(line);
     linestream >> crateNo >> slotNo >> fiberNo>> FEMBChannel >> StreamChannel >> slotID >> fiberID >> chipNo >> chipChannel >> asicNo >> asicChannel >> planeType >> offlineChannel;
@@ -81,9 +79,72 @@ dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& ps
   }
   inFile.close();
 
+
+  std::string SSPchannelMapFile = pset.get<std::string>("SSPFileName");
+
+  std::string SSPfullname;
+  sp.find_file(SSPchannelMapFile, SSPfullname);
+
+  if (SSPfullname.empty()) {
+    std::cout << "Input file for SSP Channel Map " << SSPchannelMapFile << " not found in FW_SEARCH_PATH " << std::endl;
+    throw cet::exception("File not found");
+  }
+  else
+    std::cout << "PDSP Channel Map: Building SSP channel map from file " << SSPchannelMapFile << std::endl;
+
+  std::ifstream SSPinFile(SSPfullname, std::ios::in);
+
+  while (std::getline(SSPinFile,line)) {
+    unsigned int onlineChannel, APA, SSP, SSPGlobal, ChanWithinSSP, SSPModule, offlineChannel;
+    std::stringstream linestream(line);
+    linestream >> onlineChannel >> APA >> SSP >> SSPGlobal >> ChanWithinSSP >> SSPModule >> offlineChannel;
+
+    // fill lookup tables.  Throw an exception if any number is out of expected bounds.
+    // checking for negative values produces compiler warnings as these are unsigned ints
+
+    if (onlineChannel >= fNSSPChans)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood SSP Online Channel: " << onlineChannel << "\n";
+      }
+    if (offlineChannel >= fNSSPChans)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood SSP Offline Channel: " << offlineChannel << "\n";
+      }
+    if (APA >= fNAPAs)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood APA Number in SSP map file: " << APA << "\n";
+      }
+    if (SSP >= fNSSPsPerAPA)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood SSP number within this APA: " << SSP << " " << APA << "\n";
+      }
+    if (SSPGlobal >= fNSSPs)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood Global SSP number: " << SSPGlobal << "\n";
+      }
+    if (ChanWithinSSP >= fNChansPerSSP)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood Channel within SSP Number: " << ChanWithinSSP << " " << SSPGlobal << "\n";
+      }
+    if (SSPModule >= 10)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood SSP Module Number: " << SSPModule << "\n";
+      }
+
+    farraySSPOnlineToOffline[onlineChannel] = offlineChannel;
+    farraySSPOfflineToOnline[offlineChannel] = onlineChannel;
+    fvSSPAPAMap[offlineChannel] = APA;
+    fvSSPWithinAPAMap[offlineChannel] = SSP;
+    fvSSPGlobalMap[offlineChannel] = SSPGlobal;
+    fvSSPChanWithinSSPMap[offlineChannel] = ChanWithinSSP;
+    fvSSPModuleMap[offlineChannel] = SSPModule;
+  }
+  SSPinFile.close();
+
   fHaveWarnedAboutBadCrateNumber = false;
   fHaveWarnedAboutBadSlotNumber = false;
   fHaveWarnedAboutBadFiberNumber = false;
+  fSSPHaveWarnedAboutBadOnlineChannelNumber = false;
 }
 
 dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& pset, art::ActivityRegistry&) : PdspChannelMapService(pset) {
@@ -152,7 +213,6 @@ unsigned int dune::PdspChannelMapService::FEMBFromOfflineChannel(unsigned int of
   return fvFEMBMap[offlineChannel];
 }
 
-
 unsigned int dune::PdspChannelMapService::FEMBChannelFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
   return fvFEMBChannelMap[offlineChannel];
@@ -196,6 +256,58 @@ unsigned int dune::PdspChannelMapService::ASICChannelFromOfflineChannel(unsigned
 unsigned int dune::PdspChannelMapService::PlaneFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
   return fvFEMBMap[offlineChannel];
+}
+
+unsigned int dune::PdspChannelMapService::SSPOfflineChannelFromOnlineChannel(unsigned int onlineChannel) 
+{
+  unsigned int lchannel = onlineChannel;
+
+  if (onlineChannel > fNSSPChans)
+    {
+      if (!fSSPHaveWarnedAboutBadOnlineChannelNumber)
+	{
+	  mf::LogWarning("PdspChannelMapService: Online Channel Number too high, using zero as a fallback: ") << onlineChannel;
+	  fSSPHaveWarnedAboutBadOnlineChannelNumber = true;
+	}
+      lchannel = 0;
+    }
+  return farraySSPOnlineToOffline[lchannel];
+}
+
+unsigned int dune::PdspChannelMapService::SSPOnlineChannelFromOfflineChannel(unsigned int offlineChannel) const
+{
+  SSP_check_offline_channel(offlineChannel);
+  return farraySSPOfflineToOnline[offlineChannel];
+}
+
+unsigned int dune::PdspChannelMapService::SSPAPAFromOfflineChannel(unsigned int offlineChannel) const
+{
+  SSP_check_offline_channel(offlineChannel);
+  return fvSSPAPAMap[offlineChannel];
+}
+
+unsigned int dune::PdspChannelMapService::SSPWithinAPAFromOfflineChannel(unsigned int offlineChannel) const
+{
+  SSP_check_offline_channel(offlineChannel);
+  return fvSSPWithinAPAMap[offlineChannel];
+}
+
+unsigned int dune::PdspChannelMapService::SSPGlobalFromOfflineChannel(unsigned int offlineChannel) const
+{
+  SSP_check_offline_channel(offlineChannel);
+  return fvSSPGlobalMap[offlineChannel];
+}
+
+unsigned int dune::PdspChannelMapService::SSPChanWithinSSPFromOfflineChannel(unsigned int offlineChannel) const
+{
+  SSP_check_offline_channel(offlineChannel);
+  return fvSSPChanWithinSSPMap[offlineChannel];
+}
+
+unsigned int dune::PdspChannelMapService::SSPModuleFromOfflineChannel(unsigned int offlineChannel) const
+{
+  SSP_check_offline_channel(offlineChannel);
+  return fvSSPModuleMap[offlineChannel];
 }
 
 DEFINE_ART_SERVICE(dune::PdspChannelMapService)

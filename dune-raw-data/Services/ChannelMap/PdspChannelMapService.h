@@ -4,7 +4,8 @@
 // File:        PdspChannelMapService.h
 // Author:      Jingbo Wang (jiowang@ucdavis.edu), February 2018
 //
-// Implementation of hardware-offline channel mapping reading from a file.
+// Implementation of hardware-offline channel mapping reading from a file.  
+// Separate files for TPC wires and SSP modules
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef PdspChannelMapService_H
@@ -31,12 +32,14 @@ public:
   PdspChannelMapService(fhicl::ParameterSet const& pset);
   PdspChannelMapService(fhicl::ParameterSet const& pset, art::ActivityRegistry&);
   
+
+  // TPC channel map accessors
+
   unsigned int GetFEMBChannelFromRCEStreamChannel(unsigned int rceCh) const;
   
   // Map instrumentation numbers (crate:slot:fiber:FEMBchannel) to offline channel number
   unsigned int GetOfflineNumberFromDetectorElements(unsigned int crate, unsigned int slot, unsigned int fiber, unsigned int fembchannel);
   	  
-
   /// Returns APA/crate
   unsigned int APAFromOfflineChannel(unsigned int offlineChannel) const;
   
@@ -76,26 +79,50 @@ public:
   /////////////////////////\ ProtoDUNE-SP channel map fundtions //////////////////////////////
   unsigned int OfflineFromCSFC;
 
+  // SSP channel map accessors
+
+  unsigned int SSPOfflineChannelFromOnlineChannel(unsigned int onlineChannel);
+
+  unsigned int SSPOnlineChannelFromOfflineChannel(unsigned int offlineChannel) const;
+
+  unsigned int SSPAPAFromOfflineChannel(unsigned int offlineChannel) const;
+
+  unsigned int SSPWithinAPAFromOfflineChannel(unsigned int offlineChannel) const;
+
+  unsigned int SSPGlobalFromOfflineChannel(unsigned int offlineChannel) const;
+
+  unsigned int SSPChanWithinSSPFromOfflineChannel(unsigned int offlineChannel) const;
+
+  unsigned int SSPModuleFromOfflineChannel(unsigned int offlineChannel) const;
+
 private:
 
-  // hardcoded sizes
-
+  // hardcoded TPC channel map sizes
   // Note -- we are assuming that FELIX with its two fibers per fragment knows the fiber numbers and that we aren't
   // encoding double-size channel lists for FELIX with single fiber numbers.
 
-  size_t fNChans = 15360;
-  size_t fNCrates = 6;
-  size_t fNSlots = 5;
-  size_t fNFibers = 4;
-  size_t fNFEMBChans = 128; 
+  const size_t fNChans = 15360;
+  const size_t fNCrates = 6;     
+  const size_t fNSlots = 5;
+  const size_t fNFibers = 4;
+  const size_t fNFEMBChans = 128; 
+
+  // hardcoded SSP channel map sizes
+
+  const size_t fNSSPChans = 288;
+  const size_t fNSSPs = 24;
+  const size_t fNSSPsPerAPA = 4;
+  const size_t fNChansPerSSP = 12;
+  const size_t fNAPAs = 6;
 
   // control behavior in case we need to fall back to default behavior
 
   bool fHaveWarnedAboutBadCrateNumber;
   bool fHaveWarnedAboutBadSlotNumber;
   bool fHaveWarnedAboutBadFiberNumber;
+  bool fSSPHaveWarnedAboutBadOnlineChannelNumber;
 
-  // Maps
+  // TPC Maps
   unsigned int farrayCsfcToOffline[6][5][4][128];  // implement as an array.  Do our own bounds checking
 
   // lookup tables as functions of offline channel number
@@ -113,11 +140,31 @@ private:
   unsigned int fvASICChannelMap[15360]; // ASIC internal channel
   unsigned int fvPlaneMap[15360]; // Plane type
 
+  // SSP Maps
+
+  unsigned int farraySSPOnlineToOffline[288];  // all accesses to this array need to be bounds-checked first.
+  unsigned int farraySSPOfflineToOnline[288];  
+  unsigned int fvSSPAPAMap[288];
+  unsigned int fvSSPWithinAPAMap[288];  // SSP's within an APA -- 0 to 3
+  unsigned int fvSSPGlobalMap[288];   // SSP's counting from 0 and going up to 24
+  unsigned int fvSSPChanWithinSSPMap[288];
+  unsigned int fvSSPModuleMap[288];   // PDS module within an APA (0..9)
+
+  //-----------------------------------------------
+
   void check_offline_channel(unsigned int offlineChannel) const
   {
   if (offlineChannel > fNChans)
     {      
-      throw cet::exception("PdspChannelMapService") << "Offline Channel Number out of range: " << offlineChannel << "\n"; 
+      throw cet::exception("PdspChannelMapService") << "Offline TPC Channel Number out of range: " << offlineChannel << "\n"; 
+    }
+  };
+
+  void SSP_check_offline_channel(unsigned int offlineChannel) const
+  {
+  if (offlineChannel > fNSSPChans)
+    {      
+      throw cet::exception("PdspChannelMapService") << "Offline SSP Channel Number out of range: " << offlineChannel << "\n"; 
     }
   };
 };

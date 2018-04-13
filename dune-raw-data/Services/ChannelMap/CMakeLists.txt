@@ -8,7 +8,7 @@ install_source()
 
 
 set(${product}_file_dir "${product}/${version}/files")
-file(GLOB channel_map_file protoDUNETPCChannelMap*.txt)
+file(GLOB channel_map_file *ChannelMap*.txt)
 install(FILES ${channel_map_file} DESTINATION ${${product}_file_dir})
 
 # Add plugin for each service

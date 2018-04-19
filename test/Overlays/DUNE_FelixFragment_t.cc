@@ -26,9 +26,12 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
   std::cout << "### WOOF -> Testing fragment creation from file...\n";
 
   std::ifstream in(
-      "/afs/cern.ch/work/m/mivermeu/private/dune-raw-data/frames/"
-      "FelixCounter.frame",
+      "/nashome/m/milov/Documents/kevlar/run/Run_1-SubRun_6120-Event_3059515-Plane_0-Frame_1.dat",
       std::ios::binary);
+  if(!in.is_open()) {
+    std::cout << "Could not open file.\n";
+    return;
+  }
   std::string contents((std::istreambuf_iterator<char>(in)),
                        (std::istreambuf_iterator<char>()));
 
@@ -44,20 +47,20 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
   // std::cout << "\n\nPrinting the first frame's contents.\n";
   // flxfrg.print(0);
 
-  std::cout << "### WOOF -> Test for the presence of 10000 frames...\n";
-  const size_t frames = 10000;
+  std::cout << "### WOOF -> Test for the presence of 9600 frames...\n";
+  const size_t frames = 9600;
 
   std::cout << "  -> Total words: " << flxfrg.total_words() << '\n';
   std::cout << "  -> Total frames: " << flxfrg.total_frames() << '\n';
   std::cout << "  -> Total adc values: " << flxfrg.total_adc_values() << '\n';
 
-  BOOST_REQUIRE_EQUAL(flxfrg.total_words(), frames*117);
+  BOOST_REQUIRE_EQUAL(flxfrg.total_words(), frames*120);
   BOOST_REQUIRE_EQUAL(flxfrg.total_frames(), frames);
   BOOST_REQUIRE_EQUAL(flxfrg.total_adc_values(), frames*256);
   std::cout << "\n\n";
 
   std::cout << "### WOOF -> WIB frame test...\n";
-  BOOST_REQUIRE_EQUAL(sizeof(dune::FelixFrame), 468);
+  BOOST_REQUIRE_EQUAL(sizeof(dune::FelixFrame), 480);
   std::cout << " -> SOF: " << unsigned(flxfrg.sof(0)) << "\n";
   std::cout << " -> Version: " << unsigned(flxfrg.version(0)) << "\n";
   std::cout << " -> FiberNo: " << unsigned(flxfrg.fiber_no(0)) << "\n";
@@ -96,7 +99,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     BOOST_REQUIRE_EQUAL(flxfrg.slot_no(i), reordflxfrg.slot_no(i));
     BOOST_REQUIRE_EQUAL(flxfrg.crate_no(i), reordflxfrg.crate_no(i));
     BOOST_REQUIRE_EQUAL(flxfrg.timestamp(i), reordflxfrg.timestamp(i));
-    BOOST_REQUIRE_EQUAL(flxfrg.CRC32(i), reordflxfrg.CRC32(i));
+    BOOST_REQUIRE_EQUAL(flxfrg.CRC(i), reordflxfrg.CRC(i));
     for (unsigned j = 0; j < 4; ++j) {
       BOOST_REQUIRE_EQUAL(flxfrg.s1_error(i, j), reordflxfrg.s1_error(i, j));
       BOOST_REQUIRE_EQUAL(flxfrg.s2_error(i, j), reordflxfrg.s2_error(i, j));

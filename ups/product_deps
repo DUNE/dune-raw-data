@@ -26,16 +26,19 @@ product		version		optional
 artdaq_core	v3_01_05	online
 art		v2_07_03	online
 TRACE		v3_13_04	online
-cetbuildtools	v7_00_02	online	only_for_build
-artdaq_core	v3_01_04	online_monitoring
+dunepdsprce     v0_0_4		online
+cetbuildtools	v7_00_02	online			only_for_build
+artdaq_core	v3_02_00	online_monitoring
 art		v2_07_03	online_monitoring
 TRACE		v3_13_04	online_monitoring
+dunepdsprce     v0_0_4		online_monitoring
 cetbuildtools	v5_08_01	online_monitoring	only_for_build
 artdaq_core	v3_01_06	nu
 art		v2_10_03	nu
 TRACE		v3_13_04	nu
-cetbuildtools	v7_02_01	nu	only_for_build
-dunepdsprce     v0_0_4a
+dunepdsprce     v0_0_4a		nu
+cetbuildtools	v6_01_01	nu			only_for_build
+
 end_product_list
 
 # e14 - with gcc v6_3_0

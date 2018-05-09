@@ -115,19 +115,17 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
                      .count()
               << " us.\n";
 
-    // // Test whether the original and decompressed frames correspond.
-    // const dune::FelixFrame* orig =
-    //     reinterpret_cast<dune::FelixFrame const*>(flxfrg.dataBeginBytes());
-    // const dune::FelixFrame* decomp =
-    //     reinterpret_cast<dune::FelixFrame const*>(decompfrg.dataBeginBytes());
-    // for (unsigned i = 0; i < frames; ++i) {
-    //   // std::cout << i << '\n';
-    //   BOOST_REQUIRE_EQUAL((orig + i)->version(), (decomp + i)->version());
-    //   for (unsigned j = 0; j < 256; ++j) {
-    //     // std::cout << j << '\t';
-    //     BOOST_REQUIRE_EQUAL((orig + i)->channel(j), (decomp + i)->channel(j));
-    //   }
-    // }
+    // Test whether the original and decompressed frames correspond.
+    const dune::FelixFrame* orig =
+        reinterpret_cast<dune::FelixFrame const*>(flxfrg.dataBeginBytes());
+    const dune::FelixFrame* decomp =
+        reinterpret_cast<dune::FelixFrame const*>(decompfrg.dataBeginBytes());
+    for (unsigned i = 0; i < frames; ++i) {
+      BOOST_REQUIRE_EQUAL((orig + i)->version(), (decomp + i)->version());
+      for (unsigned j = 0; j < 256; ++j) {
+        BOOST_REQUIRE_EQUAL((orig + i)->channel(j), (decomp + i)->channel(j));
+      }
+    }
   }  // Loop over files.
 
   std::cout << "### WOOF WOOF -> Done...\n";

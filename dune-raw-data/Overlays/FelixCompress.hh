@@ -5,6 +5,9 @@
 #ifndef artdaq_dune_Overlays_FelixComp_hh
 #define artdaq_dune_Overlays_FelixComp_hh
 
+// Option for previous value subtraction.
+#define PREV
+
 #include <bitset>  // testing
 #include <cmath>   // log
 #include <iomanip>
@@ -43,9 +46,11 @@ struct HuffTree {
       }
     }
 
-    // Operator< overloading for ordering by frequency. If the frequency is the same, the values in the nodes are taken into account.
+    // Operator< overloading for ordering by frequency. If the frequency is the
+    // same, the values in the nodes are taken into account.
     bool operator<(const Node& other) const {
-      return (frequency < other.frequency) || ((frequency == other.frequency)&&(value < other.value));
+      return (frequency < other.frequency) ||
+             ((frequency == other.frequency) && (value < other.value));
     }
   };
 
@@ -124,7 +129,8 @@ struct HuffTree {
       }
 
       // Make lowest value the left node in case of equal frequency.
-      if(lowest->frequency == sec_lowest->frequency && lowest->value > sec_lowest->value) {
+      if (lowest->frequency == sec_lowest->frequency &&
+          lowest->value > sec_lowest->value) {
         Node* tmp = lowest;
         lowest = sec_lowest;
         sec_lowest = tmp;
@@ -259,9 +265,14 @@ class FelixCompressor {
   void generate_Huff_tree(std::vector<char>& out) {
     // Build a frequency table.
     std::unordered_map<uint16_t, uint32_t> freq_table;
-    for (unsigned fri = 0; fri < num_frames; ++fri) {
-      for (unsigned vi = 0; vi < frame_()->num_ch_per_frame; ++vi) {
-        freq_table[frame_(fri)->channel(vi)]++;
+    for (unsigned vi = 0; vi < frame_()->num_ch_per_frame; ++vi) {
+      freq_table[frame_(0)->channel(vi)]++;
+      for (unsigned fri = 1; fri < num_frames; ++fri) {
+        adc_t curr_val = frame_(fri)->channel(vi);
+#ifdef PREV
+        curr_val -= frame_(fri - 1)->channel(vi);
+#endif
+        freq_table[curr_val]++;
       }
     }
 
@@ -307,7 +318,13 @@ class FelixCompressor {
     unsigned rec_bits = 0;
     char* dest = &out[0] + tail;
     for (unsigned i = 0; i < num_frames * 256; ++i) {
-      const adc_t curr_val = frame_(i / 256)->channel(i % 256);
+      adc_t curr_val = frame_(i % num_frames)->channel(i / num_frames);
+// Possibly use previous value subtraction.
+#ifdef PREV
+      if (i % num_frames != 0) {
+        curr_val -= frame_(i % num_frames - 1)->channel(i / num_frames);
+      }
+#endif
       char* curr_dest = dest + rec_bits / 8;
       const size_t curr_code = hufftree(curr_val)->huffcode;
       // Keep track of how many bits are left to record.
@@ -424,7 +441,13 @@ artdaq::Fragment FelixDecompress(const std::vector<char>& buff) {
       }
     }
     // Value reached.
-    (frame + i / 256)->set_channel(i % 256, pnode->value);
+    adc_t found_val = pnode->value;
+#ifdef PREV
+    if (i % num_frames != 0) {
+      found_val += (frame + i % num_frames - 1)->channel(i / num_frames);
+    }
+#endif
+    (frame + i % num_frames)->set_channel(i / num_frames, found_val);
   }
 
   return result;

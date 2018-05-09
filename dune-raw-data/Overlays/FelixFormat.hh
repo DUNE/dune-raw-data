@@ -266,15 +266,18 @@ struct ColdataBlock {
 //=============
 class FelixFrame {
  private:
+  word_t FelixHead_;
+  word_t sof_1 : 8, empty_1 : 24;
   WIBHeader head;
   ColdataBlock blocks[4];
-  word_t CRC32_1;
+  word_t eof : 8, CRC_1 : 20, empty_2 : 4;
+  word_t empty_3;
 
  public:
   // Constant expressions
   static constexpr size_t num_frame_hdr_words = 4;
   static constexpr size_t num_COLDATA_hdr_words = 4;
-  static constexpr size_t num_frame_words = 117;
+  static constexpr size_t num_frame_words = 120;
   static constexpr size_t num_frame_bytes = 468;
   static constexpr size_t num_COLDATA_words = 28;
 
@@ -376,10 +379,16 @@ class FelixFrame {
     set_channel(ch / 64, ch % 64, new_val);
   }
 
-  // CRC32 accessor
-  uint32_t CRC32() const { return CRC32_1; }
-  // CRC32 mutator
-  void set_CRC32(const uint32_t new_CRC32) { CRC32_1 = new_CRC32; }
+  // CRC accessor
+  uint32_t CRC() const { return CRC_1; }
+  // CRC mutator
+  void set_CRC(const uint32_t new_CRC) { CRC_1 = new_CRC; }
+
+  // Const struct accessors.
+  const WIBHeader* wib_header() const { return &head; }
+  const ColdataHeader* coldata_header(const unsigned& block = 0) const {
+    return &blocks[block%4].head;
+  }
 
   // Utility functions
   void print() const {
@@ -389,19 +398,20 @@ class FelixFrame {
       b.head.print();
       b.printADCs();
     }
-    std::cout << "CRC32: " << CRC32() << '\n';
+    std::cout << "CRC: " << CRC() << '\n';
   }
 };
 
 //========================
 // Reordered FELIX frames
 //========================
+static constexpr unsigned num_reord = 9600;
 class ReorderedFelixFrames {
  private:
-  WIBHeader head[10000];
-  word_t CRC32_[10000];
-  ColdataHeader blockhead[10000*4];
-  adc_t ADCs[10000*256];
+  WIBHeader head[num_reord];
+  word_t CRC_[num_reord];
+  ColdataHeader blockhead[num_reord*4];
+  adc_t ADCs[num_reord*256];
 
  public:
   static constexpr unsigned frame_size = sizeof(WIBHeader)+sizeof(word_t)+4*sizeof(ColdataHeader)+256*sizeof(adc_t);
@@ -409,7 +419,7 @@ class ReorderedFelixFrames {
   // ReorderedFelixFrames(const artdaq::Fragment fragment)
   //     : head(fragment.dataSizeBytes() / frame_size),
   //       blockhead(fragment.dataSizeBytes() / frame_size * 4),
-  //       CRC32_(fragment.dataSizeBytes() / frame_size),
+  //       CRC_(fragment.dataSizeBytes() / frame_size),
   //       ADCs(fragment.dataSizeBytes() / frame_size * 256) {}
 
   // WIB header accessors
@@ -443,49 +453,49 @@ class ReorderedFelixFrames {
 
   // COLDATA header accessors
   uint8_t s1_error(const size_t frame_ID, const uint8_t block_num) const {
-    return blockhead[frame_ID+block_num].s1_error;
+    return blockhead[frame_ID*4+block_num].s1_error;
   }
   uint8_t s2_error(const size_t frame_ID, const uint8_t block_num) const {
-    return blockhead[frame_ID+block_num].s2_error;
+    return blockhead[frame_ID*4+block_num].s2_error;
   }
   uint16_t checksum_a(const size_t frame_ID, const uint8_t block_num) const {
-    return blockhead[frame_ID+block_num].checksum_a();
+    return blockhead[frame_ID*4+block_num].checksum_a();
   }
   uint16_t checksum_b(const size_t frame_ID, const uint8_t block_num) const {
-    return blockhead[frame_ID+block_num].checksum_b();
+    return blockhead[frame_ID*4+block_num].checksum_b();
   }
   uint16_t coldata_convert_count(const size_t frame_ID, const uint8_t block_num) const {
-    return blockhead[frame_ID+block_num].coldata_convert_count;
+    return blockhead[frame_ID*4+block_num].coldata_convert_count;
   }
   uint16_t error_register(const size_t frame_ID, const uint8_t block_num) const {
-    return blockhead[frame_ID+block_num].error_register;
+    return blockhead[frame_ID*4+block_num].error_register;
   }
-  uint8_t hdr(const size_t frame_ID, const uint8_t block_num, const uint8_t i) const { return blockhead[frame_ID+block_num].hdr(i); }
+  uint8_t hdr(const size_t frame_ID, const uint8_t block_num, const uint8_t i) const { return blockhead[frame_ID*4+block_num].hdr(i); }
   // COLDATA header mutators
   void set_s1_error(const size_t frame_ID, const uint8_t block_num, const uint8_t new_s1_error) {
-    blockhead[frame_ID+block_num].s1_error = new_s1_error;
+    blockhead[frame_ID*4+block_num].s1_error = new_s1_error;
   }
   void set_s2_error(const size_t frame_ID, const uint8_t block_num, const uint8_t new_s2_error) {
-    blockhead[frame_ID+block_num].s2_error = new_s2_error;
+    blockhead[frame_ID*4+block_num].s2_error = new_s2_error;
   }
   void set_checksum_a(const size_t frame_ID, const uint8_t block_num, const uint16_t new_checksum_a) {
-    blockhead[frame_ID+block_num].set_checksum_a(new_checksum_a);
+    blockhead[frame_ID*4+block_num].set_checksum_a(new_checksum_a);
   }
   void set_checksum_b(const size_t frame_ID, const uint8_t block_num, const uint16_t new_checksum_b) {
-    blockhead[frame_ID+block_num].set_checksum_b(new_checksum_b);
+    blockhead[frame_ID*4+block_num].set_checksum_b(new_checksum_b);
   }
   void set_coldata_convert_count(const size_t frame_ID, const uint8_t block_num,
                                  const uint16_t new_coldata_convert_count) {
-    blockhead[frame_ID+block_num].coldata_convert_count = new_coldata_convert_count;
+    blockhead[frame_ID*4+block_num].coldata_convert_count = new_coldata_convert_count;
   }
   void set_error_register(const size_t frame_ID, const uint8_t block_num, const uint16_t new_error_register) {
-    blockhead[frame_ID+block_num].error_register = new_error_register;
+    blockhead[frame_ID*4+block_num].error_register = new_error_register;
   }
   void set_hdr(const size_t frame_ID, const uint8_t block_num, const uint8_t i, const uint8_t new_hdr) {
     blockhead[frame_ID*4+block_num].set_hdr(i, new_hdr);
   }
 
-  size_t total_frames() const { return 10000/* ADCs.size()/256 */; }
+  size_t total_frames() const { return num_reord/* ADCs.size()/256 */; }
 
   // Channel accessors
   uint16_t channel(const size_t frame_ID, const uint8_t block_num, const uint8_t adc, const uint8_t ch) const {
@@ -513,10 +523,10 @@ class ReorderedFelixFrames {
   //                ADCs.begin() + (ch+1) * total_frames());
   // }
 
-  // CRC32 accessor
-  uint32_t CRC32(const size_t frame_ID) const { return CRC32_[frame_ID]; }
-  // CRC32 mutator
-  void set_CRC32(const size_t frame_ID, const uint32_t new_CRC32) { CRC32_[frame_ID] = new_CRC32; }
+  // CRC accessor
+  uint32_t CRC(const size_t frame_ID) const { return CRC_[frame_ID]&((1<<20)-1); }
+  // CRC mutator
+  void set_CRC(const size_t frame_ID, const uint32_t new_CRC) { CRC_[frame_ID] = new_CRC; }
 
   // Utility functions
   void print(const size_t frame_ID) const {
@@ -534,7 +544,7 @@ class ReorderedFelixFrames {
         std::cout << std::dec << '\n';
       }
     }
-    std::cout << "CRC32: " << CRC32(frame_ID) << '\n';
+    std::cout << "CRC: " << CRC(frame_ID) << '\n';
   }
 };
 

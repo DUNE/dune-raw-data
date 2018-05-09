@@ -19,11 +19,11 @@ namespace dune {
 class FelixReorderer {
  public:
   static const unsigned netio_header_size = 0;
-  static const unsigned frame_size = 117 * 4;
+  static const unsigned frame_size = 120 * 4;
   static const unsigned wib_header_size = 4 * 4;
   static const unsigned coldata_header_size = 4 * 4;
   static const unsigned coldata_block_size = 28 * 4;
-  static const unsigned crc32_size = 4;
+  static const unsigned crc_size = 4;
 
   static const unsigned adc_size = 2;
 
@@ -31,9 +31,8 @@ class FelixReorderer {
   static const unsigned num_blocks_per_frame = 4;
   static const unsigned num_streams_per_block = 8;
 
-  static const unsigned num_adcs_per_block =
-      num_adcs_per_frame / num_blocks_per_frame;
-  static const unsigned num_adcs_per_stream =
+  static const unsigned num_adcs_per_block = 64;
+    static const unsigned num_adcs_per_stream =
       num_adcs_per_block / num_streams_per_block;
 
  private:
@@ -44,7 +43,7 @@ class FelixReorderer {
   uint16_t initial_adcs[num_adcs_per_frame];
 
   void wib_header_copy(uint8_t* dest);
-  void crc32_copy(uint8_t* dest);
+  void crc_copy(uint8_t* dest);
   void coldata_header_copy(uint8_t* dest);
   void initial_adc_copy(uint8_t* dest);
   void adc_copy(uint8_t* dest);
@@ -56,13 +55,13 @@ class FelixReorderer {
   const unsigned newSize =
       netio_header_size +
       (wib_header_size + coldata_header_size * num_blocks_per_frame +
-       crc32_size + adc_size * num_adcs_per_frame) *
+       crc_size + adc_size * num_adcs_per_frame) *
           num_frames;
 
   // Locations in the destination buffer.
   const unsigned wib_headers_begin = netio_header_size;
-  const unsigned crc32_begin = wib_headers_begin + num_frames * wib_header_size;
-  const unsigned coldata_headers_begin = crc32_begin + num_frames * crc32_size;
+  const unsigned crc_begin = wib_headers_begin + num_frames * wib_header_size;
+  const unsigned coldata_headers_begin = crc_begin + num_frames * crc_size;
   const unsigned adc_begin =
       coldata_headers_begin +
       num_frames * coldata_header_size * num_blocks_per_frame;
@@ -83,43 +82,44 @@ class FelixReorderer {
 
 void FelixReorderer::wib_header_copy(uint8_t* dest) {
   // Store WIB-headers next to each other.
-  const uint8_t* src = head + netio_header_size;
+  const dune::FelixFrame* src =
+      reinterpret_cast<dune::FelixFrame const*>(head + netio_header_size);
   for (unsigned i = 0; i < num_frames; ++i) {
-    memcpy(dest, src, wib_header_size);
+    memcpy(dest, src->wib_header(), wib_header_size);
     dest += wib_header_size;
-    src += frame_size;
+    ++src;
   }
 }
 
-void FelixReorderer::crc32_copy(uint8_t* dest) {
-  // Store CRC32s next to each other.
-  const uint8_t* src =
-      head + netio_header_size + wib_header_size + 4 * coldata_block_size;
+void FelixReorderer::crc_copy(uint8_t* dest) {
+  // Store CRCs next to each other.
+  const dune::FelixFrame* src =
+      reinterpret_cast<dune::FelixFrame const*>(head + netio_header_size);
   for (unsigned i = 0; i < num_frames; ++i) {
-    memcpy(dest, src, crc32_size);
-    dest += crc32_size;
-    src += frame_size;
+    const uint32_t curr_crc = src->CRC();
+    memcpy(dest, &curr_crc, crc_size);
+    dest += crc_size;
+    ++src;
   }
 }
 
 void FelixReorderer::coldata_header_copy(uint8_t* dest) {
   // Store COLDATA headers next to each other.
-  const uint8_t* src = head + netio_header_size + wib_header_size;
+  const dune::FelixFrame* src =
+      reinterpret_cast<dune::FelixFrame const*>(head + netio_header_size);
   for (unsigned i = 0; i < num_frames; ++i) {
     for (unsigned j = 0; j < num_blocks_per_frame; ++j) {
-      memcpy(dest, src, coldata_header_size);
+      memcpy(dest, src->coldata_header(j), coldata_header_size);
       dest += coldata_header_size;
-      src += coldata_block_size;
     }
-    src += crc32_size + wib_header_size;
+    ++src;
   }
 }
 
 void FelixReorderer::initial_adc_copy(uint8_t* dest) {
   // Store all initial ADC values in uint16_t.
   const dune::FelixFrame* src =
-      reinterpret_cast<dune::FelixFrame const*>(head +
-                                                             netio_header_size);
+      reinterpret_cast<dune::FelixFrame const*>(head + netio_header_size);
   for (unsigned i = 0; i < num_adcs_per_frame; ++i) {
     initial_adcs[i] = src->channel(i);
     memcpy(dest, &initial_adcs[i], adc_size);
@@ -194,8 +194,8 @@ void FelixReorderer::reorder_copy(uint8_t* dest) {
   wib_header_copy(dest + wib_headers_begin);
   auto colhead_start = std::chrono::high_resolution_clock::now();
   coldata_header_copy(dest + coldata_headers_begin);
-  auto crc32_start = std::chrono::high_resolution_clock::now();
-  crc32_copy(dest + crc32_begin);
+  auto crc_start = std::chrono::high_resolution_clock::now();
+  crc_copy(dest + crc_begin);
   auto adc_start = std::chrono::high_resolution_clock::now();
   adc_copy(dest + adc_begin);
   auto end = std::chrono::high_resolution_clock::now();
@@ -207,14 +207,14 @@ void FelixReorderer::reorder_copy(uint8_t* dest) {
                                                                wib_start)
              .count()
       << "usec\n"
-      << "CRC32 copy time: "
-      << std::chrono::duration_cast<std::chrono::microseconds>(crc32_start -
+      << "CRC copy time: "
+      << std::chrono::duration_cast<std::chrono::microseconds>(crc_start -
                                                                colhead_start)
              .count()
       << "usec\n"
       << "COLDATA header copy time: "
       << std::chrono::duration_cast<std::chrono::microseconds>(adc_start -
-                                                               crc32_start)
+                                                               crc_start)
              .count()
       << "usec\n"
       << "ADC copy time: "
@@ -249,10 +249,10 @@ void FelixReorderer::reorder_copy(uint8_t* dest) {
 //   frame.set_timestamp(head->timestamp());
 //   frame.set_wib_counter(head->wib_counter);
 
-//   // Install CRC32.
+//   // Install CRC.
 //   const uint32_t* cbegin =
-//       reinterpret_cast<uint32_t const*>(src + crc32_begin + crc32_size * i);
-//   frame.set_CRC32(*(cbegin));
+//       reinterpret_cast<uint32_t const*>(src + crc_begin + crc_size * i);
+//   frame.set_CRC(*(cbegin));
 
 //   // Install COLDATA headers.
 //   frame.clearReserved();

@@ -112,8 +112,8 @@ class dune::FelixFragmentBase {
   virtual uint8_t hdr(const unsigned& frame_ID, const uint8_t& block_num,
                       const uint8_t& hdr_num) const = 0;
 
-  /* CRC32 */
-  virtual word_t CRC32(const unsigned& frame_ID = 0) const = 0;
+  /* CRC */
+  virtual word_t CRC(const unsigned& frame_ID = 0) const = 0;
 
   // Functions to return a certain ADC value.
   virtual adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
@@ -149,6 +149,14 @@ class dune::FelixFragmentBase {
   // Largest ADC value possible
   virtual size_t adc_range(int daq_adc_bits = 12) {
     return (1ul << daq_adc_bits);
+  }
+
+  // Raw data access (const only).
+  const uint8_t* dataBeginBytes() const {
+    return reinterpret_cast<uint8_t const*>(artdaq_Fragment_);
+  }
+  size_t dataSizeBytes() const {
+    return sizeBytes_;
   }
 
  protected:
@@ -227,9 +235,9 @@ class dune::FelixFragmentUnordered : public dune::FelixFragmentBase {
     return frame_(frame_ID)->hdr(block_num, hdr_num);
   }
 
-  /* CRC32 */
-  word_t CRC32(const unsigned& frame_ID = 0) const {
-    return frame_(frame_ID)->CRC32();
+  /* CRC */
+  word_t CRC(const unsigned& frame_ID = 0) const {
+    return frame_(frame_ID)->CRC();
   }
 
   // Functions to return a certain ADC value.
@@ -375,9 +383,9 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
     return frames_()->hdr(frame_ID, block_num, hdr_num);
   }
 
-  /* CRC32 */
-  word_t CRC32(const unsigned& frame_ID = 0) const {
-    return frames_()->CRC32(frame_ID);
+  /* CRC */
+  word_t CRC(const unsigned& frame_ID = 0) const {
+    return frames_()->CRC(frame_ID);
   }
 
   // Functions to return a certain ADC value.
@@ -533,9 +541,9 @@ class dune::FelixFragment: public FelixFragmentBase {
     return flxfrag->hdr(frame_ID, block_num, hdr_num);
   }
 
-  /* CRC32 */
-  word_t CRC32(const unsigned& frame_ID = 0) const {
-    return flxfrag->CRC32(frame_ID);
+  /* CRC */
+  word_t CRC(const unsigned& frame_ID = 0) const {
+    return flxfrag->CRC(frame_ID);
   }
 
   // Functions to return a certain ADC value.

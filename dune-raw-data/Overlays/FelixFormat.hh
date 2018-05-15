@@ -286,7 +286,7 @@ class FelixFrame {
   static constexpr size_t num_COLDATA_hdr_words = 4;
 #if defined FELIXHEAD && defined FELIXTRAIL
   static constexpr size_t num_frame_words = 120;
-#elif defined FELIXHEAD || FELIXTRAIL
+#elif defined FELIXHEAD || defined FELIXTRAIL
   static constexpr size_t num_frame_words = 118;
 #else
   static constexpr size_t num_frame_words = 116;

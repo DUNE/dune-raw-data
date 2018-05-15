@@ -4,6 +4,9 @@
 #ifndef artdaq_dune_Overlays_FelixFormat_hh
 #define artdaq_dune_Overlays_FelixFormat_hh
 
+#define FELIXHEAD
+#define FELIXTRAIL
+
 #include <bitset>
 #include <iostream>
 #include <vector>
@@ -266,19 +269,29 @@ struct ColdataBlock {
 //=============
 class FelixFrame {
  private:
+#ifdef FELIXHEAD
   word_t FelixHead_;
   word_t sof_1 : 8, empty_1 : 24;
+#endif
   WIBHeader head;
   ColdataBlock blocks[4];
+#ifdef FELIXTRAIL
   word_t eof : 8, CRC_1 : 20, empty_2 : 4;
   word_t empty_3;
+#endif
 
  public:
   // Constant expressions
   static constexpr size_t num_frame_hdr_words = 4;
   static constexpr size_t num_COLDATA_hdr_words = 4;
+#if defined FELIXHEAD && defined FELIXTRAIL
   static constexpr size_t num_frame_words = 120;
-  static constexpr size_t num_frame_bytes = 468;
+#elif defined FELIXHEAD || FELIXTRAIL
+  static constexpr size_t num_frame_words = 118;
+#else
+  static constexpr size_t num_frame_words = 116;
+#endif
+  static constexpr size_t num_frame_bytes = num_frame_words * sizeof(word_t);
   static constexpr size_t num_COLDATA_words = 28;
 
   static constexpr size_t num_ch_per_frame = 256;
@@ -287,7 +300,11 @@ class FelixFrame {
   static constexpr size_t num_ch_per_seg = 8;
 
   // WIB header accessors
+#ifdef FELIXHEAD
   uint8_t sof() const { return head.sof; }
+#else
+  uint8_t sof() const { return 0; }
+#endif
   uint8_t version() const { return head.version; }
   uint8_t fiber_no() const { return head.fiber_no; }
   uint8_t crate_no() const { return head.crate_no; }
@@ -379,10 +396,15 @@ class FelixFrame {
     set_channel(ch / 64, ch % 64, new_val);
   }
 
+#ifdef FELIXTRAIL
   // CRC accessor
   uint32_t CRC() const { return CRC_1; }
   // CRC mutator
   void set_CRC(const uint32_t new_CRC) { CRC_1 = new_CRC; }
+#else
+  // CRC accessor
+  uint32_t CRC() const { return 0; }
+#endif
 
   // Const struct accessors.
   const WIBHeader* wib_header() const { return &head; }

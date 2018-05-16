@@ -15,6 +15,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <algorithm>
+#include <chrono>
 
 #include "artdaq-core/Data/Fragment.hh"
 #include "dune-raw-data/Overlays/FelixFormat.hh"
@@ -54,6 +56,10 @@ struct HuffTree {
     }
   };
 
+  bool valuecomp(const Node& one, const Node& other) const {
+    return one.value < other.value;
+  }
+
   Node* root;
   Node* nodelist;
   std::unordered_map<uint16_t, Node*> nodes;
@@ -75,6 +81,34 @@ struct HuffTree {
     return;
   }
   void print() { return print(root); }
+
+  // Function to print a Huffman tree to a file.
+  void printFile(std::string& filename) {
+    std::ofstream ofile(filename);
+
+    ofile << "Value\tFrequency\tCode\tLength\n";
+    std::vector<Node*> local_nlist;
+
+    for(auto p : nodes) {
+      Node* n = p.second;
+      if(n->frequency == 0) continue;
+      local_nlist.push_back(n);
+    }
+
+    std::sort(local_nlist.begin(), local_nlist.end());
+
+    for(unsigned i = 0; i < local_nlist.size(); ++i) {
+      Node* n = local_nlist[i];
+      if(n->value > (1<<16)/2) {
+        ofile << (int)n->value-(1<<16) << '\t' << n->frequency << '\t' << n->huffcode << '\t' << (unsigned)n->hufflength << '\n';
+      } else {
+        if(n->value > 1000) continue; // Disregard start values.
+        ofile << n->value << '\t' << n->frequency << '\t' << n->huffcode << '\t' << (unsigned)n->hufflength << '\n';
+      }
+    }
+
+    ofile.close();
+  }
 
   // Function to generate codes for a Huffman tree.
   void generate_codes(Node* loc, size_t buff = 0, uint8_t len = 0) {
@@ -180,15 +214,9 @@ class FelixCompressor {
 
  public:
   FelixCompressor(const uint8_t* data, const size_t num_frames = 10000)
-      : input(data), input_length(num_frames * sizeof(dune::FelixFrame)) {
-    std::cout << "Compressing FELIX frames from binary of " << input_length
-              << " bytes.\n";
-  }
+      : input(data), input_length(num_frames * sizeof(dune::FelixFrame)) {}
   FelixCompressor(const dune::FelixFragment& frag)
-      : input(frag.dataBeginBytes()), input_length(frag.dataSizeBytes()) {
-    std::cout << "Compressing FELIX fragment from overlay of " << input_length
-              << " bytes.\n";
-  }
+      : input(frag.dataBeginBytes()), input_length(frag.dataSizeBytes()) {}
 
   // Function to store metadata in a recognisable format.
   void store_metadata(std::vector<char>& out) {
@@ -253,7 +281,6 @@ class FelixCompressor {
 
     // Record first header.
     const size_t tail = out.size();
-    std::cout << "Out size: " << tail << '\n';
     out.resize(tail + sizeof(WIBHeader) + sizeof(ColdataHeader));
 
     memcpy(&out[tail], frame_()->wib_header(), sizeof(WIBHeader));
@@ -264,13 +291,14 @@ class FelixCompressor {
   // Function to generate a Huffman table and tree.
   void generate_Huff_tree(std::vector<char>& out) {
     // Build a frequency table.
-    std::unordered_map<uint16_t, uint32_t> freq_table;
+    std::unordered_map<adc_t, uint32_t> freq_table;
     for (unsigned vi = 0; vi < frame_()->num_ch_per_frame; ++vi) {
       freq_table[frame_(0)->channel(vi)]++;
       for (unsigned fri = 1; fri < num_frames; ++fri) {
-        adc_t curr_val = frame_(fri)->channel(vi);
 #ifdef PREV
-        curr_val -= frame_(fri - 1)->channel(vi);
+        adc_t curr_val = frame_(fri)->channel(vi) - frame_(fri - 1)->channel(vi);
+#else
+        adc_t curr_val = frame_(fri)->channel(vi);
 #endif
         freq_table[curr_val]++;
       }
@@ -303,7 +331,7 @@ class FelixCompressor {
 
       entropy += (double)p.second / num_vals * log((double)num_vals / p.second);
     }
-    std::cout << "ADC value entropy: " << entropy << " bits.\n";
+    // std::cout << "ADC value entropy: " << entropy << " bits.\n";
 
     // Connect the nodes in the tree according to Huffman's method.
     hufftree.make_tree(nodes);
@@ -316,33 +344,24 @@ class FelixCompressor {
     out.resize(tail + sizeof(adc_t) * num_frames * 256);
     // Record the encoded ADC values into the buffer.
     unsigned rec_bits = 0;
-    char* dest = &out[0] + tail;
-    for (unsigned i = 0; i < num_frames * 256; ++i) {
-      adc_t curr_val = frame_(i % num_frames)->channel(i / num_frames);
-// Possibly use previous value subtraction.
-#ifdef PREV
-      if (i % num_frames != 0) {
-        curr_val -= frame_(i % num_frames - 1)->channel(i / num_frames);
-      }
-#endif
-      char* curr_dest = dest + rec_bits / 8;
-      const size_t curr_code = hufftree(curr_val)->huffcode;
-      // Keep track of how many bits are left to record.
-      int bits_left = hufftree(curr_val)->hufflength;
-      // Fill current byte if it is partly filled already.
-      if (rec_bits % 8 != 0) {
-        *curr_dest |= curr_code << rec_bits % 8;
-        bits_left -= 8 - rec_bits % 8;
-        ++curr_dest;
-      }
-      // Go through full bytes and fill them.
-      while (bits_left > 0) {
-        *curr_dest |= curr_code >> (hufftree(curr_val)->hufflength - bits_left);
-        bits_left -= 8;
-        ++curr_dest;
-      }
+    const char* dest = &out[0] + tail;
 
+    for(unsigned j = 0; j < 256; ++j) {
+      adc_t curr_val = frame_(0)->channel(j);
+      *(unsigned long*)(dest + (rec_bits/8)) |= hufftree(curr_val)->huffcode << (rec_bits%8);
       rec_bits += hufftree(curr_val)->hufflength;
+
+      for (unsigned i = 1; i < num_frames; ++i) {
+#ifdef PREV
+        adc_t curr_val = frame_(i)->channel(j) - frame_(i - 1)->channel(j);
+#else
+        adc_t curr_val = frame_(i)->channel(j);
+#endif
+
+        // No code is longer than 64 bits.
+        *(uint64_t*)(dest + (rec_bits/8)) |= hufftree(curr_val)->huffcode << (rec_bits%8);
+        rec_bits += hufftree(curr_val)->hufflength;
+      }
     }
     // Resize output buffer to actual data length.
     out.resize(tail + rec_bits / 8 + 1);
@@ -350,15 +369,35 @@ class FelixCompressor {
 
   // Function that calls all others relevant for compression.
   void compress_copy(std::vector<char>& out) {
-    std::cout << "Initiated the compress_copy function.\n";
-
+    auto comp_begin = std::chrono::high_resolution_clock::now();
     store_metadata(out);
+    auto meta_end = std::chrono::high_resolution_clock::now();
+    std::cout << "Meta time taken: "
+              << std::chrono::duration_cast<std::chrono::microseconds>(
+                     meta_end - comp_begin)
+                     .count()
+              << " us.\n";
     header_reduce(out);
+    auto header_end = std::chrono::high_resolution_clock::now();
+    std::cout << "Header time taken: "
+              << std::chrono::duration_cast<std::chrono::microseconds>(
+                     header_end - meta_end)
+                     .count()
+              << " us.\n";
     generate_Huff_tree(out);
+    auto huff_end = std::chrono::high_resolution_clock::now();
+    std::cout << "Huffman time taken: "
+              << std::chrono::duration_cast<std::chrono::microseconds>(
+                     huff_end - header_end)
+                     .count()
+              << " us.\n";
     ADC_compress(out);
-
-    std::cout << "Compressed buffer with factor "
-              << (double)input_length / out.size() << ".\n";
+    auto adc_end = std::chrono::high_resolution_clock::now();
+    std::cout << "ADC time taken: "
+              << std::chrono::duration_cast<std::chrono::microseconds>(
+                     adc_end - huff_end)
+                     .count()
+              << " us.\n";
   }
 };  // FelixCompressor
 

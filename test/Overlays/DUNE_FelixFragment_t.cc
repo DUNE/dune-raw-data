@@ -49,7 +49,16 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     }
   }
 
+  // Write a file with results.
+  std::ofstream ofile("compression_results.dat");
+  ofile << "#Compression factor\tCompression time\tNoise RMS\n";
+
+  // Averaging values of different files.
+  std::vector<double> comp_factors;
+  std::vector<size_t> comp_times;
+
   for (auto filename : filenames) {
+    // std::string filename = filenames[0];
     std::ifstream in(filename, std::ios::binary);
     if (!in.is_open()) {
       std::cout << "Could not open file.\n";
@@ -67,9 +76,6 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     in.close();
 
     dune::FelixFragment flxfrg(*frag_ptr);
-
-    // std::cout << "\n\nPrinting the first frame's contents.\n";
-    // flxfrg.print(0);
 
     std::cout << "### WOOF -> Test for the presence of 9600 frames...\n";
     const size_t frames = 9600;
@@ -94,6 +100,29 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
               << std::dec;
     std::cout << "\n\n";
 
+    // Noise characterisation per channel, then average over fragment.
+    double frag_rms = 0;
+    std::vector<double> chan_avg(256,0);
+    std::vector<double> chan_rms(256,0);
+    // Determine the average per channel.
+    for(unsigned fr = 0; fr < 256; ++fr) {
+      for(unsigned ti = 0; ti < 9600; ++ti) {
+        chan_avg[fr] += flxfrg.get_ADC(fr, ti);
+      }
+      chan_avg[fr] /= 9600;
+    }
+    // Determine the RMS per channel.
+    for(unsigned vi = 0; vi < 256; ++vi) {
+      for(unsigned ti = 0; ti < 9600; ++ti) {
+        chan_rms[vi] += pow(flxfrg.get_ADC(vi, ti) - chan_avg[vi], 2);
+      }
+      chan_rms[vi] = sqrt(chan_rms[vi]/(chan_rms.size()-1));
+      frag_rms += chan_rms[vi];
+    }
+    // Determine the average RMS per fragment.
+    frag_rms /= 256;
+    std::cout << "FRAGMENT RMS: " << frag_rms << '\n';
+
     // Compression tests.
     std::cout << "### MEOW -> WIB frame compression test.\n";
 
@@ -104,6 +133,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     auto decomp_end = std::chrono::high_resolution_clock::now();
 
     std::cout << "Compressed buffer size: " << compfrg.size() << ".\n"
+              << "Compression factor: " << (double)flxfrg.dataSizeBytes() / compfrg.size() << '\n'
               << "Compression time taken: "
               << std::chrono::duration_cast<std::chrono::microseconds>(
                      comp_end - comp_begin)
@@ -113,20 +143,53 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
               << std::chrono::duration_cast<std::chrono::microseconds>(
                      decomp_end - comp_end)
                      .count()
-              << " us.\n";
+              << " us.\n\n"
+              << "Noise RMS: " << frag_rms << '\n';
 
-    // Test whether the original and decompressed frames correspond.
-    const dune::FelixFrame* orig =
-        reinterpret_cast<dune::FelixFrame const*>(flxfrg.dataBeginBytes());
-    const dune::FelixFrame* decomp =
-        reinterpret_cast<dune::FelixFrame const*>(decompfrg.dataBeginBytes());
-    for (unsigned i = 0; i < frames; ++i) {
-      BOOST_REQUIRE_EQUAL((orig + i)->version(), (decomp + i)->version());
-      for (unsigned j = 0; j < 256; ++j) {
-        BOOST_REQUIRE_EQUAL((orig + i)->channel(j), (decomp + i)->channel(j));
-      }
-    }
+    comp_factors.push_back((double)flxfrg.dataSizeBytes() / compfrg.size());
+    comp_times.push_back(std::chrono::duration_cast<std::chrono::microseconds>(
+                     comp_end - comp_begin)
+                     .count());
+
+    ofile << (double)flxfrg.dataSizeBytes() / compfrg.size() << '\t' << std::chrono::duration_cast<std::chrono::microseconds>(
+                     comp_end - comp_begin)
+                     .count() << '\t' << frag_rms << '\n';
+
+    // // Test whether the original and decompressed frames correspond.
+    // const dune::FelixFrame* orig =
+    //     reinterpret_cast<dune::FelixFrame const*>(flxfrg.dataBeginBytes());
+    // const dune::FelixFrame* decomp =
+    //     reinterpret_cast<dune::FelixFrame
+    //     const*>(decompfrg.dataBeginBytes());
+    // for (unsigned i = 0; i < frames; ++i) {
+    //   BOOST_REQUIRE_EQUAL((orig + i)->version(), (decomp + i)->version());
+    //   for (unsigned j = 0; j < 256; ++j) {
+    //     BOOST_REQUIRE_EQUAL((orig + i)->channel(j), (decomp +
+    //     i)->channel(j));
+    //   }
+    // }
   }  // Loop over files.
+
+  ofile.close();
+
+  // Calculate average compression factor and time, complete with error.
+  double comp_factor = 0;
+  for(auto c : comp_factors) { comp_factor += c;}
+  comp_factor /= comp_factors.size();
+  
+  double comp_time = 0;
+  for(auto c : comp_times) { comp_time += c;}
+  comp_time /= comp_times.size();
+
+  double comp_factor_err = 0;
+  for(auto c : comp_factors) { comp_factor_err += pow(comp_factor - c, 2); }
+  comp_factor_err = sqrt(comp_factor_err/(comp_factors.size()-1));
+
+  double comp_time_err = 0;
+  for(auto c : comp_times) { comp_time_err += pow(comp_time - c, 2); }
+  comp_time_err = sqrt(comp_time_err/(comp_times.size()-1));
+
+  std::cout << "Average compression factor: " << comp_factor << " +- " << comp_factor_err << "\nAverage compression time: " << comp_time << " +- " << comp_time_err << '\n';
 
   std::cout << "### WOOF WOOF -> Done...\n";
 }

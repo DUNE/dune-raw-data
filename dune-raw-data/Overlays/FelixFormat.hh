@@ -277,10 +277,11 @@ class FelixFrame {
   // Constant expressions
   static constexpr size_t num_frame_hdr_words = 4;
   static constexpr size_t num_COLDATA_hdr_words = 4;
+  static constexpr size_t num_frame_bytes = 480;
   static constexpr size_t num_frame_words = 120;
-  static constexpr size_t num_frame_bytes = 468;
   static constexpr size_t num_COLDATA_words = 28;
 
+  static constexpr size_t num_block_per_frame = 4;
   static constexpr size_t num_ch_per_frame = 256;
   static constexpr size_t num_ch_per_block = 64;
   static constexpr size_t num_seg_per_block = 8;

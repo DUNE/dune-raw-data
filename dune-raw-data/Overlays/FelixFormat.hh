@@ -270,14 +270,16 @@ struct ColdataBlock {
 class FelixFrame {
  private:
 #ifdef FELIXHEAD
-  word_t FelixHead_;
-  word_t sof_1 : 8, empty_1 : 24;
+  // clang complains on unused FelixHead_, sof_1 and empty_1 and empty_2 and empty_3 and eof
+  //  word_t FelixHead_;
+  //  word_t sof_1 : 8, empty_1 : 24;
 #endif
   WIBHeader head;
   ColdataBlock blocks[4];
 #ifdef FELIXTRAIL
-  word_t eof : 8, CRC_1 : 20, empty_2 : 4;
-  word_t empty_3;
+  word_t  CRC_1 : 20;
+  //word_t eof : 8, CRC_1 : 20, empty_2 : 4;
+  //word_t empty_3;
 #endif
 
  public:

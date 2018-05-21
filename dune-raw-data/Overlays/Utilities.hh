@@ -1,7 +1,7 @@
 #ifndef dune_artdaq_Overlays_Utilities_hh
 #define dune_artdaq_Overlays_Utilities_hh
 
-#include "cetlib/exception.h"
+#include "cetlib_except/exception.h"
 
 #include <string>
 

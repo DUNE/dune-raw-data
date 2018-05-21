@@ -1,6 +1,6 @@
 #include "dune-raw-data/Overlays/SSPFragment.hh"
 
-#include "cetlib/exception.h"
+#include "cetlib_except/exception.h"
 
 namespace {
 

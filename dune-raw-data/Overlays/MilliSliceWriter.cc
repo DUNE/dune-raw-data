@@ -1,5 +1,5 @@
 #include "dune-raw-data/Overlays/MilliSliceWriter.hh"
-#include "cetlib/exception.h"
+#include "cetlib_except/exception.h"
 
 dune::MilliSliceWriter::
 MilliSliceWriter(uint8_t* address, uint32_t max_size_bytes) :

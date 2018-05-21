@@ -3,7 +3,7 @@
 
 #include "artdaq-core/Data/Fragment.hh"
 //#include "artdaq-core/Data/features.hh"
-#include "cetlib/exception.h"
+#include "cetlib_except/exception.h"
 
 #include <ostream>
 #include <vector>

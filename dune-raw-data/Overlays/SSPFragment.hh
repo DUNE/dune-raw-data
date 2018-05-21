@@ -3,7 +3,7 @@
 
 #include "artdaq-core/Data/Fragment.hh"
 //#include "artdaq/DAQdata/features.hh"
-#include "cetlib/exception.h"
+#include "cetlib_except/exception.h"
 //#include "dune-artdaq/Generators/anlBoard/anlTypes.h"
 #include "dune-raw-data/Overlays/anlTypes.hh"
 

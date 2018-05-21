@@ -1,5 +1,5 @@
 #include "dune-raw-data/Overlays/MilliSliceFragmentWriter.hh"
-#include "cetlib/exception.h"
+#include "cetlib_except/exception.h"
 
 dune::MilliSliceFragmentWriter::
 MilliSliceFragmentWriter(artdaq::Fragment& frag, uint32_t max_size_bytes) :

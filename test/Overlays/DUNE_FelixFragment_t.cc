@@ -30,27 +30,27 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
   std::vector<std::string> filenames;
   for (auto event : event_nums) {
     for (unsigned p = 0; p < 3; ++p) {
-      for (unsigned f = 1; f < 10; ++f) {
-        filenames.push_back(
-            "/nashome/m/milov/Documents/kevlar/run/"
-            "Run_1-SubRun_6120-Event_" +
-            std::to_string(event) + "-Plane_" + std::to_string(p) + "-Frame_" +
-            std::to_string(f) + ".dat");
-      }
       if (p == 2) {
         for (unsigned f = 10; f < 14; ++f) {
           filenames.push_back(
-              "/nashome/m/milov/Documents/kevlar/run/"
+              "/dune/app/users/milov/kevlar/run/uBsim/"
               "Run_1-SubRun_6120-Event_" +
               std::to_string(event) + "-Plane_" + std::to_string(p) +
               "-Frame_" + std::to_string(f) + ".dat");
         }
       }
+      for (unsigned f = 1; f < 10; ++f) {
+        filenames.push_back(
+            "/dune/app/users/milov/kevlar/run/uBsim/"
+            "Run_1-SubRun_6120-Event_" +
+            std::to_string(event) + "-Plane_" + std::to_string(p) + "-Frame_" +
+            std::to_string(f) + ".dat");
+      }
     }
   }
 
   // Write a file with results.
-  std::ofstream ofile("compression_results.dat");
+  std::ofstream ofile("prev_compression_results.dat");
   ofile << "#Compression factor\tCompression time\tNoise RMS\n";
 
   // Averaging values of different files.
@@ -105,18 +105,18 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     std::vector<double> chan_avg(256,0);
     std::vector<double> chan_rms(256,0);
     // Determine the average per channel.
-    for(unsigned fr = 0; fr < 256; ++fr) {
-      for(unsigned ti = 0; ti < 9600; ++ti) {
-        chan_avg[fr] += flxfrg.get_ADC(fr, ti);
+    for(unsigned vi = 0; vi < 256; ++vi) {
+      for(unsigned ti = 1; ti < 9600; ++ti) {
+        chan_avg[vi] += (double)flxfrg.get_ADC(ti, vi) - flxfrg.get_ADC(ti-1, vi);
       }
-      chan_avg[fr] /= 9600;
+      chan_avg[vi] /= 9600;
     }
     // Determine the RMS per channel.
     for(unsigned vi = 0; vi < 256; ++vi) {
-      for(unsigned ti = 0; ti < 9600; ++ti) {
-        chan_rms[vi] += pow(flxfrg.get_ADC(vi, ti) - chan_avg[vi], 2);
+      for(unsigned ti = 1; ti < 9600; ++ti) {
+        chan_rms[vi] += pow(flxfrg.get_ADC(ti, vi) - flxfrg.get_ADC(ti-1, vi) - chan_avg[vi], 2);
       }
-      chan_rms[vi] = sqrt(chan_rms[vi]/(chan_rms.size()-1));
+      chan_rms[vi] = sqrt(chan_rms[vi]/(9600-2));
       frag_rms += chan_rms[vi];
     }
     // Determine the average RMS per fragment.

@@ -33,7 +33,7 @@ TRACE		v3_13_04	online_monitoring
 cetbuildtools	v5_08_01	online_monitoring	only_for_build
 artdaq_core	v3_02_03	nu
 art		v2_11_02	nu
-TRACE		v3_13_04	nu
+TRACE		v3_13_07	nu
 cetbuildtools	v7_03_02	nu	only_for_build
 dunepdsprce     v0_0_4a
 end_product_list

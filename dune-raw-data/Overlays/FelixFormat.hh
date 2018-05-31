@@ -5,8 +5,8 @@
 #define artdaq_dune_Overlays_FelixFormat_hh
 
 // Set these if you have a header and/or a trailer in your frames.
-#define FELIXHEAD
-#define FELIXTRAIL
+//#define FELIXHEAD
+//#define FELIXTRAIL
 
 #include <bitset>
 #include <iostream>

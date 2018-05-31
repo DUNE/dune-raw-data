@@ -4,6 +4,7 @@
 #ifndef artdaq_dune_Overlays_FelixFormat_hh
 #define artdaq_dune_Overlays_FelixFormat_hh
 
+// Set these if you have a header and/or a trailer in your frames.
 #define FELIXHEAD
 #define FELIXTRAIL
 
@@ -270,16 +271,14 @@ struct ColdataBlock {
 class FelixFrame {
  private:
 #ifdef FELIXHEAD
-  // clang complains on unused FelixHead_, sof_1 and empty_1 and empty_2 and empty_3 and eof
-  //  word_t FelixHead_;
-  //  word_t sof_1 : 8, empty_1 : 24;
+  word_t FelixHead_;
+  word_t sof_1 : 8, : 24;
 #endif
   WIBHeader head;
   ColdataBlock blocks[4];
 #ifdef FELIXTRAIL
-  word_t  CRC_1 : 20;
-  //word_t eof : 8, CRC_1 : 20, empty_2 : 4;
-  //word_t empty_3;
+  word_t /*eof*/ : 8, CRC_1 : 20, : 4;
+  word_t : 32;
 #endif
 
  public:
@@ -296,6 +295,7 @@ class FelixFrame {
   static constexpr size_t num_frame_bytes = num_frame_words * sizeof(word_t);
   static constexpr size_t num_COLDATA_words = 28;
 
+  static constexpr size_t num_block_per_frame = 4;
   static constexpr size_t num_ch_per_frame = 256;
   static constexpr size_t num_ch_per_block = 64;
   static constexpr size_t num_seg_per_block = 8;
@@ -303,9 +303,10 @@ class FelixFrame {
 
   // WIB header accessors
 #ifdef FELIXHEAD
-  uint8_t sof() const { return head.sof; }
+  uint8_t sof() const { return sof_1; }
+  word_t FelixHead() const { return FelixHead_; }
 #else
-  uint8_t sof() const { return 0; }
+  uint8_t sof() const { return head.sof; }
 #endif
   uint8_t version() const { return head.version; }
   uint8_t fiber_no() const { return head.fiber_no; }
@@ -318,7 +319,12 @@ class FelixFrame {
   uint16_t wib_counter() const { return head.wib_counter(); }
   uint8_t z() const { return head.z; }
   // WIB header mutators
+#ifdef FELIXHEAD
+  void set_FelixHead(const word_t new_flxhead) { FelixHead_ = new_flxhead; }
+  void set_sof(const uint8_t new_sof) { sof_1 = new_sof; }
+#else
   void set_sof(const uint8_t new_sof) { head.sof = new_sof; }
+#endif
   void set_version(const uint8_t new_version) { head.version = new_version; }
   void set_fiber_no(const uint8_t new_fiber_no) { head.fiber_no = new_fiber_no; }
   void set_crate_no(const uint8_t new_crate_no) { head.crate_no = new_crate_no; }
@@ -401,6 +407,7 @@ class FelixFrame {
 #ifdef FELIXTRAIL
   // CRC accessor
   uint32_t CRC() const { return CRC_1; }
+  //uint32_t empty() const { return empty_; }
   // CRC mutator
   void set_CRC(const uint32_t new_CRC) { CRC_1 = new_CRC; }
 #else

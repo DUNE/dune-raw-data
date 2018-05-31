@@ -19,28 +19,28 @@ namespace dune {
 class FelixReorderer {
  public:
   static const unsigned netio_header_size = 0;
-  static const unsigned frame_size = 120 * 4;
-  static const unsigned wib_header_size = 4 * 4;
-  static const unsigned coldata_header_size = 4 * 4;
-  static const unsigned coldata_block_size = 28 * 4;
+  static const unsigned frame_size = sizeof(FelixFrame);
+  static const unsigned wib_header_size = sizeof(WIBHeader);
+  static const unsigned coldata_header_size = sizeof(ColdataHeader);
+  static const unsigned coldata_block_size = sizeof(ColdataBlock);
   static const unsigned crc_size = 4;
 
-  static const unsigned adc_size = 2;
+  static const unsigned adc_size = sizeof(adc_t);
 
-  static const unsigned num_adcs_per_frame = 256;
-  static const unsigned num_blocks_per_frame = 4;
+  static const unsigned num_ch_per_frame = FelixFrame::num_ch_per_frame;
+  static const unsigned num_blocks_per_frame = FelixFrame::num_block_per_frame;
   static const unsigned num_streams_per_block = 8;
 
-  static const unsigned num_adcs_per_block = 64;
+  static const unsigned num_ch_per_block = FelixFrame::num_ch_per_block;
     static const unsigned num_adcs_per_stream =
-      num_adcs_per_block / num_streams_per_block;
+      num_ch_per_block / num_streams_per_block;
 
  private:
   const uint8_t* head;
   const size_t num_frames;
   const size_t size = num_frames * frame_size;
 
-  uint16_t initial_adcs[num_adcs_per_frame];
+  uint16_t initial_adcs[num_ch_per_frame];
 
   void wib_header_copy(uint8_t* dest);
   void crc_copy(uint8_t* dest);
@@ -55,8 +55,7 @@ class FelixReorderer {
   const unsigned newSize =
       netio_header_size +
       (wib_header_size + coldata_header_size * num_blocks_per_frame +
-       crc_size + adc_size * num_adcs_per_frame) *
-          num_frames;
+       crc_size + adc_size * num_ch_per_frame) * num_frames;
 
   // Locations in the destination buffer.
   const unsigned wib_headers_begin = netio_header_size;
@@ -66,7 +65,7 @@ class FelixReorderer {
       coldata_headers_begin +
       num_frames * coldata_header_size * num_blocks_per_frame;
   const unsigned end =
-      adc_begin + (num_frames - 1) * num_adcs_per_frame * adc_size;
+      adc_begin + (num_frames - 1) * num_ch_per_frame * adc_size;
 
   void reorder_copy(uint8_t* dest);
   friend void t_adc_copy_by_tick(FelixReorderer* reord, uint8_t* dest,
@@ -120,7 +119,7 @@ void FelixReorderer::initial_adc_copy(uint8_t* dest) {
   // Store all initial ADC values in uint16_t.
   const dune::FelixFrame* src =
       reinterpret_cast<dune::FelixFrame const*>(head + netio_header_size);
-  for (unsigned i = 0; i < num_adcs_per_frame; ++i) {
+  for (unsigned i = 0; i < num_ch_per_frame; ++i) {
     initial_adcs[i] = src->channel(i);
     memcpy(dest, &initial_adcs[i], adc_size);
     dest += adc_size;
@@ -131,11 +130,11 @@ void FelixReorderer::initial_adc_copy(uint8_t* dest) {
 void t_adc_copy_by_tick(FelixReorderer* reord, uint8_t* dest,
                         const unsigned& t_inst, const unsigned& t_tot) {
   // Thread starting point and range in ADC channel space.
-  unsigned t_ch_range = reord->num_adcs_per_frame / t_tot;
+  unsigned t_ch_range = reord->num_ch_per_frame / t_tot;
   unsigned t_ch_begin = t_ch_range * t_inst;
   // The last thread should clean up the remainder of the channels.
-  if (t_inst == t_tot - 1 && reord->num_adcs_per_frame % t_tot != 0) {
-    t_ch_range = reord->num_adcs_per_frame - t_ch_begin;
+  if (t_inst == t_tot - 1 && reord->num_ch_per_frame % t_tot != 0) {
+    t_ch_range = reord->num_ch_per_frame - t_ch_begin;
   }
   
   // Store all ADC values in uint16_t.
@@ -146,7 +145,7 @@ void t_adc_copy_by_tick(FelixReorderer* reord, uint8_t* dest,
     for (unsigned ch = t_ch_begin; ch < t_ch_begin + t_ch_range; ++ch) {
       uint16_t reduced_adc = (src + fr)->channel(ch);
       const size_t dest_offset =
-          ((fr - 1) * reord->num_adcs_per_frame + ch) * reord->adc_size;
+          ((fr - 1) * reord->num_ch_per_frame + ch) * reord->adc_size;
       memcpy(dest + dest_offset, &reduced_adc, reord->adc_size);
     }
   }
@@ -156,20 +155,24 @@ void t_adc_copy_by_tick(FelixReorderer* reord, uint8_t* dest,
 void t_adc_copy_by_channel(FelixReorderer* reord, uint8_t* dest,
                            const unsigned& t_inst, const unsigned& t_tot) {
   // Thread starting point and range in ADC channel space.
-  unsigned t_ch_range = reord->num_adcs_per_frame / t_tot;
+  unsigned t_ch_range = reord->num_ch_per_frame / t_tot;
   unsigned t_ch_begin = t_ch_range * t_inst;
   // The last thread should clean up the remainder of the channels.
-  if (t_inst == t_tot - 1 && reord->num_adcs_per_frame % t_tot != 0) {
-    t_ch_range = reord->num_adcs_per_frame - t_ch_begin;
+  if (t_inst == t_tot - 1 && reord->num_ch_per_frame % t_tot != 0) {
+    t_ch_range = reord->num_ch_per_frame - t_ch_begin;
   }
 
   // Store all ADC values in uint16_t.
   const dune::FelixFrame* src =
       reinterpret_cast<dune::FelixFrame const*>(
           reord->head + reord->netio_header_size);
+          
   for (unsigned fr = 0; fr < reord->num_frames; ++fr) {
     for (unsigned ch = t_ch_begin; ch < t_ch_begin + t_ch_range; ++ch) {
       adc_t curr_val = (src + fr)->channel(ch);
+      // if(fr != 0) {
+      //   curr_val -= (src + fr - 1)->channel(ch);
+      // }
       memcpy(dest + (ch * reord->num_frames + fr) * reord->adc_size, &curr_val,
              reord->adc_size);
     }
@@ -226,84 +229,6 @@ void FelixReorderer::reorder_copy(uint8_t* dest) {
              .count()
       << "usec\n\n";
 }
-
-// The following section of code generates frames from a reordered buffer, but
-// requires FrameGen to work.
-// void FelixReorderer::single_frame_from_buffer(const uint8_t* src, uint8_t*
-// dest,
-//                                               const size_t& i) {
-//   framegen::Frame frame;
-//   // Install WIB header.
-//   const dune::FelixFragment::WIBHeader* head =
-//       reinterpret_cast<dune::FelixFragment::WIBHeader const*>(
-//           src + wib_headers_begin + wib_header_size * i);
-//   frame.set_sof(head->sof);
-//   frame.set_version(head->version);
-//   frame.set_fiber_no(head->fiber_no);
-//   frame.set_crate_no(head->crate_no);
-//   frame.set_slot_no(head->slot_no);
-//   frame.set_mm(head->mm);
-//   frame.set_oos(head->oos);
-//   frame.set_wib_errors(head->wib_errors);
-//   frame.set_z(head->z);
-//   frame.set_timestamp(head->timestamp());
-//   frame.set_wib_counter(head->wib_counter);
-
-//   // Install CRC.
-//   const uint32_t* cbegin =
-//       reinterpret_cast<uint32_t const*>(src + crc_begin + crc_size * i);
-//   frame.set_CRC(*(cbegin));
-
-//   // Install COLDATA headers.
-//   frame.clearReserved();
-
-//   const dune::FelixFragment::ColdataHeader* bhead =
-//       reinterpret_cast<dune::FelixFragment::ColdataHeader const*>(
-//           src + coldata_headers_begin +
-//           coldata_header_size * i * num_blocks_per_frame);
-//   for (unsigned j = 0; j < num_blocks_per_frame; ++j) {
-//     frame.set_s1_error(j, bhead->s1_error);
-//     frame.set_s2_error(j, bhead->s2_error);
-//     frame.set_checksum_a(j, bhead->checksum_a());
-//     frame.set_checksum_b(j, bhead->checksum_b());
-//     frame.set_coldata_convert_count(j, bhead->coldata_convert_count);
-//     frame.set_error_register(j, bhead->error_register);
-//     for (unsigned k = 0; k < 8; ++k) {
-//       frame.set_HDR(j, k, bhead->HDR(k));
-//     }
-
-//     ++bhead;
-//   }
-
-//   // Install COLDATA.
-//   if (i == 0) {
-//     for (unsigned j = 0; j < num_adcs_per_frame; ++j) {
-//       const uint16_t* abegin =
-//           reinterpret_cast<uint16_t const*>(src + initial_adc_begin);
-//       frame.set_channel(j, *(abegin + j));
-//       initial_adcs[j] = *(abegin + j);
-//     }
-//   } else {
-//     for (unsigned j = 0; j < num_adcs_per_frame; ++j) {
-//       const uint16_t* abegin = reinterpret_cast<uint16_t const*>(
-//           src + adc_begin + num_adcs_per_frame * adc_size * (i - 1));
-//       frame.set_channel(j, *(abegin + j) + initial_adcs[j]);
-//     }
-//   }
-
-//   // Clean up just in case.
-//   frame.clearReserved();
-
-//   // Copy to destination buffer.
-//   memcpy(dest + i * frame_size, reinterpret_cast<char*>(&frame), frame_size);
-// }
-
-// void FelixReorderer::frames_from_buffer(const uint8_t* src, uint8_t* dest,
-//                                         const size_t& num_frames) {
-//   for (size_t i = 0; i < num_frames; ++i) {
-//     single_frame_from_buffer(src, dest, i);
-//   }
-// }
 
 artdaq::Fragment FelixReorder(const uint8_t* src, const size_t& num_frames = 10000) {
   FelixReorderer reorderer(src, num_frames);

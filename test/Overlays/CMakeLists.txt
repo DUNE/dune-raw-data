@@ -31,3 +31,10 @@ cet_test(DUNE_FelixReorder_t USE_BOOST_UNIT
   ${ARTDAQ-CORE_DATA}
   pthread
 )
+
+cet_test(DUNE_FelixDecode_t USE_BOOST_UNIT
+  LIBRARIES dune-raw-data_Overlays
+  ${ARTDAQ-CORE_DATA}
+  ${GALLERY_LIB}
+  pthread
+)

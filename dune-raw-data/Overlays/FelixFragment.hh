@@ -292,9 +292,7 @@ class dune::FelixFragmentUnordered : public dune::FelixFragmentBase {
   // The constructor simply sets its const private member "artdaq_Fragment_"
   // to refer to the artdaq::Fragment object
   FelixFragmentUnordered(artdaq::Fragment const& fragment)
-      : FelixFragmentBase(fragment) {
-    std::cout << "Attempting to create a FELIX Fragment.\n";
-  }
+      : FelixFragmentBase(fragment) {}
 
   // The number of words in the current event minus the header.
   size_t total_words() const { return sizeBytes_ / sizeof(word_t); }
@@ -440,13 +438,7 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
   // The constructor simply sets its const private member "artdaq_Fragment_"
   // to refer to the artdaq::Fragment object
   FelixFragmentReordered(artdaq::Fragment const& fragment)
-      : FelixFragmentBase(fragment) {
-    std::cout << "Attempting to create a FELIX Fragment.\n";
-  }
-  // FelixFragmentReordered(const void* fragmentP, const size_t sizeBytes)
-  //     : artdaq_Fragment_(fragmentP), sizeBytes_(sizeBytes) {
-  //   std::cout << "Attempting to create a FELIX Fragment.\n";
-  // }
+      : FelixFragmentBase(fragment) {}
 
   // The number of words in the current event minus the header.
   size_t total_words() const { return sizeBytes_ / sizeof(word_t); }

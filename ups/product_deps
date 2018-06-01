@@ -36,6 +36,7 @@ art		v2_11_02	nu
 TRACE		v3_13_07	nu
 cetbuildtools	v7_03_02	nu	only_for_build
 dunepdsprce     v0_0_4a
+gallery		v1_08_02
 end_product_list
 
 # e14 - with gcc v6_3_0
@@ -51,15 +52,15 @@ end_product_list
 # -nq- here means there is no qualifier
 # a "-" here means the dependent product is not required by the parent and will not be setup
 
-qualifier	        	 artdaq_core         	art	    	       dunepdsprce		notes
-online:e14:s50:debug		 e14:s50:debug	 	e14:debug	       e14:gen:debug
-online:e14:s50:prof		 e14:s50:prof	 	e14:prof	       e14:gen:prof
-nu:e15:s68:debug		 e15:s68:debug		e15:debug	       e15:gen:debug
-nu:e15:s68:prof			 e15:s68:prof 		e15:prof	       e15:gen:prof
-nu:c2:s68:debug		         c2:s68:debug		c2:debug	       c2:gen:debug
-nu:c2:s68:prof			 c2:s68:prof 		c2:prof 	       c2:gen:prof
-online_monitoring:e14:s50:debug	 nu:e14:s50:debug      	nu:e14:debug	       e14:gen:debug
-online_monitoring:e14:s50:prof	 nu:e14:s50:prof 	nu:e14:prof	       e14:gen:prof
+qualifier	        	 artdaq_core         	art	    	       dunepdsprce	gallery		notes
+online:e14:s50:debug		 e14:s50:debug	 	e14:debug	       e14:gen:debug	e14:debug
+online:e14:s50:prof		 e14:s50:prof	 	e14:prof	       e14:gen:prof	e14:prof
+nu:e15:s68:debug		 e15:s68:debug		e15:debug	       e15:gen:debug	e15:debug
+nu:e15:s68:prof			 e15:s68:prof 		e15:prof	       e15:gen:prof	e15:prof
+nu:c2:s68:debug		         c2:s68:debug		c2:debug	       c2:gen:debug	c2:debug
+nu:c2:s68:prof			 c2:s68:prof 		c2:prof 	       c2:gen:prof	c2:prof
+online_monitoring:e14:s50:debug	 nu:e14:s50:debug      	nu:e14:debug	       e14:gen:debug	nu:e14:debug
+online_monitoring:e14:s50:prof	 nu:e14:s50:prof 	nu:e14:prof	       e14:gen:prof	nu:e14:prof
 
 # Preserve tabs and formatting in emacs and vi / vim:
 

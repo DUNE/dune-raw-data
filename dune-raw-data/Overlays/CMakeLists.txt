@@ -17,6 +17,10 @@ art_make(BASENAME_ONLY
   ${MF_MESSAGELOGGER}
   ${MF_MESSAGEUTILITIES}
   ${RCEDAMLIB}
+  ${GALLERY_LIB}
+  gallery
+  ${ART_LIB}
+  art_Framework_Principal
   pthread
   )
 

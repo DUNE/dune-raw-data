@@ -31,53 +31,58 @@ public:
 
   PdspChannelMapService(fhicl::ParameterSet const& pset);
   PdspChannelMapService(fhicl::ParameterSet const& pset, art::ActivityRegistry&);
-  
+
+  typedef enum _FelixOrRCE
+  {
+    kRCE,
+    kFELIX
+  } FelixOrRCE;
+
+  /////////////////////////\ ProtoDUNE-SP channel map fundtions //////////////////////////////
 
   // TPC channel map accessors
 
-  unsigned int GetFEMBChannelFromRCEStreamChannel(unsigned int rceCh) const;
-  
   // Map instrumentation numbers (crate:slot:fiber:FEMBchannel) to offline channel number
-  unsigned int GetOfflineNumberFromDetectorElements(unsigned int crate, unsigned int slot, unsigned int fiber, unsigned int fembchannel);
+  // FEMB channel number is really the stream index number, but for FELIX, it is restricted to be in the range 0:127, so really it's more like an FEMB channel number
+
+  unsigned int GetOfflineNumberFromDetectorElements(unsigned int crate, unsigned int slot, unsigned int fiber, unsigned int fembchannel, FelixOrRCE frswitch=kRCE);
   	  
   /// Returns APA/crate
-  unsigned int APAFromOfflineChannel(unsigned int offlineChannel) const;
+  unsigned int APAFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
   
   /// Returns WIB/slot
-  unsigned int WIBFromOfflineChannel(unsigned int offlineChannel) const;
+  unsigned int WIBFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
   
   /// Returns FEMB/fiber
-  unsigned int FEMBFromOfflineChannel(unsigned int offlineChannel) const;
+  unsigned int FEMBFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
   
   /// Returns FEMB channel
-  unsigned int FEMBChannelFromOfflineChannel(unsigned int offlineChannel) const;
+  unsigned int FEMBChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
   
   /// Returns RCE(FELIX) stream(frame) channel
-  unsigned int StreamChannelFromOfflineChannel(unsigned int offlineChannel) const;
+  unsigned int StreamChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
   
   /// Returns global slot ID
-  unsigned int SlotIdFromOfflineChannel(unsigned int offlineChannel) const;
+  unsigned int SlotIdFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
   
   /// Returns global fiber ID
-  unsigned int FiberIdFromOfflineChannel(unsigned int offlineChannel) const;
+  unsigned int FiberIdFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
 
   /// Returns chip number
-  unsigned int ChipFromOfflineChannel(unsigned int offlineChannel) const;
+  unsigned int ChipFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
   
   /// Returns chip channel number
-  unsigned int ChipChannelFromOfflineChannel(unsigned int offlineChannel) const;
+  unsigned int ChipChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
   
   /// Returns ASIC number
-  unsigned int ASICFromOfflineChannel(unsigned int offlineChannel) const;
+  unsigned int ASICFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
   
   /// Returns ASIC channel number
-  unsigned int ASICChannelFromOfflineChannel(unsigned int offlineChannel) const;
+  unsigned int ASICChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
   
   /// Returns plane
-  unsigned int PlaneFromOfflineChannel(unsigned int offlineChannel) const;
+  unsigned int PlaneFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
   
-  /////////////////////////\ ProtoDUNE-SP channel map fundtions //////////////////////////////
-  unsigned int OfflineFromCSFC;
 
   // SSP channel map accessors
 
@@ -139,6 +144,20 @@ private:
   unsigned int fvASICMap[15360]; // ASIC
   unsigned int fvASICChannelMap[15360]; // ASIC internal channel
   unsigned int fvPlaneMap[15360]; // Plane type
+
+  unsigned int fFELIXarrayCsfcToOffline[6][5][4][128];  // implement as an array.  Do our own bounds checking
+  unsigned int fFELIXvAPAMap[15360]; // APA(=crate)
+  unsigned int fFELIXvWIBMap[15360];	// WIB(slot)
+  unsigned int fFELIXvFEMBMap[15360];	// FEMB(fiber)
+  unsigned int fFELIXvFEMBChannelMap[15360];	// FEMB internal channel
+  unsigned int fFELIXvStreamChannelMap[15360];	// RCE(FELIX) internal channel
+  unsigned int fFELIXvSlotIdMap[15360]; // global WIB(slot) ID
+  unsigned int fFELIXvFiberIdMap[15360]; // global FEMB(fiber) ID
+  unsigned int fFELIXvChipMap[15360]; // Chip
+  unsigned int fFELIXvChipChannelMap[15360]; //Chip internal channel 
+  unsigned int fFELIXvASICMap[15360]; // ASIC
+  unsigned int fFELIXvASICChannelMap[15360]; // ASIC internal channel
+  unsigned int fFELIXvPlaneMap[15360]; // Plane type
 
   // SSP Maps
 

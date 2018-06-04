@@ -28,7 +28,7 @@ dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& ps
     throw cet::exception("File not found");
   }
   else
-    std::cout << "PDSP Channel Map: Building TPC wiremap from file " << channelMapFile << std::endl;
+    std::cout << "PDSP Channel Map: Building RCE TPC wiremap from file " << channelMapFile << std::endl;
 
   std::ifstream inFile(fullname, std::ios::in);
   std::string line;
@@ -75,6 +75,66 @@ dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& ps
     fvASICMap[offlineChannel] = asicNo;
     fvASICChannelMap[offlineChannel] = asicChannel;
     fvPlaneMap[offlineChannel] = planeType;
+
+  }
+  inFile.close();
+
+
+
+  std::string FELIXchannelMapFile = pset.get<std::string>("FELIXFileName");
+  sp.find_file(FELIXchannelMapFile, fullname);
+
+  if (fullname.empty()) {
+    std::cout << "Input file " << FELIXchannelMapFile << " not found" << std::endl;
+    throw cet::exception("File not found");
+  }
+  else
+    std::cout << "PDSP Channel Map: Building FELIX TPC wiremap from file " << channelMapFile << std::endl;
+
+  std::ifstream FELIXinFile(fullname, std::ios::in);
+
+  while (std::getline(FELIXinFile,line)) {
+    unsigned int crateNo, slotNo, fiberNo, FEMBChannel, StreamChannel, slotID, fiberID, chipNo, chipChannel, asicNo, asicChannel, planeType, offlineChannel;
+    std::stringstream linestream(line);
+    linestream >> crateNo >> slotNo >> fiberNo>> FEMBChannel >> StreamChannel >> slotID >> fiberID >> chipNo >> chipChannel >> asicNo >> asicChannel >> planeType >> offlineChannel;
+
+    // fill lookup tables.  Throw an exception if any number is out of expected bounds.
+    // checking for negative values produces compiler warnings as these are unsigned ints
+
+    if (offlineChannel >= fNChans)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood Offline Channel: " << offlineChannel << "\n";
+      }
+    if (crateNo >= fNCrates)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood Crate Number: " << crateNo << "\n";
+      }
+    if (slotNo >= fNSlots)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood Slot Number: " << slotNo << "\n";
+      }
+    if (fiberNo >= fNFibers)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood Fiber Number: " << fiberNo << "\n";
+      }
+    if (StreamChannel >= fNFEMBChans)
+      {
+	throw cet::exception("PdspChannelMapService") << "Ununderstood FEMB (Stream) Channel Number: " << StreamChannel << "\n";
+      }
+
+    fFELIXarrayCsfcToOffline[crateNo][slotNo][fiberNo][StreamChannel] = offlineChannel;
+    fFELIXvAPAMap[offlineChannel] = crateNo; 
+    fFELIXvWIBMap[offlineChannel] = slotNo; 
+    fFELIXvFEMBMap[offlineChannel] = fiberNo; 
+    fFELIXvFEMBChannelMap[offlineChannel] = FEMBChannel; 
+    fFELIXvStreamChannelMap[offlineChannel] = StreamChannel;
+    fFELIXvSlotIdMap[offlineChannel] = slotID; 
+    fFELIXvFiberIdMap[offlineChannel] = fiberID; 
+    fFELIXvChipMap[offlineChannel] = chipNo; 
+    fFELIXvChipChannelMap[offlineChannel] = chipChannel;
+    fFELIXvASICMap[offlineChannel] = asicNo;
+    fFELIXvASICChannelMap[offlineChannel] = asicChannel;
+    fFELIXvPlaneMap[offlineChannel] = planeType;
 
   }
   inFile.close();
@@ -150,9 +210,9 @@ dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& ps
 dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& pset, art::ActivityRegistry&) : PdspChannelMapService(pset) {
 }
 
-unsigned int dune::PdspChannelMapService::GetOfflineNumberFromDetectorElements(unsigned int crate, unsigned int slot, unsigned int fiber, unsigned int streamchannel) {
+unsigned int dune::PdspChannelMapService::GetOfflineNumberFromDetectorElements(unsigned int crate, unsigned int slot, unsigned int fiber, unsigned int streamchannel, FelixOrRCE frswitch) {
 
-  unsigned int offlineChannel;
+  unsigned int offlineChannel=0;
   unsigned int lcrate = crate;
   unsigned int lslot = slot;
   unsigned int lfiber = fiber;
@@ -193,69 +253,160 @@ unsigned int dune::PdspChannelMapService::GetOfflineNumberFromDetectorElements(u
 						    << crate << " " << slot << " " << fiber << " " << streamchannel << "\n";
     }
 
-  offlineChannel = farrayCsfcToOffline[lcrate][lslot][lfiber][streamchannel];
+  if (frswitch == kRCE)
+    {
+      offlineChannel = farrayCsfcToOffline[lcrate][lslot][lfiber][streamchannel];
+    }
+  else
+    {
+      offlineChannel = fFELIXarrayCsfcToOffline[lcrate][lslot][lfiber][streamchannel];
+    }
+
   return offlineChannel;
 }
 
-unsigned int dune::PdspChannelMapService::APAFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdspChannelMapService::APAFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
   check_offline_channel(offlineChannel);
-  return fvAPAMap[offlineChannel];
+  if (frswitch == kRCE)
+    {
+      return fvAPAMap[offlineChannel];
+    }
+  else
+    {
+      return fFELIXvAPAMap[offlineChannel];
+    }
 }
 
-unsigned int dune::PdspChannelMapService::WIBFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdspChannelMapService::WIBFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
   check_offline_channel(offlineChannel);
-  return fvWIBMap[offlineChannel];
-
+  if (frswitch == kRCE)
+    {
+      return fvWIBMap[offlineChannel];       
+    }
+  else
+    {
+      return fFELIXvWIBMap[offlineChannel];              
+    }
 }
 
-unsigned int dune::PdspChannelMapService::FEMBFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdspChannelMapService::FEMBFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
   check_offline_channel(offlineChannel);
-  return fvFEMBMap[offlineChannel];
+  if (frswitch == kRCE)
+    {
+      return fvFEMBMap[offlineChannel]; 
+    }
+  else
+    {
+      return fFELIXvFEMBMap[offlineChannel];        
+    }
 }
 
-unsigned int dune::PdspChannelMapService::FEMBChannelFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdspChannelMapService::FEMBChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
   check_offline_channel(offlineChannel);
-  return fvFEMBChannelMap[offlineChannel];
+  if (frswitch == kRCE)
+    {
+      return fvFEMBChannelMap[offlineChannel];       
+    }
+  else
+    {
+      return fFELIXvFEMBChannelMap[offlineChannel];  
+    }
 }
 
-unsigned int dune::PdspChannelMapService::StreamChannelFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdspChannelMapService::StreamChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
   check_offline_channel(offlineChannel);
-  return fvStreamChannelMap[offlineChannel];
+  if (frswitch == kRCE)
+    {
+      return fvStreamChannelMap[offlineChannel];       
+    }
+  else
+    {
+      return fFELIXvStreamChannelMap[offlineChannel];       
+    }
 }
 
-unsigned int dune::PdspChannelMapService::SlotIdFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdspChannelMapService::SlotIdFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
   check_offline_channel(offlineChannel);
-  return fvSlotIdMap[offlineChannel];
+  if (frswitch == kRCE)
+    {
+      return fvSlotIdMap[offlineChannel];  
+    }
+  else
+    {
+      return fFELIXvSlotIdMap[offlineChannel];         
+    }
 }
 
-unsigned int dune::PdspChannelMapService::FiberIdFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdspChannelMapService::FiberIdFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
   check_offline_channel(offlineChannel);
-  return fvFiberIdMap[offlineChannel];
+  if (frswitch == kRCE)
+    {
+      return fvFiberIdMap[offlineChannel];       
+    }
+  else
+    {
+      return fFELIXvFiberIdMap[offlineChannel];
+    }
 }
 
-unsigned int dune::PdspChannelMapService::ChipFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdspChannelMapService::ChipFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
   check_offline_channel(offlineChannel);
-  return fvChipMap[offlineChannel];
+  if (frswitch == kRCE)
+    {
+      return fvChipMap[offlineChannel];       
+    }
+  else
+    {
+      return fFELIXvChipMap[offlineChannel];
+    }
 }
 
-unsigned int dune::PdspChannelMapService::ChipChannelFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdspChannelMapService::ChipChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
   check_offline_channel(offlineChannel);
-  return fvChipChannelMap[offlineChannel];
+  if (frswitch == kRCE)
+    {
+      return fvChipChannelMap[offlineChannel];
+    }
+  else
+    {
+      return fFELIXvChipChannelMap[offlineChannel];       
+    }
 }
 
-unsigned int dune::PdspChannelMapService::ASICFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdspChannelMapService::ASICFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
   check_offline_channel(offlineChannel);
-  return fvASICMap[offlineChannel];
+  if (frswitch == kRCE)
+    {
+      return fvASICMap[offlineChannel];       
+    }
+  else
+    {
+      return fFELIXvASICMap[offlineChannel];
+    }
 }
 
-unsigned int dune::PdspChannelMapService::ASICChannelFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdspChannelMapService::ASICChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
   check_offline_channel(offlineChannel);
-  return fvASICChannelMap[offlineChannel];
+  if (frswitch == kRCE)
+    {
+      return fvASICChannelMap[offlineChannel];
+    }
+  else
+    {
+      return fFELIXvASICChannelMap[offlineChannel];       
+    }
 }
 
-unsigned int dune::PdspChannelMapService::PlaneFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdspChannelMapService::PlaneFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
   check_offline_channel(offlineChannel);
-  return fvFEMBMap[offlineChannel];
+  if (frswitch == kRCE)
+    {
+      return fvPlaneMap[offlineChannel];       
+    }
+  else
+    {
+      return fFELIXvPlaneMap[offlineChannel];       
+    }
 }
 
 unsigned int dune::PdspChannelMapService::SSPOfflineChannelFromOnlineChannel(unsigned int onlineChannel) 

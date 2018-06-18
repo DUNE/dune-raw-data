@@ -3,7 +3,6 @@ BEGIN_PROLOG
 # ProtoDUNE-SP online/offline channel mapping.
 
 pdspchannelmap: {
-  service_provider:  PdspChannelMapService
   FileName:         "protoDUNETPCChannelMap_RCE_v4.txt"
   FELIXFileName:    "protoDUNETPCChannelMap_FELIX_v4.txt"
   SSPFileName:      "protoDUNESSPChannelMap_v1.txt"

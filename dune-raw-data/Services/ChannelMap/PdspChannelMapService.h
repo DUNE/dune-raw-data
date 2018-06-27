@@ -173,7 +173,7 @@ private:
 
   void check_offline_channel(unsigned int offlineChannel) const
   {
-  if (offlineChannel > fNChans)
+  if (offlineChannel >= fNChans)
     {      
       throw cet::exception("PdspChannelMapService") << "Offline TPC Channel Number out of range: " << offlineChannel << "\n"; 
     }
@@ -181,7 +181,7 @@ private:
 
   void SSP_check_offline_channel(unsigned int offlineChannel) const
   {
-  if (offlineChannel > fNSSPChans)
+  if (offlineChannel >= fNSSPChans)
     {      
       throw cet::exception("PdspChannelMapService") << "Offline SSP Channel Number out of range: " << offlineChannel << "\n"; 
     }

@@ -45,43 +45,43 @@ public:
   // Map instrumentation numbers (crate:slot:fiber:FEMBchannel) to offline channel number
   // FEMB channel number is really the stream index number, but for FELIX, it is restricted to be in the range 0:127, so really it's more like an FEMB channel number
 
-  unsigned int GetOfflineNumberFromDetectorElements(unsigned int crate, unsigned int slot, unsigned int fiber, unsigned int fembchannel, FelixOrRCE frswitch=kRCE);
+  unsigned int GetOfflineNumberFromDetectorElements(unsigned int crate, unsigned int slot, unsigned int fiber, unsigned int fembchannel, FelixOrRCE frswitch);
   	  
   /// Returns APA/crate
-  unsigned int APAFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
+  unsigned int APAFromOfflineChannel(unsigned int offlineChannel) const;
   
   /// Returns WIB/slot
-  unsigned int WIBFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
+  unsigned int WIBFromOfflineChannel(unsigned int offlineChannel) const;
   
   /// Returns FEMB/fiber
-  unsigned int FEMBFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
+  unsigned int FEMBFromOfflineChannel(unsigned int offlineChannel) const;
   
   /// Returns FEMB channel
-  unsigned int FEMBChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
+  unsigned int FEMBChannelFromOfflineChannel(unsigned int offlineChannel) const;
   
   /// Returns RCE(FELIX) stream(frame) channel
-  unsigned int StreamChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
+  unsigned int StreamChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const;
   
   /// Returns global slot ID
-  unsigned int SlotIdFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
+  unsigned int SlotIdFromOfflineChannel(unsigned int offlineChannel) const;
   
   /// Returns global fiber ID
-  unsigned int FiberIdFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
+  unsigned int FiberIdFromOfflineChannel(unsigned int offlineChannel) const;
 
   /// Returns chip number
-  unsigned int ChipFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
+  unsigned int ChipFromOfflineChannel(unsigned int offlineChannel) const;
   
   /// Returns chip channel number
-  unsigned int ChipChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
+  unsigned int ChipChannelFromOfflineChannel(unsigned int offlineChannel) const;
   
   /// Returns ASIC number
-  unsigned int ASICFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
+  unsigned int ASICFromOfflineChannel(unsigned int offlineChannel) const;
   
   /// Returns ASIC channel number
-  unsigned int ASICChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
+  unsigned int ASICChannelFromOfflineChannel(unsigned int offlineChannel) const;
   
   /// Returns plane
-  unsigned int PlaneFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch=kRCE) const;
+  unsigned int PlaneFromOfflineChannel(unsigned int offlineChannel) const;
   
 
   // SSP channel map accessors

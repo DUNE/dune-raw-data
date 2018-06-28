@@ -265,53 +265,39 @@ unsigned int dune::PdspChannelMapService::GetOfflineNumberFromDetectorElements(u
   return offlineChannel;
 }
 
-unsigned int dune::PdspChannelMapService::APAFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
+// does not depend on FELIX or RCE -- offline channels should always map to the same APA/crate regardless of RCE or FELIX
+
+unsigned int dune::PdspChannelMapService::APAFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
-  if (frswitch == kRCE)
-    {
-      return fvAPAMap[offlineChannel];
-    }
-  else
-    {
-      return fFELIXvAPAMap[offlineChannel];
-    }
+  return fvAPAMap[offlineChannel];
+  // return fFELIXvAPAMap[offlineChannel];   // -- FELIX one -- should be the same
 }
 
-unsigned int dune::PdspChannelMapService::WIBFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
+// does not depend on FELIX or RCE 
+
+unsigned int dune::PdspChannelMapService::WIBFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
-  if (frswitch == kRCE)
-    {
-      return fvWIBMap[offlineChannel];       
-    }
-  else
-    {
-      return fFELIXvWIBMap[offlineChannel];              
-    }
+  return fvWIBMap[offlineChannel];       
+  // return fFELIXvWIBMap[offlineChannel];    // -- FELIX one -- should be the same
 }
 
-unsigned int dune::PdspChannelMapService::FEMBFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
+// does not depend on FELIX or RCE 
+
+unsigned int dune::PdspChannelMapService::FEMBFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
-  if (frswitch == kRCE)
-    {
-      return fvFEMBMap[offlineChannel]; 
-    }
-  else
-    {
-      return fFELIXvFEMBMap[offlineChannel];        
-    }
+  return fvFEMBMap[offlineChannel]; 
+  return fFELIXvFEMBMap[offlineChannel];   
 }
 
-unsigned int dune::PdspChannelMapService::FEMBChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
+// does not depend on FELIX or RCE 
+
+unsigned int dune::PdspChannelMapService::FEMBChannelFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
-  if (frswitch == kRCE)
-    {
-      return fvFEMBChannelMap[offlineChannel];       
-    }
-  else
-    {
-      return fFELIXvFEMBChannelMap[offlineChannel];  
-    }
+  return fvFEMBChannelMap[offlineChannel];       
+  // return fFELIXvFEMBChannelMap[offlineChannel];    // -- FELIX one -- should be the same
 }
+
+// this one does depend on FELIX or RCE
 
 unsigned int dune::PdspChannelMapService::StreamChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
   check_offline_channel(offlineChannel);
@@ -325,88 +311,62 @@ unsigned int dune::PdspChannelMapService::StreamChannelFromOfflineChannel(unsign
     }
 }
 
-unsigned int dune::PdspChannelMapService::SlotIdFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
+// does not depend on FELIX or RCE 
+
+unsigned int dune::PdspChannelMapService::SlotIdFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
-  if (frswitch == kRCE)
-    {
-      return fvSlotIdMap[offlineChannel];  
-    }
-  else
-    {
-      return fFELIXvSlotIdMap[offlineChannel];         
-    }
+  return fvSlotIdMap[offlineChannel];  
+  //  return fFELIXvSlotIdMap[offlineChannel];    // -- FELIX one -- should be the same
 }
 
-unsigned int dune::PdspChannelMapService::FiberIdFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
+// may potentially depend on FELIX or RCE, but if fibers are switched between the WIB and the FELIX or RCE,
+// we can fix this in the channel map but report with this method the fiber coming out of the WIB, not the
+// one going in to the FELIX or RCE
+
+unsigned int dune::PdspChannelMapService::FiberIdFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
-  if (frswitch == kRCE)
-    {
-      return fvFiberIdMap[offlineChannel];       
-    }
-  else
-    {
-      return fFELIXvFiberIdMap[offlineChannel];
-    }
+  return fvFiberIdMap[offlineChannel];       
+  return fFELIXvFiberIdMap[offlineChannel];   // -- FELIX one -- should be the same
 }
 
-unsigned int dune::PdspChannelMapService::ChipFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
+// does not depend on FELIX or RCE 
+
+unsigned int dune::PdspChannelMapService::ChipFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
-  if (frswitch == kRCE)
-    {
-      return fvChipMap[offlineChannel];       
-    }
-  else
-    {
-      return fFELIXvChipMap[offlineChannel];
-    }
+  return fvChipMap[offlineChannel];       
+  // return fFELIXvChipMap[offlineChannel];    // -- FELIX one -- should be the same
 }
 
-unsigned int dune::PdspChannelMapService::ChipChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
+// does not depend on FELIX or RCE 
+
+unsigned int dune::PdspChannelMapService::ChipChannelFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
-  if (frswitch == kRCE)
-    {
-      return fvChipChannelMap[offlineChannel];
-    }
-  else
-    {
-      return fFELIXvChipChannelMap[offlineChannel];       
-    }
+  return fvChipChannelMap[offlineChannel];
+  // return fFELIXvChipChannelMap[offlineChannel];    // -- FELIX one -- should be the same
 }
 
-unsigned int dune::PdspChannelMapService::ASICFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
+// does not depend on FELIX or RCE 
+
+unsigned int dune::PdspChannelMapService::ASICFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
-  if (frswitch == kRCE)
-    {
-      return fvASICMap[offlineChannel];       
-    }
-  else
-    {
-      return fFELIXvASICMap[offlineChannel];
-    }
+  return fvASICMap[offlineChannel];       
+  // return fFELIXvASICMap[offlineChannel];    // -- FELIX one -- should be the same
 }
 
-unsigned int dune::PdspChannelMapService::ASICChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
+// does not depend on FELIX or RCE 
+
+unsigned int dune::PdspChannelMapService::ASICChannelFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
-  if (frswitch == kRCE)
-    {
-      return fvASICChannelMap[offlineChannel];
-    }
-  else
-    {
-      return fFELIXvASICChannelMap[offlineChannel];       
-    }
+  return fvASICChannelMap[offlineChannel];
+  // return fFELIXvASICChannelMap[offlineChannel];    // -- FELIX one -- should be the same
 }
 
-unsigned int dune::PdspChannelMapService::PlaneFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const {
+// does not depend on FELIX or RCE 
+
+unsigned int dune::PdspChannelMapService::PlaneFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
-  if (frswitch == kRCE)
-    {
-      return fvPlaneMap[offlineChannel];       
-    }
-  else
-    {
-      return fFELIXvPlaneMap[offlineChannel];       
-    }
+  return fvPlaneMap[offlineChannel];       
+  // return fFELIXvPlaneMap[offlineChannel];    // -- FELIX one -- should be the same
 }
 
 unsigned int dune::PdspChannelMapService::SSPOfflineChannelFromOnlineChannel(unsigned int onlineChannel) 

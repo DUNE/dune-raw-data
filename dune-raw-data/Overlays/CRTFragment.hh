@@ -9,7 +9,7 @@
 
 namespace CRT
 {
-	class Fragment;
+  class Fragment;
 }
 
 class CRT::Fragment
@@ -20,8 +20,7 @@ public:
     uint8_t magic; // must be 'M'
     uint8_t nhit;
     uint16_t module_num;
-    int32_t unixtime;
-    uint32_t fifty_mhz_time;
+    uint64_t fifty_mhz_time;
   };
 
   struct hit_t{
@@ -43,14 +42,8 @@ public:
     return header()->nhit;
   }
 
-  // Return the Unix timestamp (seconds since 1 Jan 1970)
-  int32_t unixtime()
-  {
-    return header()->unixtime;
-  }
-
   // Return the value of the 50MHz counter
-  uint32_t fifty_mhz_time()
+  uint64_t fifty_mhz_time()
   {
     return header()->fifty_mhz_time;
   }
@@ -80,10 +73,8 @@ public:
     printf("CRT header: Magic = '%c'\n"
            "            n hit = %2u\n"
            "            module = %5u\n"
-           "            Unix time  = %10d (0x%8x)\n"
-           "            50Mhz time = %10u (0x%8x)\n",
+           "            50Mhz time = %10lu (0x%8x)\n",
            header()->magic, header()->nhit, header()->module_num,
-           header()->unixtime, header()->unixtime,
            header()->fifty_mhz_time, header()->fifty_mhz_time);
   }
 
@@ -130,12 +121,6 @@ public:
     if(h->nhit > 64){
       fprintf(stderr, "CRT event has more hits (%d) than channels (64)\n",
               h->nhit);
-      return false;
-    }
-    if(h->unixtime < 1525147200){
-      // I know we didn't take data before 1 May 2018, so if it says it did,
-      // the data must be corrupt.
-      fprintf(stderr, "CRT Unix time (%d) is too early\n", h->unixtime);
       return false;
     }
     return true;

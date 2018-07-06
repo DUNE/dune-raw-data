@@ -5,8 +5,8 @@
 #define artdaq_dune_Overlays_FelixFormat_hh
 
 // Set these if you have a header and/or a trailer in your frames.
-//#define FELIXHEAD
-//#define FELIXTRAIL
+#define FELIXHEAD
+#define FELIXTRAIL
 
 #include <bitset>
 #include <iostream>
@@ -277,7 +277,7 @@ class FelixFrame {
   WIBHeader head;
   ColdataBlock blocks[4];
 #ifdef FELIXTRAIL
-  word_t /*eof*/ : 8, CRC_1 : 20, : 4;
+  word_t /*eof*/ : 8, /* CRC_1 */ : 20, : 4;
   word_t : 32;
 #endif
 
@@ -404,16 +404,17 @@ class FelixFrame {
     set_channel(ch / 64, ch % 64, new_val);
   }
 
-#ifdef FELIXTRAIL
-  // CRC accessor
-  uint32_t CRC() const { return CRC_1; }
-  //uint32_t empty() const { return empty_; }
-  // CRC mutator
-  void set_CRC(const uint32_t new_CRC) { CRC_1 = new_CRC; }
-#else
-  // CRC accessor
-  uint32_t CRC() const { return 0; }
-#endif
+// #ifdef FELIXTRAIL
+//   // CRC accessor
+//   uint32_t CRC() const {
+//     return CRC_1;
+//   }
+//   // CRC mutator
+//   void set_CRC(const uint32_t new_CRC) { CRC_1 = new_CRC; }
+// #else
+//   // CRC accessor
+//   uint32_t CRC() const { return 0; }
+// #endif
 
   // Const struct accessors.
   const WIBHeader* wib_header() const { return &head; }
@@ -429,18 +430,18 @@ class FelixFrame {
       b.head.print();
       b.printADCs();
     }
-    std::cout << "CRC: " << CRC() << '\n';
+    // std::cout << "CRC: " << CRC() << '\n';
   }
 };
 
 //========================
 // Reordered FELIX frames
 //========================
-static constexpr unsigned num_reord = 9600;
+static constexpr unsigned num_reord = 9595;
 class ReorderedFelixFrames {
  private:
   WIBHeader head[num_reord];
-  word_t CRC_[num_reord];
+  // word_t CRC_[num_reord];
   ColdataHeader blockhead[num_reord*4];
   adc_t ADCs[num_reord*256];
 
@@ -554,10 +555,15 @@ class ReorderedFelixFrames {
   //                ADCs.begin() + (ch+1) * total_frames());
   // }
 
-  // CRC accessor
-  uint32_t CRC(const size_t frame_ID) const { return CRC_[frame_ID]&((1<<20)-1); }
-  // CRC mutator
-  void set_CRC(const size_t frame_ID, const uint32_t new_CRC) { CRC_[frame_ID] = new_CRC; }
+  // // CRC accessor
+  // uint32_t CRC(const size_t frame_ID) const {
+  //   return frame_ID*0;
+  //   /* CRC_[frame_ID] & ((1 << 20) - 1); */
+  // }
+  // // CRC mutator
+  // void set_CRC(const size_t frame_ID, const uint32_t new_CRC) {
+  //   ADCs[frame_ID] += new_CRC * 0; /* CRC_[frame_ID] = new_CRC; */
+  // }
 
   // Utility functions
   void print(const size_t frame_ID) const {
@@ -575,7 +581,7 @@ class ReorderedFelixFrames {
         std::cout << std::dec << '\n';
       }
     }
-    std::cout << "CRC: " << CRC(frame_ID) << '\n';
+    // std::cout << "CRC: " << CRC(frame_ID) << '\n';
   }
 };
 

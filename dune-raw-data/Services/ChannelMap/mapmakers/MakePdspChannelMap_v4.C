@@ -58,6 +58,46 @@ int felixCh[8][16] = {
                                                                                  {111, 110, 109, 108, 107, 106, 105, 104, 127, 126, 125, 124, 123, 122, 121, 120}
 };
 
+
+  // indexed by offline-oriented slot and fiber, to give online slot and fiber
+  // implements Table 4 and Fig. 3a in DocDB 4064. 
+
+  // Map for offline APA 0 (== online APA 3), and other even offline APA's
+
+  int sfmap_slot_even[5][4] = {
+    {0,1,2,3},  // offline slot 0, fibers 0-3
+    {4,0,1,2},  // offline slot 1, fibers 0-3
+    {3,4,0,1},  // offline slot 2, fibers 0-3
+    {2,3,4,0},  // offline slot 3, fibers 0-3
+    {1,2,3,4}   // offline slot 4, fibers 0-3
+  };
+
+  int sfmap_fiber_even[5][4] = {
+    {0,0,0,0},  // offline slot 0, fibers 0-3
+    {0,1,1,1},  // offline slot 1, fibers 0-3
+    {1,1,2,2},	// offline slot 2, fibers 0-3
+    {2,2,2,3},	// offline slot 3, fibers 0-3
+    {3,3,3,3}	// offline slot 4, fibers 0-3
+  };
+
+  // Map for offline APA 1 (== online APA 5), and other odd offline APA's
+
+  int sfmap_slot_odd[5][4] = {
+    {0,1,2,3},  // offline slot 0, fibers 0-3
+    {4,0,1,2},  // offline slot 1, fibers 0-3
+    {3,4,0,1},  // offline slot 2, fibers 0-3
+    {2,3,4,0},  // offline slot 3, fibers 0-3
+    {1,2,3,4}   // offline slot 4, fibers 0-3
+  };
+
+  int sfmap_fiber_odd[5][4] = {
+    {2,2,2,2},  // offline slot 0, fibers 0-3
+    {2,3,3,3},  // offline slot 1, fibers 0-3
+    {3,3,0,0},	// offline slot 2, fibers 0-3
+    {0,0,0,1},	// offline slot 3, fibers 0-3
+    {1,1,1,1}	// offline slot 4, fibers 0-3
+  };
+
 void MakePdspChannelMap_v4() {
  
   ofstream fmaprce;
@@ -80,7 +120,10 @@ void MakePdspChannelMap_v4() {
   
   int Asic = 0;
   int offlineChannel  = 0;
+
   for(int crateNo = 0; crateNo<nCrate; crateNo++) {
+    bool APAisLeft =  ( crateNo % 2 == 1 );   // if false, then APA is on the right-hand side of the beam
+
     int planeType = 0;
     vector<int> Uwire, Vwire, Zwire;
     for(int slotNo = 0;slotNo<nSlotPerCrate;slotNo++) {
@@ -98,27 +141,54 @@ void MakePdspChannelMap_v4() {
 
 	      RCEStreamChannel = rceCh[chipNo][chipChannel]; 
 	      FELIXStreamChannel = felixCh[chipNo][chipChannel];  
-     	 	        	
+
+	      int slotNoOnline = sfmap_slot_even[slotNo][fiberNo];
+	      int fiberNoOnline = sfmap_fiber_even[slotNo][fiberNo];
+	      if (APAisLeft)
+		{
+	          slotNoOnline = sfmap_slot_odd[slotNo][fiberNo];
+	          fiberNoOnline = sfmap_fiber_odd[slotNo][fiberNo];
+		}
+     	 	            	 	        	
 	      //offline number
 	      if(planeType == 0) {
 		Uwire.push_back(planeCh[chipNo][chipChannel]);
-		offlineChannel = 2560*crateNo + 40*(4*slotNo + fiberNo)+ (planeCh[chipNo][chipChannel]-1);
+		// old calc -- need to invert the order of U-plane channels
+		//offlineChannel = 2560*crateNo + 40*(4*slotNo + fiberNo)+ (planeCh[chipNo][chipChannel]-1);
+		int itmp = 40*(4*slotNo + fiberNo)+ (planeCh[chipNo][chipChannel]-1);  // should go from 0 to 799
+		if (! APAisLeft) 
+		  {
+		    itmp = 799 - itmp;
+		  }
+		offlineChannel = 2560*crateNo + itmp;
 	      }
 	      if(planeType == 1) {
 		Vwire.push_back(planeCh[chipNo][chipChannel]);
-		offlineChannel = 2560*crateNo +  800 + 40*(4*slotNo + fiberNo) + (planeCh[chipNo][chipChannel]-1);
+		//offlineChannel = 2560*crateNo +  800 + 40*(4*slotNo + fiberNo) + (planeCh[chipNo][chipChannel]-1);
+		int itmp = 40*(4*slotNo + fiberNo) + (planeCh[chipNo][chipChannel]-1);  // goes from 0 to 799
+		if (APAisLeft) 
+		  {
+		    itmp = 799 - itmp;
+		  }
+		offlineChannel = 2560*crateNo +  800 + itmp;
+
 	      }
 	      if(planeType == 2) {
-		Uwire.push_back(planeCh[chipNo][chipChannel]);
-		offlineChannel = 2560*crateNo + 1600 + 48*(4*slotNo + fiberNo)  + (planeCh[chipNo][chipChannel]-1);
+		Zwire.push_back(planeCh[chipNo][chipChannel]);   
+		//offlineChannel = 2560*crateNo + 1600 + 48*(4*slotNo + fiberNo)  + (planeCh[chipNo][chipChannel]-1);
+		int itmp = 48*(4*slotNo + fiberNo)  + (planeCh[chipNo][chipChannel]-1);  // goes from 0 to 959
+		if (APAisLeft) 
+		  {
+		    itmp = 959 - itmp;
+		  }
+                offlineChannel = 2560*crateNo + 1600 + itmp;
 	      }
      	 	       
-     	 	       
-	      fmaprce<<crateNo<<"\t"<<slotNo<<"\t"<<fiberNo<<"\t"<<FEMBChannel
+	      fmaprce<<crateNo<<"\t"<<slotNoOnline<<"\t"<<fiberNoOnline<<"\t"<<FEMBChannel
 		     <<"\t"<<RCEStreamChannel<<"\t"<<slotID<<"\t"<<fiberID
 		     <<"\t"<<chipNo<<"\t"<<chipChannel<<"\t"<<asicNo<<"\t"
 		     <<asicChannel<<"\t"<<planeType<<"\t"<<offlineChannel<<endl;  
-	      fmapfelix<<crateNo<<"\t"<<slotNo<<"\t"<<fiberNo<<"\t"<<FEMBChannel
+	      fmapfelix<<crateNo<<"\t"<<slotNoOnline<<"\t"<<fiberNoOnline<<"\t"<<FEMBChannel
 		       <<"\t"<<FELIXStreamChannel<<"\t"<<slotID<<"\t"<<fiberID
 		       <<"\t"<<chipNo<<"\t"<<chipChannel<<"\t"<<asicNo<<"\t"
 		       <<asicChannel<<"\t"<<planeType<<"\t"<<offlineChannel<<endl;  

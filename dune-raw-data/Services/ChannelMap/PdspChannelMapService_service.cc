@@ -139,6 +139,23 @@ dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& ps
   }
   inFile.close();
 
+  // APA numbering -- hardcoded here.
+  // Installation numbering:
+  //             APA5  APA6  APA4
+  //  beam -->
+  //             APA3  APA2  APA1
+  //
+  //  The Offline numbering:
+  //             APA1  APA3  APA5
+  //  beam -->
+  //             APA0  APA2  APA4
+  //
+  fvInstalledAPA[0] = 3;
+  fvInstalledAPA[1] = 5;
+  fvInstalledAPA[2] = 2;
+  fvInstalledAPA[3] = 6;
+  fvInstalledAPA[4] = 1;
+  fvInstalledAPA[5] = 4;
 
   std::string SSPchannelMapFile = pset.get<std::string>("SSPFileName");
 
@@ -271,6 +288,16 @@ unsigned int dune::PdspChannelMapService::APAFromOfflineChannel(unsigned int off
   check_offline_channel(offlineChannel);
   return fvAPAMap[offlineChannel];
   // return fFELIXvAPAMap[offlineChannel];   // -- FELIX one -- should be the same
+}
+
+unsigned int dune::PdspChannelMapService::InstalledAPAFromOfflineChannel(unsigned int offlineChannel) const {
+  check_offline_channel(offlineChannel);
+  unsigned int offlineAPA = fvAPAMap[offlineChannel];
+  if (offlineAPA > 5)
+    {
+      throw cet::exception("PdspChannelMapService") << "Offline APA Number out of range: " << offlineAPA << "\n"; 
+    }
+  return fvInstalledAPA[fvAPAMap[offlineChannel]];
 }
 
 // does not depend on FELIX or RCE 

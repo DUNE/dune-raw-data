@@ -49,6 +49,9 @@ public:
   	  
   /// Returns APA/crate
   unsigned int APAFromOfflineChannel(unsigned int offlineChannel) const;
+
+  /// Returns APA/crate in installation notation
+  unsigned int InstalledAPAFromOfflineChannel(unsigned int offlineChannel) const;
   
   /// Returns WIB/slot
   unsigned int WIBFromOfflineChannel(unsigned int offlineChannel) const;
@@ -158,6 +161,8 @@ private:
   unsigned int fFELIXvASICMap[15360]; // ASIC
   unsigned int fFELIXvASICChannelMap[15360]; // ASIC internal channel
   unsigned int fFELIXvPlaneMap[15360]; // Plane type
+
+  unsigned int fvInstalledAPA[6];  // APA as installed.  This array maps the two conventions.  Argument = offline, value = installed
 
   // SSP Maps
 

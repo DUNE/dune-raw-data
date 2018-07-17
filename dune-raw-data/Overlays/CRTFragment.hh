@@ -51,7 +51,7 @@ public:
   // Return the channel number of the ith hit.  That hit must exist.
   uint8_t channel(const int i) const
   {
-    return hit(i)->adc;
+    return hit(i)->channel;
   }
 
   // Return the ADC value of the ith hit.  That hit must exist.

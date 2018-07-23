@@ -73,11 +73,11 @@ int felixCh[8][16] = {
   };
 
   int sfmap_fiber_even[5][4] = {
-    {0,0,0,0},  // offline slot 0, fibers 0-3
-    {0,1,1,1},  // offline slot 1, fibers 0-3
-    {1,1,2,2},	// offline slot 2, fibers 0-3
-    {2,2,2,3},	// offline slot 3, fibers 0-3
-    {3,3,3,3}	// offline slot 4, fibers 0-3
+    {2,2,2,2},  // offline slot 0, fibers 0-3
+    {2,3,3,3},  // offline slot 1, fibers 0-3
+    {3,3,0,0},	// offline slot 2, fibers 0-3
+    {0,0,0,1},	// offline slot 3, fibers 0-3
+    {1,1,1,1}	// offline slot 4, fibers 0-3
   };
 
   // Map for offline APA 1 (== online APA 5), and other odd offline APA's
@@ -91,11 +91,11 @@ int felixCh[8][16] = {
   };
 
   int sfmap_fiber_odd[5][4] = {
-    {2,2,2,2},  // offline slot 0, fibers 0-3
-    {2,3,3,3},  // offline slot 1, fibers 0-3
-    {3,3,0,0},	// offline slot 2, fibers 0-3
-    {0,0,0,1},	// offline slot 3, fibers 0-3
-    {1,1,1,1}	// offline slot 4, fibers 0-3
+    {0,0,0,0},  // offline slot 0, fibers 0-3
+    {0,1,1,1},  // offline slot 1, fibers 0-3
+    {1,1,2,2},	// offline slot 2, fibers 0-3
+    {2,2,2,3},	// offline slot 3, fibers 0-3
+    {3,3,3,3}	// offline slot 4, fibers 0-3
   };
 
 void MakePdspChannelMap_v4() {

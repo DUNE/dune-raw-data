@@ -4,6 +4,48 @@
 
 namespace dune {
 
+
+  std::ostream & operator << (std::ostream & out, CTBFragment const & f ) {
+
+    for ( unsigned int i = 0; i < f.NWords() ; ++i ) {
+
+      if ( f.Trigger(i) ) {
+        out << "Trigger word " << std::hex << f.Trigger(i) -> word_type
+            << ", payload: " << f.Trigger(i) -> trigger_word
+            << ", TS: " << f.Trigger(i) -> timestamp << std::dec << std::endl ;
+      }
+      else if ( f.ChStatus(i) ) {
+	out << "Check Status word " << std::hex 
+            << " PDS " << f.ChStatus(i) -> pds
+            << ", CRT: " << f.ChStatus(i) -> crt 
+	    << ", Beam Hi: " << f.ChStatus(i) -> beam_hi 
+	    << ", Beam Low: " << f.ChStatus(i) -> beam_lo
+	    << ", TS: " << f.ChStatus(i) -> timestamp
+	    << std::dec << std::endl ;
+
+      }
+      else if ( f.Feedback(i) ) {
+	out << "Feedback word  " << std::hex 
+	    << ", Padding: " << f.Feedback(i) -> padding
+	    << ", Source: " << f.Feedback(i) -> source
+	    << ", Code: " << f.Feedback(i) -> code
+            << ", TS: " << f.Feedback(i) -> timestamp << std::dec << std::endl ;
+
+      }
+      else {
+	out << "type: " << std::hex << f.Word(i) -> word_type 
+	    << ", payload: " << f.Word(i) -> payload 
+	    << ", TS: " << f.Word(i) -> timestamp << std::dec << std::endl ;
+      }
+
+    }
+
+
+    return out ;
+  }
+
+
+
   CTBFragment::CTBFragment( artdaq::Fragment const & f ) : 
 
     _n_words( f.dataSizeBytes()/CTBFragment::WordSize() ),

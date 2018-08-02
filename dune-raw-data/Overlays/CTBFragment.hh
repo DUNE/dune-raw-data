@@ -51,9 +51,9 @@ class dune::CTBFragment {
 
   CTBFragment( artdaq::Fragment const & f ) ;
 
-  // const getter functions for the data in the header
 
-  unsigned int NWords() const noexcept { return _n_words } ;
+  // const getter functions for the data in the header
+  unsigned int NWords() const noexcept { return _n_words ; } 
 
   // array-like access to the words, index from 0 to NWords()-1 
   // this pointer should always be valid, if not there is a problem

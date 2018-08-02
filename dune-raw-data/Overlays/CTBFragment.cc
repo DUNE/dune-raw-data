@@ -1,13 +1,13 @@
-#include "dune-raw-data/Overlays/ToyFragment.hh"
+#include "dune-raw-data/Overlays/CTBFragment.hh"
 
 #include "cetlib/exception.h"
 
 namespace dune {
 
-  CTBFragment( artdaq::Fragment const & f ) : 
+  CTBFragment::CTBFragment( artdaq::Fragment const & f ) : 
 
     _n_words( f.dataSizeBytes()/CTBFragment::WordSize() ),
-    artdq_Fragment_( f ) 
+    artdaq_Fragment_( f ) 
   { ; } 
 
 
@@ -35,7 +35,7 @@ namespace dune {
   }
 
 
-  const ptb::content::word::ch_status_t* ChStatus( unsigned int i ) const {
+  const ptb::content::word::ch_status_t* CTBFragment::ChStatus( unsigned int i ) const {
 
     const ptb::content::word::word_t* w = Word( i )  ;
 
@@ -46,7 +46,7 @@ namespace dune {
   }
 
  
-  const ptb::content::word::timestamp_t* Timestamp( unsigned int i ) const {
+  const ptb::content::word::timestamp_t* CTBFragment::Timestamp( unsigned int i ) const {
 
     const ptb::content::word::word_t* w = Word( i )  ;
 
@@ -57,7 +57,7 @@ namespace dune {
   }
 
 
-  const ptb::content::word::trigger_t * Trigger( unsigned int i )  const {
+  const ptb::content::word::trigger_t * CTBFragment::Trigger( unsigned int i )  const {
 
     const ptb::content::word::word_t* w = Word( i )  ;
 
@@ -71,7 +71,7 @@ namespace dune {
   
   // casting methods
 
-  const ptb::content::word::feedback_t * Feedback ( const ptb::content::word::word_t & w ) {
+  const ptb::content::word::feedback_t * CTBFragment::Feedback ( const ptb::content::word::word_t & w ) {
 
     if ( w.word_type != ptb::content::word::t_fback ) return nullptr ;
 
@@ -79,7 +79,7 @@ namespace dune {
 
   }
 
-  const ptb::content::word::ch_status_t* ChStatus ( const ptb::content::word::word_t & w ) {
+  const ptb::content::word::ch_status_t* CTBFragment::ChStatus ( const ptb::content::word::word_t & w ) {
     
     if ( w.word_type != ptb::content::word::t_ch ) return nullptr ;
 
@@ -87,7 +87,7 @@ namespace dune {
 
   }
 
-  const ptb::content::word::timestamp_t* Timestamp( const ptb::content::word::word_t & w ) {
+  const ptb::content::word::timestamp_t* CTBFragment::Timestamp( const ptb::content::word::word_t & w ) {
   
     if ( w.word_type != ptb::content::word::t_ts ) return nullptr ;
 
@@ -95,7 +95,7 @@ namespace dune {
 
   }
 
-  const ptb::content::word::trigger_t*   Trigger  ( const ptb::content::word::word_t & w ) {
+  const ptb::content::word::trigger_t*   CTBFragment::Trigger  ( const ptb::content::word::word_t & w ) {
 
     if ( w.word_type != ptb::content::word::t_lt && w.word_type != ptb::content::word::t_gt ) return nullptr ;
 

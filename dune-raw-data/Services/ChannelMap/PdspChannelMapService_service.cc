@@ -353,7 +353,7 @@ unsigned int dune::PdspChannelMapService::SlotIdFromOfflineChannel(unsigned int 
 unsigned int dune::PdspChannelMapService::FiberIdFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
   return fvFiberIdMap[offlineChannel];       
-  return fFELIXvFiberIdMap[offlineChannel];   // -- FELIX one -- should be the same
+  //return fFELIXvFiberIdMap[offlineChannel];   // -- FELIX one -- should be the same
 }
 
 // does not depend on FELIX or RCE 

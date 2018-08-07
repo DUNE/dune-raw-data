@@ -324,8 +324,8 @@ unsigned int dune::PdspChannelMapService::WIBFromOfflineChannel(unsigned int off
 
 unsigned int dune::PdspChannelMapService::FEMBFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
-  return fvFEMBMap[offlineChannel]; 
-  return fFELIXvFEMBMap[offlineChannel];   
+  return fvFEMBMap[offlineChannel]+1; 
+  //return fFELIXvFEMBMap[offlineChannel];   
 }
 
 // does not depend on FELIX or RCE 

@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
       if (p == 2) {
         for (unsigned f = 10; f < 14; ++f) {
           filenames.push_back(
-              "/dune/app/users/milov/kevlar/run/uBsim/"
+              "/dune/app/users/milov/kevlar/newrun/uBsim/"
               "Run_1-SubRun_6120-Event_" +
               std::to_string(event) + "-Plane_" + std::to_string(p) +
               "-Frame_" + std::to_string(f) + ".dat");
@@ -41,9 +41,9 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
       }
       for (unsigned f = 1; f < 10; ++f) {
         filenames.push_back(
-            "/dune/app/users/milov/kevlar/run/uBsim/"
+            "/dune/app/users/milov/kevlar/newrun/uBsim/"
             "Run_1-SubRun_6120-Event_" +
-            std::to_string(event) + "-Plane_" + std::to_string(p) + "-Frame_" +
+            std::to_string(event) + "-Plane_" + std::to_string(p) + "-Frame_0" +
             std::to_string(f) + ".dat");
       }
     }
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     // std::string filename = filenames[0];
     std::ifstream in(filename, std::ios::binary);
     if (!in.is_open()) {
-      std::cout << "Could not open file.\n";
+      std::cout << "Could not open file " << filename << ".\n";
       return;
     }
     std::cout << "Reading from " << filename << ".\n";
@@ -84,13 +84,13 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     std::cout << "  -> Total frames: " << flxfrg.total_frames() << '\n';
     std::cout << "  -> Total adc values: " << flxfrg.total_adc_values() << '\n';
 
-    BOOST_REQUIRE_EQUAL(flxfrg.total_words(), frames * 120);
+    BOOST_REQUIRE_EQUAL(flxfrg.total_words(), frames * 116);
     BOOST_REQUIRE_EQUAL(flxfrg.total_frames(), frames);
     BOOST_REQUIRE_EQUAL(flxfrg.total_adc_values(), frames * 256);
     std::cout << "\n\n";
 
     std::cout << "### WOOF -> WIB frame test.\n";
-    BOOST_REQUIRE_EQUAL(sizeof(dune::FelixFrame), 480);
+    BOOST_REQUIRE_EQUAL(sizeof(dune::FelixFrame), 464);
     std::cout << " -> SOF: " << unsigned(flxfrg.sof(0)) << "\n";
     std::cout << " -> Version: " << unsigned(flxfrg.version(0)) << "\n";
     std::cout << " -> FiberNo: " << unsigned(flxfrg.fiber_no(0)) << "\n";
@@ -123,73 +123,73 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     frag_rms /= 256;
     std::cout << "FRAGMENT RMS: " << frag_rms << '\n';
 
-    // Compression tests.
-    std::cout << "### MEOW -> WIB frame compression test.\n";
+    // // Compression tests.
+    // std::cout << "### MEOW -> WIB frame compression test.\n";
 
-    auto comp_begin = std::chrono::high_resolution_clock::now();
-    std::vector<char> compfrg(dune::FelixCompress(flxfrg));
-    auto comp_end = std::chrono::high_resolution_clock::now();
-    artdaq::Fragment decompfrg(dune::FelixDecompress(compfrg));
-    auto decomp_end = std::chrono::high_resolution_clock::now();
+    // auto comp_begin = std::chrono::high_resolution_clock::now();
+    // std::vector<char> compfrg(dune::FelixCompress(flxfrg));
+    // auto comp_end = std::chrono::high_resolution_clock::now();
+    // artdaq::Fragment decompfrg(dune::FelixDecompress(compfrg));
+    // auto decomp_end = std::chrono::high_resolution_clock::now();
 
-    std::cout << "Compressed buffer size: " << compfrg.size() << ".\n"
-              << "Compression factor: " << (double)flxfrg.dataSizeBytes() / compfrg.size() << '\n'
-              << "Compression time taken: "
-              << std::chrono::duration_cast<std::chrono::microseconds>(
-                     comp_end - comp_begin)
-                     .count()
-              << " us.\n"
-              << "Decompression time taken: "
-              << std::chrono::duration_cast<std::chrono::microseconds>(
-                     decomp_end - comp_end)
-                     .count()
-              << " us.\n\n"
-              << "Noise RMS: " << frag_rms << '\n';
+    // std::cout << "Compressed buffer size: " << compfrg.size() << ".\n"
+    //           << "Compression factor: " << (double)flxfrg.dataSizeBytes() / compfrg.size() << '\n'
+    //           << "Compression time taken: "
+    //           << std::chrono::duration_cast<std::chrono::microseconds>(
+    //                  comp_end - comp_begin)
+    //                  .count()
+    //           << " us.\n"
+    //           << "Decompression time taken: "
+    //           << std::chrono::duration_cast<std::chrono::microseconds>(
+    //                  decomp_end - comp_end)
+    //                  .count()
+    //           << " us.\n\n"
+    //           << "Noise RMS: " << frag_rms << '\n';
 
-    comp_factors.push_back((double)flxfrg.dataSizeBytes() / compfrg.size());
-    comp_times.push_back(std::chrono::duration_cast<std::chrono::microseconds>(
-                     comp_end - comp_begin)
-                     .count());
+    // comp_factors.push_back((double)flxfrg.dataSizeBytes() / compfrg.size());
+    // comp_times.push_back(std::chrono::duration_cast<std::chrono::microseconds>(
+    //                  comp_end - comp_begin)
+    //                  .count());
 
-    ofile << (double)flxfrg.dataSizeBytes() / compfrg.size() << '\t' << std::chrono::duration_cast<std::chrono::microseconds>(
-                     comp_end - comp_begin)
-                     .count() << '\t' << frag_rms << '\n';
+    // ofile << (double)flxfrg.dataSizeBytes() / compfrg.size() << '\t' << std::chrono::duration_cast<std::chrono::microseconds>(
+    //                  comp_end - comp_begin)
+    //                  .count() << '\t' << frag_rms << '\n';
 
-    // // Test whether the original and decompressed frames correspond.
-    // const dune::FelixFrame* orig =
-    //     reinterpret_cast<dune::FelixFrame const*>(flxfrg.dataBeginBytes());
-    // const dune::FelixFrame* decomp =
-    //     reinterpret_cast<dune::FelixFrame
-    //     const*>(decompfrg.dataBeginBytes());
-    // for (unsigned i = 0; i < frames; ++i) {
-    //   BOOST_REQUIRE_EQUAL((orig + i)->version(), (decomp + i)->version());
-    //   for (unsigned j = 0; j < 256; ++j) {
-    //     BOOST_REQUIRE_EQUAL((orig + i)->channel(j), (decomp +
-    //     i)->channel(j));
-    //   }
-    // }
+    // // // Test whether the original and decompressed frames correspond.
+    // // const dune::FelixFrame* orig =
+    // //     reinterpret_cast<dune::FelixFrame const*>(flxfrg.dataBeginBytes());
+    // // const dune::FelixFrame* decomp =
+    // //     reinterpret_cast<dune::FelixFrame
+    // //     const*>(decompfrg.dataBeginBytes());
+    // // for (unsigned i = 0; i < frames; ++i) {
+    // //   BOOST_REQUIRE_EQUAL((orig + i)->version(), (decomp + i)->version());
+    // //   for (unsigned j = 0; j < 256; ++j) {
+    // //     BOOST_REQUIRE_EQUAL((orig + i)->channel(j), (decomp +
+    // //     i)->channel(j));
+    // //   }
+    // // }
   }  // Loop over files.
 
   ofile.close();
 
-  // Calculate average compression factor and time, complete with error.
-  double comp_factor = 0;
-  for(auto c : comp_factors) { comp_factor += c;}
-  comp_factor /= comp_factors.size();
+  // // Calculate average compression factor and time, complete with error.
+  // double comp_factor = 0;
+  // for(auto c : comp_factors) { comp_factor += c;}
+  // comp_factor /= comp_factors.size();
   
-  double comp_time = 0;
-  for(auto c : comp_times) { comp_time += c;}
-  comp_time /= comp_times.size();
+  // double comp_time = 0;
+  // for(auto c : comp_times) { comp_time += c;}
+  // comp_time /= comp_times.size();
 
-  double comp_factor_err = 0;
-  for(auto c : comp_factors) { comp_factor_err += pow(comp_factor - c, 2); }
-  comp_factor_err = sqrt(comp_factor_err/(comp_factors.size()-1));
+  // double comp_factor_err = 0;
+  // for(auto c : comp_factors) { comp_factor_err += pow(comp_factor - c, 2); }
+  // comp_factor_err = sqrt(comp_factor_err/(comp_factors.size()-1));
 
-  double comp_time_err = 0;
-  for(auto c : comp_times) { comp_time_err += pow(comp_time - c, 2); }
-  comp_time_err = sqrt(comp_time_err/(comp_times.size()-1));
+  // double comp_time_err = 0;
+  // for(auto c : comp_times) { comp_time_err += pow(comp_time - c, 2); }
+  // comp_time_err = sqrt(comp_time_err/(comp_times.size()-1));
 
-  std::cout << "Average compression factor: " << comp_factor << " +- " << comp_factor_err << "\nAverage compression time: " << comp_time << " +- " << comp_time_err << '\n';
+  // std::cout << "Average compression factor: " << comp_factor << " +- " << comp_factor_err << "\nAverage compression time: " << comp_time << " +- " << comp_time_err << '\n';
 
   std::cout << "### WOOF WOOF -> Done...\n";
 }

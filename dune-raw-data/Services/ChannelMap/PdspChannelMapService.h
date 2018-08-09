@@ -49,6 +49,9 @@ public:
   	  
   /// Returns APA/crate
   unsigned int APAFromOfflineChannel(unsigned int offlineChannel) const;
+
+  /// Returns APA/crate in installation notation
+  unsigned int InstalledAPAFromOfflineChannel(unsigned int offlineChannel) const;
   
   /// Returns WIB/slot
   unsigned int WIBFromOfflineChannel(unsigned int offlineChannel) const;
@@ -122,10 +125,10 @@ private:
 
   // control behavior in case we need to fall back to default behavior
 
-  bool fHaveWarnedAboutBadCrateNumber;
-  bool fHaveWarnedAboutBadSlotNumber;
-  bool fHaveWarnedAboutBadFiberNumber;
-  bool fSSPHaveWarnedAboutBadOnlineChannelNumber;
+  size_t fBadCrateNumberWarningsIssued;
+  size_t fBadSlotNumberWarningsIssued;
+  size_t fBadFiberNumberWarningsIssued;
+  size_t fSSPBadChannelNumberWarningsIssued;
 
   // TPC Maps
   unsigned int farrayCsfcToOffline[6][5][4][128];  // implement as an array.  Do our own bounds checking
@@ -159,6 +162,9 @@ private:
   unsigned int fFELIXvASICChannelMap[15360]; // ASIC internal channel
   unsigned int fFELIXvPlaneMap[15360]; // Plane type
 
+  unsigned int fvInstalledAPA[6];  // APA as installed.  This array maps the two conventions.  Argument = offline, value = installed
+  unsigned int fvTPCSet_VsInstalledAPA[6];  // inverse map
+
   // SSP Maps
 
   unsigned int farraySSPOnlineToOffline[288];  // all accesses to this array need to be bounds-checked first.
@@ -169,6 +175,8 @@ private:
   unsigned int fvSSPChanWithinSSPMap[288];
   unsigned int fvSSPModuleMap[288];   // PDS module within an APA (0..9)
 
+  size_t count_bits(size_t i);  // returns the number of bits set, for use in determing whether to print a warning out
+ 
   //-----------------------------------------------
 
   void check_offline_channel(unsigned int offlineChannel) const

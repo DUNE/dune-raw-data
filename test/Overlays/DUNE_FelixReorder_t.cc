@@ -20,23 +20,24 @@ BOOST_AUTO_TEST_SUITE(FelixReorder_test)
 
 BOOST_AUTO_TEST_CASE(BaselineTest) {
   // Get all files.
-  std::vector<int> event_nums = {3059515, 3059537, 3059542, 3059574, 3059575,
-                                 3059577, 3059599, 3059603, 3059620, 3059622};
+  std::vector<int> event_nums = {7258, 7263, 7264, 7269, 7276, 7283, 7284, 7287, 7294, 7296};
+  // MC event numbers
+  //std::vector<int> event_nums = {3059515, 3059537, 3059542, 3059574, 3059575,
+  //                               3059577, 3059599, 3059603, 3059620, 3059622};
   std::vector<std::string> filenames;
   for (auto event : event_nums) {
     for (unsigned p = 0; p < 3; ++p) {
       for (unsigned f = 1; f < 10; ++f) {
         filenames.push_back(
-            "/nashome/m/milov/Documents/kevlar/run/"
-            "Run_1-SubRun_6120-Event_" +
+            "/dune/app/users/milov/kevlar/run/uBdat/Run_8700-SubRun_145-Event_" +
             std::to_string(event) + "-Plane_" + std::to_string(p) + "-Frame_" +
             std::to_string(f) + ".dat");
       }
       if (p == 2) {
         for (unsigned f = 10; f < 14; ++f) {
           filenames.push_back(
-              "/nashome/m/milov/Documents/kevlar/run/"
-              "Run_1-SubRun_6120-Event_" +
+              "/dune/app/users/milov/kevlar/run/uBdat/"
+              "Run_8700-SubRun_145-Event_" +
               std::to_string(event) + "-Plane_" + std::to_string(p) +
               "-Frame_" + std::to_string(f) + ".dat");
         }
@@ -49,7 +50,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     std::ifstream in(filename, std::ios::binary);
     if (!in.is_open()) {
       std::cout << "Could not open file " << filename << ".\n";
-      return;
+      continue;
     }
     std::string contents((std::istreambuf_iterator<char>(in)),
                          (std::istreambuf_iterator<char>()));
@@ -95,7 +96,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
       BOOST_REQUIRE_EQUAL(flxfrg.slot_no(i), reordflxfrg.slot_no(i));
       BOOST_REQUIRE_EQUAL(flxfrg.crate_no(i), reordflxfrg.crate_no(i));
       BOOST_REQUIRE_EQUAL(flxfrg.timestamp(i), reordflxfrg.timestamp(i));
-      BOOST_REQUIRE_EQUAL(flxfrg.CRC(i), reordflxfrg.CRC(i));
+      // BOOST_REQUIRE_EQUAL(flxfrg.CRC(i), reordflxfrg.CRC(i));
       for (unsigned j = 0; j < 4; ++j) {
         BOOST_REQUIRE_EQUAL(flxfrg.s1_error(i, j), reordflxfrg.s1_error(i, j));
         BOOST_REQUIRE_EQUAL(flxfrg.s2_error(i, j), reordflxfrg.s2_error(i, j));

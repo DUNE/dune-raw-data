@@ -17,6 +17,11 @@ unsigned int bad() {
 
 dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& pset) {
 
+  fBadCrateNumberWarningsIssued = 0;
+  fBadSlotNumberWarningsIssued = 0;
+  fBadFiberNumberWarningsIssued = 0;
+  fSSPBadChannelNumberWarningsIssued = 0;
+
   std::string channelMapFile = pset.get<std::string>("FileName");
 
   std::string fullname;
@@ -139,6 +144,30 @@ dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& ps
   }
   inFile.close();
 
+  // APA numbering -- hardcoded here.
+  // Installation numbering:
+  //             APA5  APA6  APA4
+  //  beam -->
+  //             APA3  APA2  APA1
+  //
+  //  The Offline numbering:
+  //             APA1  APA3  APA5
+  //  beam -->
+  //             APA0  APA2  APA4
+  //
+  fvInstalledAPA[0] = 3;
+  fvInstalledAPA[1] = 5;
+  fvInstalledAPA[2] = 2;
+  fvInstalledAPA[3] = 6;
+  fvInstalledAPA[4] = 1;
+  fvInstalledAPA[5] = 4;
+
+  // and the inverse map -- shifted by 1 -- the above list must start counting at 1.
+
+  for (size_t i=0; i<6; ++i)
+    {
+      fvTPCSet_VsInstalledAPA[fvInstalledAPA[i]-1] = i;
+    }
 
   std::string SSPchannelMapFile = pset.get<std::string>("SSPFileName");
 
@@ -200,15 +229,15 @@ dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& ps
     fvSSPModuleMap[offlineChannel] = SSPModule;
   }
   SSPinFile.close();
-
-  fHaveWarnedAboutBadCrateNumber = false;
-  fHaveWarnedAboutBadSlotNumber = false;
-  fHaveWarnedAboutBadFiberNumber = false;
-  fSSPHaveWarnedAboutBadOnlineChannelNumber = false;
 }
 
 dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& pset, art::ActivityRegistry&) : PdspChannelMapService(pset) {
 }
+
+// assumes crate goes from 1-6, in "installed crate ordering"
+// assumes slot goes from 0-5.
+// assumes fiber goes from 1-4.
+// These conventions are observed in Run 2973, a cryo commissioning run.
 
 unsigned int dune::PdspChannelMapService::GetOfflineNumberFromDetectorElements(unsigned int crate, unsigned int slot, unsigned int fiber, unsigned int streamchannel, FelixOrRCE frswitch) {
 
@@ -217,34 +246,34 @@ unsigned int dune::PdspChannelMapService::GetOfflineNumberFromDetectorElements(u
   unsigned int lslot = slot;
   unsigned int lfiber = fiber;
 
-  if (crate >= fNCrates)
+  if (crate > fNCrates || crate == 0)
     {
-      if (!fHaveWarnedAboutBadCrateNumber)
+      if ( count_bits(fBadCrateNumberWarningsIssued) == 1)
 	{
-	  mf::LogWarning("PdspChannelMapService: Crate Number too high, using crate number zero as a fallback.  Ununderstood crate number: ") << crate;
-	  fHaveWarnedAboutBadCrateNumber = true;
+	  mf::LogWarning("PdspChannelMapService: Bad Crate Number, expecting a number between 1 and 6.  Falling back to 1.  Ununderstood crate number=") << crate;
 	}
-      lcrate = 0;
+      fBadCrateNumberWarningsIssued++;
+      lcrate = 1;
     }
 
   if (slot >= fNSlots)
     {
-      if (!fHaveWarnedAboutBadSlotNumber)
+      if (count_bits(fBadSlotNumberWarningsIssued) == 1)
 	{
-	  mf::LogWarning("PdspChannelMapService: Slot Number too high, using slot number zero as a fallback.  Ununderstood slot number: ") << slot;
-	  fHaveWarnedAboutBadSlotNumber = true;
+	  mf::LogWarning("PdspChannelMapService: Bad slot number, using slot number zero as a fallback.  Ununderstood slot number: ") << slot;
 	}
+      fBadSlotNumberWarningsIssued++;
       lslot = 0;
     }
 
-  if (fiber >= fNFibers)
+  if (fiber > fNFibers || fiber == 0)
     {
-      if (!fHaveWarnedAboutBadFiberNumber)
+      if (count_bits(fBadFiberNumberWarningsIssued)==1)
 	{
-	  mf::LogWarning("PdspChannelMapService: Fiber Number too high, using fiber number zero as a fallback.  Ununderstood fiber number: ") << fiber;
-	  fHaveWarnedAboutBadFiberNumber = true;
+	  mf::LogWarning("PdspChannelMapService: Bad fiber number, falling back to 1.  Ununderstood fiber number: ") << fiber;
 	}
-      lfiber = 0;
+      fBadFiberNumberWarningsIssued++;
+      lfiber = 1;
     }
 
   if (streamchannel >= fNFEMBChans)
@@ -255,11 +284,11 @@ unsigned int dune::PdspChannelMapService::GetOfflineNumberFromDetectorElements(u
 
   if (frswitch == kRCE)
     {
-      offlineChannel = farrayCsfcToOffline[lcrate][lslot][lfiber][streamchannel];
+      offlineChannel = farrayCsfcToOffline[fvTPCSet_VsInstalledAPA[lcrate-1]][lslot][lfiber-1][streamchannel];
     }
   else
     {
-      offlineChannel = fFELIXarrayCsfcToOffline[lcrate][lslot][lfiber][streamchannel];
+      offlineChannel = fFELIXarrayCsfcToOffline[fvTPCSet_VsInstalledAPA[lcrate-1]][lslot][lfiber-1][streamchannel];
     }
 
   return offlineChannel;
@@ -271,6 +300,16 @@ unsigned int dune::PdspChannelMapService::APAFromOfflineChannel(unsigned int off
   check_offline_channel(offlineChannel);
   return fvAPAMap[offlineChannel];
   // return fFELIXvAPAMap[offlineChannel];   // -- FELIX one -- should be the same
+}
+
+unsigned int dune::PdspChannelMapService::InstalledAPAFromOfflineChannel(unsigned int offlineChannel) const {
+  check_offline_channel(offlineChannel);
+  unsigned int offlineAPA = fvAPAMap[offlineChannel];
+  if (offlineAPA > 5)
+    {
+      throw cet::exception("PdspChannelMapService") << "Offline APA Number out of range: " << offlineAPA << "\n"; 
+    }
+  return fvInstalledAPA[fvAPAMap[offlineChannel]];
 }
 
 // does not depend on FELIX or RCE 
@@ -285,8 +324,8 @@ unsigned int dune::PdspChannelMapService::WIBFromOfflineChannel(unsigned int off
 
 unsigned int dune::PdspChannelMapService::FEMBFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
-  return fvFEMBMap[offlineChannel]; 
-  return fFELIXvFEMBMap[offlineChannel];   
+  return fvFEMBMap[offlineChannel]+1; 
+  //return fFELIXvFEMBMap[offlineChannel];   
 }
 
 // does not depend on FELIX or RCE 
@@ -326,7 +365,7 @@ unsigned int dune::PdspChannelMapService::SlotIdFromOfflineChannel(unsigned int 
 unsigned int dune::PdspChannelMapService::FiberIdFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
   return fvFiberIdMap[offlineChannel];       
-  return fFELIXvFiberIdMap[offlineChannel];   // -- FELIX one -- should be the same
+  //return fFELIXvFiberIdMap[offlineChannel];   // -- FELIX one -- should be the same
 }
 
 // does not depend on FELIX or RCE 
@@ -369,17 +408,29 @@ unsigned int dune::PdspChannelMapService::PlaneFromOfflineChannel(unsigned int o
   // return fFELIXvPlaneMap[offlineChannel];    // -- FELIX one -- should be the same
 }
 
+size_t dune::PdspChannelMapService::count_bits(size_t i)
+{
+  size_t result=0;
+  size_t s = sizeof(size_t)*8;
+  for (size_t j=0; j<s; ++j)
+    {
+      if (i & 1) ++result;
+      i >>= 1;
+    }
+  return result;
+}
+
 unsigned int dune::PdspChannelMapService::SSPOfflineChannelFromOnlineChannel(unsigned int onlineChannel) 
 {
   unsigned int lchannel = onlineChannel;
 
   if (onlineChannel > fNSSPChans)
     {
-      if (!fSSPHaveWarnedAboutBadOnlineChannelNumber)
+      if (count_bits(fSSPBadChannelNumberWarningsIssued)==1)
 	{
 	  mf::LogWarning("PdspChannelMapService: Online Channel Number too high, using zero as a fallback: ") << onlineChannel;
-	  fSSPHaveWarnedAboutBadOnlineChannelNumber = true;
 	}
+      fSSPBadChannelNumberWarningsIssued++;
       lchannel = 0;
     }
   return farraySSPOnlineToOffline[lchannel];

@@ -3,7 +3,7 @@
 
 #include "artdaq-core/Data/Fragment.hh"
 
-#include "dune-artdaq/Generators/TriggerBoard/content.h"
+#include "dune-raw-data/Overlays/CTB_content.h"
 
 #include "cetlib/exception.h"
 

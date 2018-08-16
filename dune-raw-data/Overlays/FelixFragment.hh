@@ -112,8 +112,8 @@ class dune::FelixFragmentBase {
   virtual uint8_t hdr(const unsigned& frame_ID, const uint8_t& block_num,
                       const uint8_t& hdr_num) const = 0;
 
-  /* CRC */
-  virtual word_t CRC(const unsigned& frame_ID = 0) const = 0;
+  // /* CRC */
+  // virtual word_t CRC(const unsigned& frame_ID = 0) const = 0;
 
   // Functions to return a certain ADC value.
   virtual adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
@@ -235,10 +235,10 @@ class dune::FelixFragmentUnordered : public dune::FelixFragmentBase {
     return frame_(frame_ID)->hdr(block_num, hdr_num);
   }
 
-  /* CRC */
-  word_t CRC(const unsigned& frame_ID = 0) const {
-    return frame_(frame_ID)->CRC();
-  }
+  // /* CRC */
+  // word_t CRC(const unsigned& frame_ID = 0) const {
+  //   return frame_(frame_ID)->CRC();
+  // }
 
   // Functions to return a certain ADC value.
   adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
@@ -292,9 +292,7 @@ class dune::FelixFragmentUnordered : public dune::FelixFragmentBase {
   // The constructor simply sets its const private member "artdaq_Fragment_"
   // to refer to the artdaq::Fragment object
   FelixFragmentUnordered(artdaq::Fragment const& fragment)
-      : FelixFragmentBase(fragment) {
-    std::cout << "Attempting to create a FELIX Fragment.\n";
-  }
+      : FelixFragmentBase(fragment) {}
 
   // The number of words in the current event minus the header.
   size_t total_words() const { return sizeBytes_ / sizeof(word_t); }
@@ -310,7 +308,9 @@ class dune::FelixFragmentUnordered : public dune::FelixFragmentBase {
  protected:
   // Allow access to individual frames according to the FelixFrame structure.
   FelixFrame const* frame_(const unsigned& frame_num = 0) const {
-    return static_cast<dune::FelixFrame const*>(artdaq_Fragment_) + frame_num;
+    // WARNING: CUSTOM OFFSET OF EIGHT WORDS FOR DEBUGGING
+    //return reinterpret_cast<dune::FelixFrame const*>(static_cast<uint32_t const*>(artdaq_Fragment_)+8) + frame_num;
+    return reinterpret_cast<dune::FelixFrame const*>(static_cast<uint32_t const*>(artdaq_Fragment_)) + frame_num;
   }
 };
 
@@ -383,10 +383,10 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
     return frames_()->hdr(frame_ID, block_num, hdr_num);
   }
 
-  /* CRC */
-  word_t CRC(const unsigned& frame_ID = 0) const {
-    return frames_()->CRC(frame_ID);
-  }
+  // /* CRC */
+  // word_t CRC(const unsigned& frame_ID = 0) const {
+  //   return frames_()->CRC(frame_ID);
+  // }
 
   // Functions to return a certain ADC value.
   adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
@@ -440,13 +440,7 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
   // The constructor simply sets its const private member "artdaq_Fragment_"
   // to refer to the artdaq::Fragment object
   FelixFragmentReordered(artdaq::Fragment const& fragment)
-      : FelixFragmentBase(fragment) {
-    std::cout << "Attempting to create a FELIX Fragment.\n";
-  }
-  // FelixFragmentReordered(const void* fragmentP, const size_t sizeBytes)
-  //     : artdaq_Fragment_(fragmentP), sizeBytes_(sizeBytes) {
-  //   std::cout << "Attempting to create a FELIX Fragment.\n";
-  // }
+      : FelixFragmentBase(fragment) {}
 
   // The number of words in the current event minus the header.
   size_t total_words() const { return sizeBytes_ / sizeof(word_t); }
@@ -541,10 +535,10 @@ class dune::FelixFragment: public FelixFragmentBase {
     return flxfrag->hdr(frame_ID, block_num, hdr_num);
   }
 
-  /* CRC */
-  word_t CRC(const unsigned& frame_ID = 0) const {
-    return flxfrag->CRC(frame_ID);
-  }
+  // /* CRC */
+  // word_t CRC(const unsigned& frame_ID = 0) const {
+  //   return flxfrag->CRC(frame_ID);
+  // }
 
   // Functions to return a certain ADC value.
   adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,

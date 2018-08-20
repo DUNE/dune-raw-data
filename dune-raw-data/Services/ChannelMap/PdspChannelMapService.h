@@ -12,7 +12,6 @@
 #define PdspChannelMapService_H
 
 #include <map>
-#include <unordered_map>
 #include <vector>
 #include <iostream>
 #include <limits>
@@ -77,12 +76,20 @@ public:
   /// Returns chip channel number
   unsigned int ChipChannelFromOfflineChannel(unsigned int offlineChannel) const;
   
-  /// Returns ASIC number
-  unsigned int ASICFromOfflineChannel(unsigned int offlineChannel) const;
+  /// Returns ASIC number -- to be deprecated
+  unsigned int ASICFromOfflineChannel(unsigned int offlineChannel);
   
-  /// Returns ASIC channel number
-  unsigned int ASICChannelFromOfflineChannel(unsigned int offlineChannel) const;
+  /// Returns ASIC channel number -- to be deprecated
+  unsigned int ASICChannelFromOfflineChannel(unsigned int offlineChannel);
+
+  // replaced by these
   
+  unsigned int AsicFromOfflineChannel(unsigned int offlineChannel) const;
+
+  unsigned int AsicChannelFromOfflineChannel(unsigned int offlineChannel) const;
+
+  unsigned int AsicLinkFromOfflineChannel(unsigned int offlineChannel) const;
+
   /// Returns plane
   unsigned int PlaneFromOfflineChannel(unsigned int offlineChannel) const;
   
@@ -129,6 +136,9 @@ private:
   size_t fBadSlotNumberWarningsIssued;
   size_t fBadFiberNumberWarningsIssued;
   size_t fSSPBadChannelNumberWarningsIssued;
+
+  size_t fASICWarningsIssued;
+  size_t fASICChanWarningsIssued;
 
   // TPC Maps
   unsigned int farrayCsfcToOffline[6][5][4][128];  // implement as an array.  Do our own bounds checking

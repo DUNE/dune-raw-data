@@ -21,6 +21,8 @@ dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& ps
   fBadSlotNumberWarningsIssued = 0;
   fBadFiberNumberWarningsIssued = 0;
   fSSPBadChannelNumberWarningsIssued = 0;
+  fASICWarningsIssued = 0;
+  fASICChanWarningsIssued = 0;
 
   std::string channelMapFile = pset.get<std::string>("FileName");
 
@@ -365,7 +367,6 @@ unsigned int dune::PdspChannelMapService::SlotIdFromOfflineChannel(unsigned int 
 unsigned int dune::PdspChannelMapService::FiberIdFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
   return fvFiberIdMap[offlineChannel];       
-  //return fFELIXvFiberIdMap[offlineChannel];   // -- FELIX one -- should be the same
 }
 
 // does not depend on FELIX or RCE 
@@ -373,39 +374,55 @@ unsigned int dune::PdspChannelMapService::FiberIdFromOfflineChannel(unsigned int
 unsigned int dune::PdspChannelMapService::ChipFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
   return fvChipMap[offlineChannel];       
-  // return fFELIXvChipMap[offlineChannel];    // -- FELIX one -- should be the same
 }
 
-// does not depend on FELIX or RCE 
+unsigned int dune::PdspChannelMapService::AsicFromOfflineChannel(unsigned int offlineChannel) const {
+  check_offline_channel(offlineChannel);
+  return fvChipMap[offlineChannel];       
+}
 
 unsigned int dune::PdspChannelMapService::ChipChannelFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
   return fvChipChannelMap[offlineChannel];
-  // return fFELIXvChipChannelMap[offlineChannel];    // -- FELIX one -- should be the same
 }
 
-// does not depend on FELIX or RCE 
+// from David Adams -- use the chip channel instead of the asic channel
 
-unsigned int dune::PdspChannelMapService::ASICFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdspChannelMapService::AsicChannelFromOfflineChannel(unsigned int offlineChannel) const {
+  check_offline_channel(offlineChannel);
+  return fvChipChannelMap[offlineChannel];
+}
+
+// really shouldn't be using this as it doesn't mean asic
+
+unsigned int dune::PdspChannelMapService::ASICFromOfflineChannel(unsigned int offlineChannel) {
+  if (count_bits(fASICWarningsIssued) == 1)
+    {
+	  mf::LogWarning("PdspChannelMapService: Deprecated call to ASICFromOfflineChannel.  Use AsicLinkFromOfflineChannel");
+    }
+  fASICWarningsIssued++;
   check_offline_channel(offlineChannel);
   return fvASICMap[offlineChannel];       
-  // return fFELIXvASICMap[offlineChannel];    // -- FELIX one -- should be the same
 }
 
-// does not depend on FELIX or RCE 
+unsigned int dune::PdspChannelMapService::AsicLinkFromOfflineChannel(unsigned int offlineChannel) const {
+  check_offline_channel(offlineChannel);
+  return fvASICMap[offlineChannel];       
+}
 
-unsigned int dune::PdspChannelMapService::ASICChannelFromOfflineChannel(unsigned int offlineChannel) const {
+unsigned int dune::PdspChannelMapService::ASICChannelFromOfflineChannel(unsigned int offlineChannel) {
+  if (count_bits(fASICChanWarningsIssued) == 1)
+    {
+	  mf::LogWarning("PdspChannelMapService: Deprecated call to ASICChannelFromOfflineChannel.  Not a meaningful number -- channels are grouped by 16's not 8's");
+    }
+  fASICChanWarningsIssued++;
   check_offline_channel(offlineChannel);
   return fvASICChannelMap[offlineChannel];
-  // return fFELIXvASICChannelMap[offlineChannel];    // -- FELIX one -- should be the same
 }
-
-// does not depend on FELIX or RCE 
 
 unsigned int dune::PdspChannelMapService::PlaneFromOfflineChannel(unsigned int offlineChannel) const {
   check_offline_channel(offlineChannel);
   return fvPlaneMap[offlineChannel];       
-  // return fFELIXvPlaneMap[offlineChannel];    // -- FELIX one -- should be the same
 }
 
 size_t dune::PdspChannelMapService::count_bits(size_t i)

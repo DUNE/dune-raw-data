@@ -73,7 +73,7 @@ public:
     printf("CRT header: Magic = '%c'\n"
            "            n hit = %2u\n"
            "            module = %5u\n"
-           "            50Mhz time = %10lu (0x%8x)\n",
+           "            50Mhz time = %10lu (0x%8lx)\n",
            header()->magic, header()->nhit, header()->module_num,
            header()->fifty_mhz_time, header()->fifty_mhz_time);
   }

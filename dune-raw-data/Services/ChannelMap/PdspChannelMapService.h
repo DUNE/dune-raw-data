@@ -108,7 +108,7 @@ public:
 
   unsigned int SSPChanWithinSSPFromOfflineChannel(unsigned int offlineChannel) const;
 
-  unsigned int SSPModuleFromOfflineChannel(unsigned int offlineChannel) const;
+  unsigned int OpDetNoFromOfflineChannel(unsigned int offlineChannel) const;
 
 private:
 
@@ -180,10 +180,10 @@ private:
   unsigned int farraySSPOnlineToOffline[288];  // all accesses to this array need to be bounds-checked first.
   unsigned int farraySSPOfflineToOnline[288];  
   unsigned int fvSSPAPAMap[288];
-  unsigned int fvSSPWithinAPAMap[288];  // SSP's within an APA -- 0 to 3
-  unsigned int fvSSPGlobalMap[288];   // SSP's counting from 0 and going up to 24
+  unsigned int fvSSPWithinAPAMap[288];  // Global SSP number 11, 12, 21, etc.
+  unsigned int fvSSPGlobalMap[288];     // Also global SSP number 11, 12, 21, etc. 
   unsigned int fvSSPChanWithinSSPMap[288];
-  unsigned int fvSSPModuleMap[288];   // PDS module within an APA (0..9)
+  unsigned int fvOpDetNoMap[288];   // PDS op det number
 
   size_t count_bits(size_t i);  // returns the number of bits set, for use in determing whether to print a warning out
  

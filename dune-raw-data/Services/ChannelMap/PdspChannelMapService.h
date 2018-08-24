@@ -125,8 +125,8 @@ private:
   // hardcoded SSP channel map sizes
 
   const size_t fNSSPChans = 288;
-  const size_t fNSSPs = 24;
-  const size_t fNSSPsPerAPA = 4;
+  //const size_t fNSSPs = 24;
+  //const size_t fNSSPsPerAPA = 4;
   const size_t fNChansPerSSP = 12;
   const size_t fNAPAs = 6;
 

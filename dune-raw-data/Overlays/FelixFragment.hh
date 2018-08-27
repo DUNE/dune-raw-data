@@ -46,15 +46,13 @@ inline uint32_t get32BitRange(const uint32_t& word, const uint8_t& begin,
 //============================
 class dune::FelixFragmentBase {
  public:
-  /* Struct to hold FelixFragment Metadata.
-   * Currently not used, but it will be important
-   * for the more complex Fragment version. */
+  /* Struct to hold FelixFragment Metadata. */
   struct Metadata {
     typedef uint32_t data_t;
 
-    data_t board_serial_number : 16;
-    data_t num_adc_bits : 8;
-    data_t unused : 8;
+    data_t num_frames : 16;
+    data_t reordered : 8;
+    data_t compressed : 8;
 
     static size_t const size_words = 1ul; /* Units of Metadata::data_t */
   };
@@ -133,7 +131,8 @@ class dune::FelixFragmentBase {
   virtual void print_frames() const = 0;
 
   FelixFragmentBase(const artdaq::Fragment& fragment)
-      : artdaq_Fragment_(fragment.dataBeginBytes()),
+      : meta_(*(fragment.metadata<Metadata>())),
+        artdaq_Fragment_(fragment.dataBeginBytes()),
         sizeBytes_(fragment.dataSizeBytes()) {}
   virtual ~FelixFragmentBase() {}
 
@@ -152,11 +151,10 @@ class dune::FelixFragmentBase {
   const uint8_t* dataBeginBytes() const {
     return reinterpret_cast<uint8_t const*>(artdaq_Fragment_);
   }
-  size_t dataSizeBytes() const {
-    return sizeBytes_;
-  }
+  size_t dataSizeBytes() const { return sizeBytes_; }
 
  protected:
+  Metadata meta_;
   const void* artdaq_Fragment_;
   size_t sizeBytes_;
 };
@@ -315,71 +313,71 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
 
   /* Frame field and accessors. */
   uint8_t sof(const unsigned& frame_ID = 0) const {
-    return frames_()->sof(frame_ID);
+    return head_(frame_ID)->sof;
   }
   uint8_t version(const unsigned& frame_ID = 0) const {
-    return frames_()->version(frame_ID);
+    return head_(frame_ID)->version;
   }
   uint8_t fiber_no(const unsigned& frame_ID = 0) const {
-    return frames_()->fiber_no(frame_ID);
+    return head_(frame_ID)->fiber_no;
   }
   uint8_t slot_no(const unsigned& frame_ID = 0) const {
-    return frames_()->slot_no(frame_ID);
+    return head_(frame_ID)->slot_no;
   }
   uint8_t crate_no(const unsigned& frame_ID = 0) const {
-    return frames_()->crate_no(frame_ID);
+    return head_(frame_ID)->crate_no;
   }
   uint8_t mm(const unsigned& frame_ID = 0) const {
-    return frames_()->mm(frame_ID);
+    return head_(frame_ID)->mm;
   }
   uint8_t oos(const unsigned& frame_ID = 0) const {
-    return frames_()->oos(frame_ID);
+    return head_(frame_ID)->oos;
   }
   uint16_t wib_errors(const unsigned& frame_ID = 0) const {
-    return frames_()->wib_errors(frame_ID);
+    return head_(frame_ID)->wib_errors;
   }
   uint64_t timestamp(const unsigned& frame_ID = 0) const {
-    return frames_()->timestamp(frame_ID);
+    return head_(frame_ID)->timestamp();
   }
   uint16_t wib_counter(const unsigned& frame_ID = 0) const {
-    return frames_()->wib_counter(frame_ID);
+    return head_(frame_ID)->wib_counter();
   }
 
   /* Coldata block accessors. */
   uint8_t s1_error(const unsigned& frame_ID, const uint8_t& block_num) const {
-    return frames_()->s1_error(frame_ID, block_num);
+    return blockhead_(frame_ID, block_num)->s1_error;
   }
   uint8_t s2_error(const unsigned& frame_ID, const uint8_t& block_num) const {
-    return frames_()->s2_error(frame_ID, block_num);
+    return blockhead_(frame_ID, block_num)->s2_error;
   }
   uint16_t checksum_a(const unsigned& frame_ID,
                       const uint8_t& block_num) const {
-    return frames_()->checksum_a(frame_ID, block_num);
+    return blockhead_(frame_ID, block_num)->checksum_a();
   }
   uint16_t checksum_b(const unsigned& frame_ID,
                       const uint8_t& block_num) const {
-    return frames_()->checksum_b(frame_ID, block_num);
+    return blockhead_(frame_ID, block_num)->checksum_b();
   }
   uint16_t coldata_convert_count(const unsigned& frame_ID,
                                  const uint8_t& block_num) const {
-    return frames_()->coldata_convert_count(frame_ID, block_num);
+    return blockhead_(frame_ID, block_num)->coldata_convert_count;
   }
   uint16_t error_register(const unsigned& frame_ID,
                           const uint8_t& block_num) const {
-    return frames_()->error_register(frame_ID, block_num);
+    return blockhead_(frame_ID, block_num)->error_register;
   }
   uint8_t hdr(const unsigned& frame_ID, const uint8_t& block_num,
               const uint8_t& hdr_num) const {
-    return frames_()->hdr(frame_ID, block_num, hdr_num);
+    return blockhead_(frame_ID, block_num)->hdr(hdr_num);
   }
 
   // Functions to return a certain ADC value.
   adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
                 const uint8_t channel_ID) const {
-    return frames_()->channel(frame_ID, block_ID, channel_ID);
+    return channel_(frame_ID, block_ID*64 + channel_ID);
   }
   adc_t get_ADC(const unsigned& frame_ID, const uint8_t channel_ID) const {
-    return frames_()->channel(frame_ID, channel_ID);
+    return channel_(frame_ID, channel_ID);
   }
 
   // Function to return all ADC values for a single channel.
@@ -408,18 +406,19 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
 
   // Function to print all timestamps.
   void print_timestamps() const {
-    for (unsigned int i = 0; i < total_frames(); i++) {
-      std::cout << std::hex << frames_()->timestamp(i) << '\t' << std::dec << i
-                << std::endl;
-    }
+    // for (unsigned int i = 0; i < total_frames(); i++) {
+    //   std::cout << std::hex << frames_()->timestamp(i) << '\t' << std::dec << i
+    //             << std::endl;
+    // }
   }
 
-  void print(const unsigned i) const { frames_()->print(i); }
+  void print(const unsigned i) const { 
+    std::cout << "Frame " << i << " should be printed here.\n"; /* frames_()->print(i); */ }
 
   void print_frames() const {
-    for (unsigned i = 0; i < total_frames(); i++) {
-      frames_()->print(i);
-    }
+    // for (unsigned i = 0; i < total_frames(); i++) {
+    //   frames_()->print(i);
+    // }
   }
 
   // The constructor simply sets its const private member "artdaq_Fragment_"
@@ -431,7 +430,7 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
   size_t total_words() const { return sizeBytes_ / sizeof(word_t); }
 
   // The number of frames in the current event.
-  size_t total_frames() const { return frames_()->total_frames(); }
+  size_t total_frames() const { return meta_.num_frames; }
 
   // The number of ADC values describing data beyond the header
   size_t total_adc_values() const {
@@ -439,18 +438,45 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
   }
 
  protected:
-  // Allow access to individual frames according to the ReorderedFelixFrames structure.
-  ReorderedFelixFrames const* frames_() const {
-    return static_cast<dune::ReorderedFelixFrames const*>(artdaq_Fragment_);
+  // // Allow access to individual frames according to the ReorderedFelixFrames structure.
+  // ReorderedFelixFrames const* frames_() const {
+  //   return static_cast<dune::ReorderedFelixFrames const*>(artdaq_Fragment_);
+  // }
+
+  // Important positions within the data buffer.
+  const unsigned int num_frames_ = meta_.num_frames;
+  const unsigned int coldata_head_start =
+      num_frames_ * sizeof(dune::WIBHeader);
+  const unsigned int adc_start =
+      coldata_head_start + num_frames_ * 4 * sizeof(dune::ColdataHeader);
+
+  // Reordered frame format overlaid on the data.
+  dune::WIBHeader const* head_(const unsigned int frame_num) const {
+    return static_cast<dune::WIBHeader const*>(artdaq_Fragment_) + frame_num;
+  }
+
+  dune::ColdataHeader const* blockhead_(const unsigned int frame_num, const uint8_t block_num) const {
+    return reinterpret_cast<dune::ColdataHeader const*>(
+               static_cast<uint8_t const*>(artdaq_Fragment_) +
+               coldata_head_start) +
+           frame_num * 4 + block_num;
+  }
+
+  dune::adc_t channel_(const unsigned int frame_num,
+                             const uint8_t ch_num) const {
+    return *(reinterpret_cast<dune::adc_t const*>(
+               static_cast<uint8_t const*>(artdaq_Fragment_) + adc_start) +
+           frame_num + ch_num * num_frames_);
   }
 };
 
 //======================
 // FELIX fragment class
 //======================
-class dune::FelixFragment: public FelixFragmentBase {
+class dune::FelixFragment : public FelixFragmentBase {
  public:
-  FelixFragment(const artdaq::Fragment& fragment, const bool reordered = 0): FelixFragmentBase(fragment) {
+  FelixFragment(const artdaq::Fragment& fragment, const bool reordered = 0)
+      : FelixFragmentBase(fragment) {
     if (reordered) {
       flxfrag = new FelixFragmentReordered(fragment);
     } else {

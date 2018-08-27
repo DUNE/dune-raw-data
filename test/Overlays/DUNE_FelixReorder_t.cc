@@ -60,6 +60,9 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     // contents.insert(0, bufferstring);
 
     dune::FelixFragmentBase::Metadata meta;
+    meta.num_frames = contents.size()/sizeof(dune::FelixFrame);
+    meta.reordered = 0;
+    meta.compressed = 0;
     std::unique_ptr<artdaq::Fragment> frag_ptr(artdaq::Fragment::FragmentBytes(
         contents.size(), 1, 1, dune::toFragmentType("FELIX"), meta));
     frag_ptr->resizeBytes(contents.size());

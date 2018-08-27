@@ -420,144 +420,138 @@ class FelixFrame {
   }
 };
 
-//========================
-// Reordered FELIX frames
-//========================
-static constexpr unsigned num_reord = 6000;
-class ReorderedFelixFrames {
- private:
-  WIBHeader head[num_reord];
-  ColdataHeader blockhead[num_reord*4];
-  adc_t ADCs[num_reord*256];
+// //========================
+// // Reordered FELIX frames
+// //========================
+// static constexpr unsigned num_reord = 6000;
+// class ReorderedFelixFrames {
+//  private:
+//   WIBHeader head[num_reord];
+//   ColdataHeader blockhead[num_reord*4];
+//   adc_t ADCs[num_reord*256];
 
- public:
-  static constexpr unsigned frame_size = sizeof(WIBHeader)+sizeof(word_t)+4*sizeof(ColdataHeader)+256*sizeof(adc_t);
+//  public:
+//   static constexpr unsigned frame_size = sizeof(WIBHeader)+sizeof(word_t)+4*sizeof(ColdataHeader)+256*sizeof(adc_t);
 
-  // ReorderedFelixFrames(const artdaq::Fragment fragment)
-  //     : head(fragment.dataSizeBytes() / frame_size),
-  //       blockhead(fragment.dataSizeBytes() / frame_size * 4),
-  //       CRC_(fragment.dataSizeBytes() / frame_size),
-  //       ADCs(fragment.dataSizeBytes() / frame_size * 256) {}
+//   // WIB header accessors
+//   uint8_t sof(const size_t frame_ID = 0) const { return head[frame_ID].sof; }
+//   uint8_t version(const size_t frame_ID = 0) const { return head[frame_ID].version; }
+//   uint8_t fiber_no(const size_t frame_ID = 0) const { return head[frame_ID].fiber_no; }
+//   uint8_t crate_no(const size_t frame_ID = 0) const { return head[frame_ID].crate_no; }
+//   uint8_t slot_no(const size_t frame_ID = 0) const { return head[frame_ID].slot_no; }
+//   uint8_t mm(const size_t frame_ID = 0) const { return head[frame_ID].mm; }
+//   uint8_t oos(const size_t frame_ID = 0) const { return head[frame_ID].oos; }
+//   uint16_t wib_errors(const size_t frame_ID = 0) const { return head[frame_ID].wib_errors; }
+//   uint64_t timestamp(const size_t frame_ID = 0) const { return head[frame_ID].timestamp(); }
+//   uint16_t wib_counter(const size_t frame_ID = 0) const { return head[frame_ID].wib_counter(); }
+//   uint8_t z(const size_t frame_ID = 0) const { return head[frame_ID].z; }
+//   // WIB header mutators
+//   void set_sof(const size_t frame_ID, const uint8_t new_sof) { head[frame_ID].sof = new_sof; }
+//   void set_version(const size_t frame_ID, const uint8_t new_version) { head[frame_ID].version = new_version; }
+//   void set_fiber_no(const size_t frame_ID, const uint8_t new_fiber_no) { head[frame_ID].fiber_no = new_fiber_no; }
+//   void set_crate_no(const size_t frame_ID, const uint8_t new_crate_no) { head[frame_ID].crate_no = new_crate_no; }
+//   void set_slot_no(const size_t frame_ID, const uint8_t new_slot_no) { head[frame_ID].slot_no = new_slot_no; }
+//   void set_mm(const size_t frame_ID, const uint8_t new_mm) { head[frame_ID].mm = new_mm; }
+//   void set_oos(const size_t frame_ID, const uint8_t new_oos) { head[frame_ID].oos = new_oos; }
+//   void set_wib_errors(const size_t frame_ID, const uint16_t new_wib_errors) {
+//     head[frame_ID].wib_errors = new_wib_errors;
+//   }
+//   void set_timestamp(const size_t frame_ID, uint64_t new_timestamp) { head[frame_ID].set_timestamp(new_timestamp); }
+//   void set_wib_counter(const size_t frame_ID, uint16_t new_wib_counter) {
+//     head[frame_ID].wib_counter_1 = new_wib_counter;
+//   }
+//   void set_z(const size_t frame_ID, uint8_t new_z) { head[frame_ID].z = new_z; }
 
-  // WIB header accessors
-  uint8_t sof(const size_t frame_ID = 0) const { return head[frame_ID].sof; }
-  uint8_t version(const size_t frame_ID = 0) const { return head[frame_ID].version; }
-  uint8_t fiber_no(const size_t frame_ID = 0) const { return head[frame_ID].fiber_no; }
-  uint8_t crate_no(const size_t frame_ID = 0) const { return head[frame_ID].crate_no; }
-  uint8_t slot_no(const size_t frame_ID = 0) const { return head[frame_ID].slot_no; }
-  uint8_t mm(const size_t frame_ID = 0) const { return head[frame_ID].mm; }
-  uint8_t oos(const size_t frame_ID = 0) const { return head[frame_ID].oos; }
-  uint16_t wib_errors(const size_t frame_ID = 0) const { return head[frame_ID].wib_errors; }
-  uint64_t timestamp(const size_t frame_ID = 0) const { return head[frame_ID].timestamp(); }
-  uint16_t wib_counter(const size_t frame_ID = 0) const { return head[frame_ID].wib_counter(); }
-  uint8_t z(const size_t frame_ID = 0) const { return head[frame_ID].z; }
-  // WIB header mutators
-  void set_sof(const size_t frame_ID, const uint8_t new_sof) { head[frame_ID].sof = new_sof; }
-  void set_version(const size_t frame_ID, const uint8_t new_version) { head[frame_ID].version = new_version; }
-  void set_fiber_no(const size_t frame_ID, const uint8_t new_fiber_no) { head[frame_ID].fiber_no = new_fiber_no; }
-  void set_crate_no(const size_t frame_ID, const uint8_t new_crate_no) { head[frame_ID].crate_no = new_crate_no; }
-  void set_slot_no(const size_t frame_ID, const uint8_t new_slot_no) { head[frame_ID].slot_no = new_slot_no; }
-  void set_mm(const size_t frame_ID, const uint8_t new_mm) { head[frame_ID].mm = new_mm; }
-  void set_oos(const size_t frame_ID, const uint8_t new_oos) { head[frame_ID].oos = new_oos; }
-  void set_wib_errors(const size_t frame_ID, const uint16_t new_wib_errors) {
-    head[frame_ID].wib_errors = new_wib_errors;
-  }
-  void set_timestamp(const size_t frame_ID, uint64_t new_timestamp) { head[frame_ID].set_timestamp(new_timestamp); }
-  void set_wib_counter(const size_t frame_ID, uint16_t new_wib_counter) {
-    head[frame_ID].wib_counter_1 = new_wib_counter;
-  }
-  void set_z(const size_t frame_ID, uint8_t new_z) { head[frame_ID].z = new_z; }
+//   // COLDATA header accessors
+//   uint8_t s1_error(const size_t frame_ID, const uint8_t block_num) const {
+//     return blockhead[frame_ID*4+block_num].s1_error;
+//   }
+//   uint8_t s2_error(const size_t frame_ID, const uint8_t block_num) const {
+//     return blockhead[frame_ID*4+block_num].s2_error;
+//   }
+//   uint16_t checksum_a(const size_t frame_ID, const uint8_t block_num) const {
+//     return blockhead[frame_ID*4+block_num].checksum_a();
+//   }
+//   uint16_t checksum_b(const size_t frame_ID, const uint8_t block_num) const {
+//     return blockhead[frame_ID*4+block_num].checksum_b();
+//   }
+//   uint16_t coldata_convert_count(const size_t frame_ID, const uint8_t block_num) const {
+//     return blockhead[frame_ID*4+block_num].coldata_convert_count;
+//   }
+//   uint16_t error_register(const size_t frame_ID, const uint8_t block_num) const {
+//     return blockhead[frame_ID*4+block_num].error_register;
+//   }
+//   uint8_t hdr(const size_t frame_ID, const uint8_t block_num, const uint8_t i) const { return blockhead[frame_ID*4+block_num].hdr(i); }
+//   // COLDATA header mutators
+//   void set_s1_error(const size_t frame_ID, const uint8_t block_num, const uint8_t new_s1_error) {
+//     blockhead[frame_ID*4+block_num].s1_error = new_s1_error;
+//   }
+//   void set_s2_error(const size_t frame_ID, const uint8_t block_num, const uint8_t new_s2_error) {
+//     blockhead[frame_ID*4+block_num].s2_error = new_s2_error;
+//   }
+//   void set_checksum_a(const size_t frame_ID, const uint8_t block_num, const uint16_t new_checksum_a) {
+//     blockhead[frame_ID*4+block_num].set_checksum_a(new_checksum_a);
+//   }
+//   void set_checksum_b(const size_t frame_ID, const uint8_t block_num, const uint16_t new_checksum_b) {
+//     blockhead[frame_ID*4+block_num].set_checksum_b(new_checksum_b);
+//   }
+//   void set_coldata_convert_count(const size_t frame_ID, const uint8_t block_num,
+//                                  const uint16_t new_coldata_convert_count) {
+//     blockhead[frame_ID*4+block_num].coldata_convert_count = new_coldata_convert_count;
+//   }
+//   void set_error_register(const size_t frame_ID, const uint8_t block_num, const uint16_t new_error_register) {
+//     blockhead[frame_ID*4+block_num].error_register = new_error_register;
+//   }
+//   void set_hdr(const size_t frame_ID, const uint8_t block_num, const uint8_t i, const uint8_t new_hdr) {
+//     blockhead[frame_ID*4+block_num].set_hdr(i, new_hdr);
+//   }
 
-  // COLDATA header accessors
-  uint8_t s1_error(const size_t frame_ID, const uint8_t block_num) const {
-    return blockhead[frame_ID*4+block_num].s1_error;
-  }
-  uint8_t s2_error(const size_t frame_ID, const uint8_t block_num) const {
-    return blockhead[frame_ID*4+block_num].s2_error;
-  }
-  uint16_t checksum_a(const size_t frame_ID, const uint8_t block_num) const {
-    return blockhead[frame_ID*4+block_num].checksum_a();
-  }
-  uint16_t checksum_b(const size_t frame_ID, const uint8_t block_num) const {
-    return blockhead[frame_ID*4+block_num].checksum_b();
-  }
-  uint16_t coldata_convert_count(const size_t frame_ID, const uint8_t block_num) const {
-    return blockhead[frame_ID*4+block_num].coldata_convert_count;
-  }
-  uint16_t error_register(const size_t frame_ID, const uint8_t block_num) const {
-    return blockhead[frame_ID*4+block_num].error_register;
-  }
-  uint8_t hdr(const size_t frame_ID, const uint8_t block_num, const uint8_t i) const { return blockhead[frame_ID*4+block_num].hdr(i); }
-  // COLDATA header mutators
-  void set_s1_error(const size_t frame_ID, const uint8_t block_num, const uint8_t new_s1_error) {
-    blockhead[frame_ID*4+block_num].s1_error = new_s1_error;
-  }
-  void set_s2_error(const size_t frame_ID, const uint8_t block_num, const uint8_t new_s2_error) {
-    blockhead[frame_ID*4+block_num].s2_error = new_s2_error;
-  }
-  void set_checksum_a(const size_t frame_ID, const uint8_t block_num, const uint16_t new_checksum_a) {
-    blockhead[frame_ID*4+block_num].set_checksum_a(new_checksum_a);
-  }
-  void set_checksum_b(const size_t frame_ID, const uint8_t block_num, const uint16_t new_checksum_b) {
-    blockhead[frame_ID*4+block_num].set_checksum_b(new_checksum_b);
-  }
-  void set_coldata_convert_count(const size_t frame_ID, const uint8_t block_num,
-                                 const uint16_t new_coldata_convert_count) {
-    blockhead[frame_ID*4+block_num].coldata_convert_count = new_coldata_convert_count;
-  }
-  void set_error_register(const size_t frame_ID, const uint8_t block_num, const uint16_t new_error_register) {
-    blockhead[frame_ID*4+block_num].error_register = new_error_register;
-  }
-  void set_hdr(const size_t frame_ID, const uint8_t block_num, const uint8_t i, const uint8_t new_hdr) {
-    blockhead[frame_ID*4+block_num].set_hdr(i, new_hdr);
-  }
+//   size_t total_frames() const { return num_reord/* ADCs.size()/256 */; }
 
-  size_t total_frames() const { return num_reord/* ADCs.size()/256 */; }
+//   // Channel accessors
+//   uint16_t channel(const size_t frame_ID, const uint8_t block_num, const uint8_t adc, const uint8_t ch) const {
+//     return ADCs[(block_num*64 + adc*8 + ch)*total_frames() + frame_ID];
+//   }
+//   uint16_t channel(const size_t frame_ID, const uint8_t block_num, const uint8_t ch) const {
+//     return channel(frame_ID, block_num, ch / 8, ch % 8);
+//   }
+//   uint16_t channel(const size_t frame_ID, const uint8_t ch) const { return channel(frame_ID, ch / 64, ch % 64); }
+//   // Channel mutators
+//   void set_channel(const size_t frame_ID, const uint8_t block_num, const uint8_t adc, const uint8_t ch,
+//                    const uint16_t new_val) {
+//     ADCs[(block_num * 64 + adc * 8 + ch) * total_frames() + frame_ID] = new_val;
+//   }
+//   void set_channel(const size_t frame_ID, const uint8_t block_num, const uint8_t ch, const uint16_t new_val) {
+//     set_channel(frame_ID, block_num, ch / 8, ch % 8, new_val);
+//   }
+//   void set_channel(const size_t frame_ID, const uint8_t ch, const uint16_t new_val) {
+//     set_channel(frame_ID, ch / 64, ch % 64, new_val);
+//   }
 
-  // Channel accessors
-  uint16_t channel(const size_t frame_ID, const uint8_t block_num, const uint8_t adc, const uint8_t ch) const {
-    return ADCs[(block_num*64 + adc*8 + ch)*total_frames() + frame_ID];
-  }
-  uint16_t channel(const size_t frame_ID, const uint8_t block_num, const uint8_t ch) const {
-    return channel(frame_ID, block_num, ch / 8, ch % 8);
-  }
-  uint16_t channel(const size_t frame_ID, const uint8_t ch) const { return channel(frame_ID, ch / 64, ch % 64); }
-  // Channel mutators
-  void set_channel(const size_t frame_ID, const uint8_t block_num, const uint8_t adc, const uint8_t ch,
-                   const uint16_t new_val) {
-    ADCs[(block_num * 64 + adc * 8 + ch) * total_frames() + frame_ID] = new_val;
-  }
-  void set_channel(const size_t frame_ID, const uint8_t block_num, const uint8_t ch, const uint16_t new_val) {
-    set_channel(frame_ID, block_num, ch / 8, ch % 8, new_val);
-  }
-  void set_channel(const size_t frame_ID, const uint8_t ch, const uint16_t new_val) {
-    set_channel(frame_ID, ch / 64, ch % 64, new_val);
-  }
+//   // Waveform accessor
+//   // adc_v waveform(const uint8_t ch) {
+//   //   return adc_v(ADCs.begin() + ch * total_frames(),
+//   //                ADCs.begin() + (ch+1) * total_frames());
+//   // }
 
-  // Waveform accessor
-  // adc_v waveform(const uint8_t ch) {
-  //   return adc_v(ADCs.begin() + ch * total_frames(),
-  //                ADCs.begin() + (ch+1) * total_frames());
-  // }
+//   // Utility functions
+//   void print(const size_t frame_ID) const {
+//     std::cout << "Printing frame " << frame_ID << ":\n";
+//     head[frame_ID].print();
+//     for (unsigned i = 0; i < 4; ++i) {
+//       blockhead[frame_ID*4+i].print();
 
-  // Utility functions
-  void print(const size_t frame_ID) const {
-    std::cout << "Printing frame " << frame_ID << ":\n";
-    head[frame_ID].print();
-    for (unsigned i = 0; i < 4; ++i) {
-      blockhead[frame_ID*4+i].print();
-
-      std::cout << "\t\t0\t1\t2\t3\t4\t5\t6\t7\n";
-      for (int j = 0; j < 8; j++) {
-        std::cout << "Stream " << j << ":\t";
-        for (int k = 0; k < 8; k++) {
-          std::cout << std::hex << channel(frame_ID, i*64+j*8+k) << '\t';
-        }
-        std::cout << std::dec << '\n';
-      }
-    }
-  }
-};
+//       std::cout << "\t\t0\t1\t2\t3\t4\t5\t6\t7\n";
+//       for (int j = 0; j < 8; j++) {
+//         std::cout << "Stream " << j << ":\t";
+//         for (int k = 0; k < 8; k++) {
+//           std::cout << std::hex << channel(frame_ID, i*64+j*8+k) << '\t';
+//         }
+//         std::cout << std::dec << '\n';
+//       }
+//     }
+//   }
+// };
 
 }  // namespace dune
 

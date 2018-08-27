@@ -11,6 +11,7 @@
 
 #include "artdaq-core/Data/Fragment.hh"
 #include "dune-raw-data/Overlays/FelixFormat.hh"
+#include "dune-raw-data/Overlays/FelixFragment.hh"
 
 #define NUMBER_THREADS 1
 
@@ -160,6 +161,7 @@ void FelixReorderer::reorder_copy(uint8_t* dest) {
   adc_copy(dest + adc_begin);
   // auto end = std::chrono::high_resolution_clock::now();
 
+  // Timing.
   // std::cout
   //     << "\nMemcpy speed tests:\n"
   //     << "WIB header copy time: "
@@ -187,9 +189,13 @@ void FelixReorderer::reorder_copy(uint8_t* dest) {
   //     << "usec\n\n";
 }
 
-artdaq::Fragment FelixReorder(const uint8_t* src, const size_t& num_frames = 10000) {
+artdaq::Fragment FelixReorder(const uint8_t* src, const uint16_t& num_frames = 10000) {
   FelixReorderer reorderer(src, num_frames);
   artdaq::Fragment result;
+
+  dune::FelixFragmentBase::Metadata meta = {num_frames, 1, 0};
+  result.setMetadata(meta);
+
   result.resizeBytes(reorderer.newSize);
   reorderer.reorder_copy(result.dataBeginBytes());
 

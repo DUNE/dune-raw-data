@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -7,6 +8,7 @@
 #include "canvas/Utilities/InputTag.h"
 #include "dune-raw-data/Overlays/FelixDecode.hh"
 #include "dune-raw-data/Overlays/FelixFragment.hh"
+#include "dune-raw-data/Overlays/FelixReorder.hh"
 #include "gallery/Event.h"
 
 #pragma GCC diagnostic push
@@ -22,96 +24,60 @@
 BOOST_AUTO_TEST_SUITE(FelixDecode_test)
 
 BOOST_AUTO_TEST_CASE(BaselineTest) {
-  std::vector<std::string> filenames;
-  std::string filename_base = "/data2/np04_raw_run001837_dl1.root.copied";
-  for(unsigned i = 0; i < 15; ++i) {
-    std::string filename = filename_base.insert(filename_base.find("dl1"), std::to_string(i)+"_");
-    std::cout << filename << '\n';
-    filenames.push_back(filename);
-  }
+  std::string filename = "/data0/np04_raw_run003311_0001_dl1.root.copied";
+      std::string outputDestination = "noise_records/test";
 
-  dune::FelixDecoder flxdec(filenames);
-  flxdec.check_timestamps(); // Checks increments by 25 and reports otherwise.
-  flxdec.check_CCC(); // Checks increments by 1 and correspondence between CCCs.
-  
-  for(unsigned i = 0; i < flxdec.total_fragments(); ++i) {
-    // You have to copy fragments into new containers if you want to use the overlay on them.
-    artdaq::Fragment frag(flxdec.Fragment(i));
+  // Initialise a decoder object from the file.
+  dune::FelixDecoder flxdec(filename);
+
+  for(unsigned i = 0; i < 1000 /* flxdec.total_fragments() */; ++i) {
+    // Save fragment to file.
+    std::string frag_number = std::to_string(i);
+    frag_number = std::string(4 - frag_number.size(), '0') + frag_number;
+
+    std::string filename = "run/run003311_0001_" + frag_number + ".dat";
+    // std::cout << "Writing to " << filename << ".\n";
+    std::ofstream ofile(filename);
+    artdaq::Fragment frag = flxdec.Fragment(i);
+    ofile.write(reinterpret_cast<char const*>(frag.dataBeginBytes())+8*4, frag.dataSizeBytes()-8*4);
+    ofile.close();
+
     dune::FelixFragment flxfrag(frag);
-    std::cout << frag.timestamp() - flxfrag.timestamp() << '\n';
+    artdaq::Fragment reordfrag = dune::FelixReorder(frag.dataBeginBytes()+8*4,
+                               (frag.dataSizeBytes()-8*4) / 464);
+
+    std::string reordfilename = filename.insert(filename.size()-4, "-reordered");
+    // std::cout << "Writing to " << reordfilename << ".\n";
+    std::ofstream reordfile(reordfilename);
+    reordfile.write(reinterpret_cast<char const*>(reordfrag.dataBeginBytes()),
+                    reordfrag.dataSizeBytes());
+    reordfile.close();
+
+    // std::cout << i << '\t' << (unsigned)flxfrag.crate_no() << '\n';
   }
 
-  // Print frames 4,5,6 of the 8th fragment.
-  flxdec.printFrames(3, 5, 7);
+ // flxdec.check_all_timestamps();
+ // flxdec.check_all_CCCs();
+ // flxdec.check_all_IDs();
 
-  // // File(s) to be loaded.
-  // std::string filename =
-  //     "/dune/app/users/milov/dune-raw-data/np04_raw_run001803_1_dl1.root";
-  // std::vector<std::string> filenames;
-  // filenames.push_back(filename);
+  // artdaq::Fragment frag = flxdec.Fragment(0);
+  // dune::FelixFragment flxfrag(frag);
+  // std::cout << (unsigned)flxfrag.crate_no() << "   " << (unsigned)flxfrag.slot_no() << "   "
+  //           << (unsigned)flxfrag.fiber_no() << '\n';
 
-  // // Tag to load FELIX data.
-  // art::InputTag tag("daq:FELIX:DAQ");
+  // Print RMS values to file.
+  // flxdec.calculateNoiseRMS(outputDestination);
 
-  // // Loop over events.
-  // for (gallery::Event evt(filenames); !evt.atEnd(); evt.next()) {
-  //   std::cout << "Event number " << evt.eventEntry() << " loaded.\n";
-  //   gallery::ValidHandle<std::vector<artdaq::Fragment>> const& frags =
-  //       evt.getValidHandle<std::vector<artdaq::Fragment>>(tag);
-  //   std::cout << "Found valid artdaq::Fragments of size " << (*frags).size()
-  //             << " \n";
-
-  //   // Loop over fragments within an event (likely just one).
-  //   for(const auto& frag : *frags) {
-  //     dune::FelixFragment flxfrag(frag);
-  //     // Check fragment timestamp.
-  //     std::cout << frag.timestamp() << '\t' << flxfrag.timestamp() << '\t' << frag.timestamp() - flxfrag.timestamp() << '\n';
-  //     // Loop over frames in the fragment and check the timestamps and COLDATA
-  //     // convert counts.
-  //     uint64_t prevtimestamp = flxfrag.timestamp(0);
-  //     uint16_t prevCCC1 = flxfrag.coldata_convert_count(0,0);
-  //     uint16_t prevCCC2 = flxfrag.coldata_convert_count(0,2);
-  //     for(unsigned fr = 1; fr < 10 /*flxfrag.total_frames()*/; ++fr) {
-  //       // // Print the first few frames.
-  //       // flxfrag.print(fr);
-
-  //       std::cout << "tick, crate, slot, fiber: " << fr << ", " << (unsigned)flxfrag.crate_no(fr) << ", " << (unsigned)flxfrag.slot_no(fr) << ", " << (unsigned)flxfrag.fiber_no(fr) << "\n";
-
-  //       // Check timestamp.
-  //       if(flxfrag.timestamp(fr) - prevtimestamp != 25) {
-  //         std::cout << "Timestamp does not increase by 25 at frame " << fr << "!\n";
-  //         std::cout << flxfrag.timestamp(fr) - prevtimestamp << "\n";
-  //         return;
-  //       }
-  //       prevtimestamp = flxfrag.timestamp(fr);
-
-  //       // Check CCC.
-  //       if (flxfrag.coldata_convert_count(fr, 0) - prevCCC1 != 1 &&
-  //           flxfrag.coldata_convert_count(fr, 0) - prevCCC1 != -65535) {
-  //         std::cout << "CCC1 does not increase by 1 at frame " << fr << "!\n";
-  //         std::cout << flxfrag.coldata_convert_count(fr,0) - prevCCC1 << '\n';
-  //         return;
-  //       }
-  //       if (flxfrag.coldata_convert_count(fr, 2) - prevCCC2 != 1 &&
-  //           flxfrag.coldata_convert_count(fr, 2) - prevCCC2 != -65535) {
-  //         std::cout << "CCC2 does not increase by 1 at frame " << fr << "!\n";
-  //         std::cout << flxfrag.coldata_convert_count(fr,2) - prevCCC2 << '\n';
-  //         return;
-  //       }
-  //       prevCCC1 = flxfrag.coldata_convert_count(fr,0);
-  //       prevCCC2 = flxfrag.coldata_convert_count(fr,2);
-  //       if(flxfrag.coldata_convert_count(fr, 0) != flxfrag.coldata_convert_count(fr, 1) || flxfrag.coldata_convert_count(fr, 2) != flxfrag.coldata_convert_count(fr, 3)) {
-  //         std::cout << "CCC in frame " << fr << " do not correspond!\n";
-  //         return;
-  //       }
-  //       // break;
-  //     } // Loop over frames.
-  //     std::cout << "All checks good.\n";
-
-  //     // break;
-  //   } // Loop over fragments.
-  //   // break;
+  // for(unsigned i = 0; i < flxdec.total_fragments(); ++i) {
+  //   artdaq::Fragment frag = flxdec.Fragment(i);
+  //   dune::FelixFragment flxfrag(frag);
+  //   std::cout << i << "     " << (unsigned)flxfrag.crate_no() << "  "
+  //             << (unsigned)flxfrag.slot_no() << "   "
+  //             << (unsigned)flxfrag.fiber_no() << '\n';
   // }
+
+  // // Print frames 4,5,6 of the 8th fragment.
+  // flxdec.printFrames(3, 5, 7);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

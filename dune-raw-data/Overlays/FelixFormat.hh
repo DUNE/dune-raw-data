@@ -5,8 +5,8 @@
 #define artdaq_dune_Overlays_FelixFormat_hh
 
 // Set these if you have a header and/or a trailer in your frames.
-#define FELIXHEAD
-#define FELIXTRAIL
+// #define FELIXHEAD
+// #define FELIXTRAIL
 
 #include <bitset>
 #include <iostream>
@@ -258,7 +258,6 @@ struct ColdataBlock {
       std::cout << "Stream " << i << ":\t";
       for (int j = 0; j < 8; j++) {
         std::cout << std::hex << channel(i, j) << '\t';
-        // std::cout << std::hex << segments[i].channel(j/2, j%4) << '\t';
       }
       std::cout << std::dec << '\n';
     }
@@ -404,18 +403,6 @@ class FelixFrame {
     set_channel(ch / 64, ch % 64, new_val);
   }
 
-// #ifdef FELIXTRAIL
-//   // CRC accessor
-//   uint32_t CRC() const {
-//     return CRC_1;
-//   }
-//   // CRC mutator
-//   void set_CRC(const uint32_t new_CRC) { CRC_1 = new_CRC; }
-// #else
-//   // CRC accessor
-//   uint32_t CRC() const { return 0; }
-// #endif
-
   // Const struct accessors.
   const WIBHeader* wib_header() const { return &head; }
   const ColdataHeader* coldata_header(const unsigned& block = 0) const {
@@ -430,18 +417,16 @@ class FelixFrame {
       b.head.print();
       b.printADCs();
     }
-    // std::cout << "CRC: " << CRC() << '\n';
   }
 };
 
 //========================
 // Reordered FELIX frames
 //========================
-static constexpr unsigned num_reord = 9595;
+static constexpr unsigned num_reord = 6000;
 class ReorderedFelixFrames {
  private:
   WIBHeader head[num_reord];
-  // word_t CRC_[num_reord];
   ColdataHeader blockhead[num_reord*4];
   adc_t ADCs[num_reord*256];
 
@@ -555,16 +540,6 @@ class ReorderedFelixFrames {
   //                ADCs.begin() + (ch+1) * total_frames());
   // }
 
-  // // CRC accessor
-  // uint32_t CRC(const size_t frame_ID) const {
-  //   return frame_ID*0;
-  //   /* CRC_[frame_ID] & ((1 << 20) - 1); */
-  // }
-  // // CRC mutator
-  // void set_CRC(const size_t frame_ID, const uint32_t new_CRC) {
-  //   ADCs[frame_ID] += new_CRC * 0; /* CRC_[frame_ID] = new_CRC; */
-  // }
-
   // Utility functions
   void print(const size_t frame_ID) const {
     std::cout << "Printing frame " << frame_ID << ":\n";
@@ -581,7 +556,6 @@ class ReorderedFelixFrames {
         std::cout << std::dec << '\n';
       }
     }
-    // std::cout << "CRC: " << CRC(frame_ID) << '\n';
   }
 };
 

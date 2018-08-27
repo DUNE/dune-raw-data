@@ -25,25 +25,26 @@ BOOST_AUTO_TEST_SUITE(FelixFragment_test)
 
 BOOST_AUTO_TEST_CASE(BaselineTest) {
   // Get all files.
-  // std::vector<int> event_nums = {3059515, 3059537, 3059542, 3059574, 3059575,
-  //                                3059577, 3059599, 3059603, 3059620, 3059622};
-  std::vector<int> event_nums = {7258, 7263, 7264, 7269, 7276, 7283, 7284, 7287, 7294, 7296};
+  std::vector<int> event_nums = {3059515, 3059537, 3059542, 3059574, 3059575,
+                                 3059577, 3059599, 3059603, 3059620, 3059622};
   std::vector<std::string> filenames;
   for (auto event : event_nums) {
     for (unsigned p = 0; p < 3; ++p) {
-      for (unsigned f = 1; f < 10; ++f) {
-        filenames.push_back(
-            "/nfs/sw/felix/fragment-ana/uBdat/Run_8700-SubRun_145-Event_" +
-            std::to_string(event) + "-Plane_" + std::to_string(p) + "-Frame_0" +
-            std::to_string(f) + ".dat");
-      }
       if (p == 2) {
         for (unsigned f = 10; f < 14; ++f) {
           filenames.push_back(
-              "/nfs/sw/felix/fragment-ana/uBdat/Run_8700-SubRun_145-Event_" +
+              "/dune/app/users/milov/kevlar/run/uBsim/"
+              "Run_1-SubRun_6120-Event_" +
               std::to_string(event) + "-Plane_" + std::to_string(p) +
               "-Frame_" + std::to_string(f) + ".dat");
         }
+      }
+      for (unsigned f = 1; f < 10; ++f) {
+        filenames.push_back(
+            "/dune/app/users/milov/kevlar/run/uBsim/"
+            "Run_1-SubRun_6120-Event_" +
+            std::to_string(event) + "-Plane_" + std::to_string(p) + "-Frame_" +
+            std::to_string(f) + ".dat");
       }
     }
   }
@@ -60,7 +61,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     // std::string filename = filenames[0];
     std::ifstream in(filename, std::ios::binary);
     if (!in.is_open()) {
-      std::cout << "Could not open file " << filename << ".\n";
+      std::cout << "Could not open file.\n";
       return;
     }
     std::cout << "Reading from " << filename << ".\n";
@@ -76,20 +77,20 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
 
     dune::FelixFragment flxfrg(*frag_ptr);
 
-    std::cout << "### WOOF -> Test for the presence of 6000 frames...\n";
-    const size_t frames = 6000;
+    std::cout << "### WOOF -> Test for the presence of 9600 frames...\n";
+    const size_t frames = 9600;
 
     std::cout << "  -> Total words: " << flxfrg.total_words() << '\n';
     std::cout << "  -> Total frames: " << flxfrg.total_frames() << '\n';
     std::cout << "  -> Total adc values: " << flxfrg.total_adc_values() << '\n';
 
-    BOOST_REQUIRE_EQUAL(flxfrg.total_words(), frames * 116);
+    BOOST_REQUIRE_EQUAL(flxfrg.total_words(), frames * 120);
     BOOST_REQUIRE_EQUAL(flxfrg.total_frames(), frames);
     BOOST_REQUIRE_EQUAL(flxfrg.total_adc_values(), frames * 256);
     std::cout << "\n\n";
 
     std::cout << "### WOOF -> WIB frame test.\n";
-    BOOST_REQUIRE_EQUAL(sizeof(dune::FelixFrame), 464);
+    BOOST_REQUIRE_EQUAL(sizeof(dune::FelixFrame), 480);
     std::cout << " -> SOF: " << unsigned(flxfrg.sof(0)) << "\n";
     std::cout << " -> Version: " << unsigned(flxfrg.version(0)) << "\n";
     std::cout << " -> FiberNo: " << unsigned(flxfrg.fiber_no(0)) << "\n";
@@ -105,17 +106,17 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     std::vector<double> chan_rms(256,0);
     // Determine the average per channel.
     for(unsigned vi = 0; vi < 256; ++vi) {
-      for(unsigned ti = 1; ti < frames; ++ti) {
+      for(unsigned ti = 1; ti < 9600; ++ti) {
         chan_avg[vi] += (double)flxfrg.get_ADC(ti, vi) - flxfrg.get_ADC(ti-1, vi);
       }
-      chan_avg[vi] /= frames;
+      chan_avg[vi] /= 9600;
     }
     // Determine the RMS per channel.
     for(unsigned vi = 0; vi < 256; ++vi) {
-      for(unsigned ti = 1; ti < frames; ++ti) {
+      for(unsigned ti = 1; ti < 9600; ++ti) {
         chan_rms[vi] += pow(flxfrg.get_ADC(ti, vi) - flxfrg.get_ADC(ti-1, vi) - chan_avg[vi], 2);
       }
-      chan_rms[vi] = sqrt(chan_rms[vi]/(frames-2));
+      chan_rms[vi] = sqrt(chan_rms[vi]/(9600-2));
       frag_rms += chan_rms[vi];
     }
     // Determine the average RMS per fragment.
@@ -162,21 +163,6 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     //     const*>(decompfrg.dataBeginBytes());
     // for (unsigned i = 0; i < frames; ++i) {
     //   BOOST_REQUIRE_EQUAL((orig + i)->version(), (decomp + i)->version());
-    //   BOOST_REQUIRE_EQUAL((orig + i)->fiber_no(), (decomp + i)->fiber_no());
-    //   BOOST_REQUIRE_EQUAL((orig + i)->crate_no(), (decomp + i)->crate_no());
-    //   BOOST_REQUIRE_EQUAL((orig + i)->slot_no(), (decomp + i)->slot_no());
-    //   BOOST_REQUIRE_EQUAL((orig + i)->mm(), (decomp + i)->mm());
-    //   BOOST_REQUIRE_EQUAL((orig + i)->oos(), (decomp + i)->oos());
-    //   BOOST_REQUIRE_EQUAL((orig + i)->wib_errors(), (decomp + i)->wib_errors());
-    //   BOOST_REQUIRE_EQUAL((orig + i)->timestamp(), (decomp + i)->timestamp());
-    //   BOOST_REQUIRE_EQUAL((orig + i)->wib_counter(), (decomp + i)->wib_counter());
-    //   BOOST_REQUIRE_EQUAL((orig + i)->z(), (decomp + i)->z());
-    //   for(unsigned j = 0; j < 4; ++j) {
-    //     BOOST_REQUIRE_EQUAL((orig + i)->s1_error(j), (decomp + i)->s1_error(j));
-    //     BOOST_REQUIRE_EQUAL((orig + i)->s2_error(j), (decomp + i)->s2_error(j));
-    //     BOOST_REQUIRE_EQUAL((orig + i)->coldata_convert_count(j), (decomp + i)->coldata_convert_count(j));
-    //     BOOST_REQUIRE_EQUAL((orig + i)->error_register(j), (decomp + i)->error_register(j));
-    //   }
     //   for (unsigned j = 0; j < 256; ++j) {
     //     BOOST_REQUIRE_EQUAL((orig + i)->channel(j), (decomp +
     //     i)->channel(j));
@@ -186,24 +172,24 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
 
   ofile.close();
 
-  // // Calculate average compression factor and time, complete with error.
-  // double comp_factor = 0;
-  // for(auto c : comp_factors) { comp_factor += c;}
-  // comp_factor /= comp_factors.size();
+  // Calculate average compression factor and time, complete with error.
+  double comp_factor = 0;
+  for(auto c : comp_factors) { comp_factor += c;}
+  comp_factor /= comp_factors.size();
   
-  // double comp_time = 0;
-  // for(auto c : comp_times) { comp_time += c;}
-  // comp_time /= comp_times.size();
+  double comp_time = 0;
+  for(auto c : comp_times) { comp_time += c;}
+  comp_time /= comp_times.size();
 
-  // double comp_factor_err = 0;
-  // for(auto c : comp_factors) { comp_factor_err += pow(comp_factor - c, 2); }
-  // comp_factor_err = sqrt(comp_factor_err/(comp_factors.size()-1));
+  double comp_factor_err = 0;
+  for(auto c : comp_factors) { comp_factor_err += pow(comp_factor - c, 2); }
+  comp_factor_err = sqrt(comp_factor_err/(comp_factors.size()-1));
 
-  // double comp_time_err = 0;
-  // for(auto c : comp_times) { comp_time_err += pow(comp_time - c, 2); }
-  // comp_time_err = sqrt(comp_time_err/(comp_times.size()-1));
+  double comp_time_err = 0;
+  for(auto c : comp_times) { comp_time_err += pow(comp_time - c, 2); }
+  comp_time_err = sqrt(comp_time_err/(comp_times.size()-1));
 
-  // std::cout << "Average compression factor: " << comp_factor << " +- " << comp_factor_err << "\nAverage compression time: " << comp_time << " +- " << comp_time_err << '\n';
+  std::cout << "Average compression factor: " << comp_factor << " +- " << comp_factor_err << "\nAverage compression time: " << comp_time << " +- " << comp_time_err << '\n';
 
   std::cout << "### WOOF WOOF -> Done...\n";
 }

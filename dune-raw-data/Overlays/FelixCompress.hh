@@ -229,8 +229,10 @@ class FelixCompressor {
     memcpy(&out[0], &meta, sizeof(meta));
   }
 
-  // Function to reduce headers and produce fatal errors upon error encounter.
+  // Function to reduce headers and error fields upon error encounter.
   void header_reduce(std::vector<char>& out) {
+    // Fields for storing which frames have faulty headers.
+    std::vector<uint8_t> bad_headers(num_frames/8 + 1);
     // Check all error fields and increments of timestamp and CCC.
     for (unsigned i = 1; i < num_frames; ++i) {
       bool check_failed = false;
@@ -266,26 +268,54 @@ class FelixCompressor {
             frame_(i)->coldata_convert_count(j);
       }
 
-      // Fatal error if anything failed.
+      // Set a bit if anything failed.
       if (check_failed) {
-        std::cout << "Check failed at the " << i << "th frame.\n";
+        bad_headers[i/8] |= 1 << (i%8);
 
-        std::cout << "First frame:\n";
-        frame_(i - 1)->print();
-        std::cout << "Second frame:\n";
-        frame_(i)->print();
+        // std::cout << "Check failed at the " << i << "th frame.\n";
 
-        exit(1);
+        // std::cout << "First frame:\n";
+        // frame_(i - 1)->print();
+        // std::cout << "Second frame:\n";
+        // frame_(i)->print();
+
+        // exit(1);
       }
     }  // Loop over all frames.
 
-    // Record first header.
-    const size_t tail = out.size();
-    out.resize(tail + sizeof(WIBHeader) + sizeof(ColdataHeader));
+    // Record faulty frame field.
+    size_t tail = out.size();
+    out.resize(tail + num_frames/8+1);
+    memcpy(&out[tail], &bad_headers[0], bad_headers.size());
+
+    // Record first headers.
+    tail = out.size();
+    out.resize(tail + sizeof(WIBHeader) + 4*sizeof(ColdataHeader));
 
     memcpy(&out[tail], frame_()->wib_header(), sizeof(WIBHeader));
-    memcpy(&out[tail + sizeof(WIBHeader)], frame_()->coldata_header(),
+    memcpy(&out[tail + sizeof(WIBHeader)], frame_()->coldata_header(0),
            sizeof(ColdataHeader));
+    memcpy(&out[tail + sizeof(WIBHeader) + sizeof(ColdataHeader)], frame_()->coldata_header(1),
+           sizeof(ColdataHeader));
+    memcpy(&out[tail + sizeof(WIBHeader) + 2*sizeof(ColdataHeader)], frame_()->coldata_header(2),
+           sizeof(ColdataHeader));
+    memcpy(&out[tail + sizeof(WIBHeader) + 3*sizeof(ColdataHeader)], frame_()->coldata_header(3),
+           sizeof(ColdataHeader));
+
+    // Loop over frames again to record faulty headers.
+    for(unsigned i = 1; i < num_frames; ++i) {
+      bool check_failed = (bad_headers[i / 8] >> (7 - (i % 8))) & 1;
+      if(!check_failed) { continue; }
+
+      tail = out.size();
+      out.resize(tail + sizeof(WIBHeader) + 4*sizeof(ColdataHeader));
+
+      memcpy(&out[tail], frame_(i)->wib_header(), sizeof(WIBHeader));
+      for(unsigned j = 0; j < 4; ++j) {
+        memcpy(&out[tail + sizeof(WIBHeader)], frame_(i)->coldata_header(j),
+              sizeof(ColdataHeader));
+      }
+    }
   }
 
   // Function to generate a Huffman table and tree.
@@ -369,35 +399,35 @@ class FelixCompressor {
 
   // Function that calls all others relevant for compression.
   void compress_copy(std::vector<char>& out) {
-    auto comp_begin = std::chrono::high_resolution_clock::now();
+    // auto comp_begin = std::chrono::high_resolution_clock::now();
     store_metadata(out);
-    auto meta_end = std::chrono::high_resolution_clock::now();
-    std::cout << "Meta time taken: "
-              << std::chrono::duration_cast<std::chrono::microseconds>(
-                     meta_end - comp_begin)
-                     .count()
-              << " us.\n";
+    // auto meta_end = std::chrono::high_resolution_clock::now();
+    // std::cout << "Meta time taken: "
+    //           << std::chrono::duration_cast<std::chrono::microseconds>(
+    //                  meta_end - comp_begin)
+    //                  .count()
+    //           << " us.\n";
     header_reduce(out);
-    auto header_end = std::chrono::high_resolution_clock::now();
-    std::cout << "Header time taken: "
-              << std::chrono::duration_cast<std::chrono::microseconds>(
-                     header_end - meta_end)
-                     .count()
-              << " us.\n";
+    // auto header_end = std::chrono::high_resolution_clock::now();
+    // std::cout << "Header time taken: "
+    //           << std::chrono::duration_cast<std::chrono::microseconds>(
+    //                  header_end - meta_end)
+    //                  .count()
+    //           << " us.\n";
     generate_Huff_tree(out);
-    auto huff_end = std::chrono::high_resolution_clock::now();
-    std::cout << "Huffman time taken: "
-              << std::chrono::duration_cast<std::chrono::microseconds>(
-                     huff_end - header_end)
-                     .count()
-              << " us.\n";
+    // auto huff_end = std::chrono::high_resolution_clock::now();
+    // std::cout << "Huffman time taken: "
+    //           << std::chrono::duration_cast<std::chrono::microseconds>(
+    //                  huff_end - header_end)
+    //                  .count()
+    //           << " us.\n";
     ADC_compress(out);
-    auto adc_end = std::chrono::high_resolution_clock::now();
-    std::cout << "ADC time taken: "
-              << std::chrono::duration_cast<std::chrono::microseconds>(
-                     adc_end - huff_end)
-                     .count()
-              << " us.\n";
+    // auto adc_end = std::chrono::high_resolution_clock::now();
+    // std::cout << "ADC time taken: "
+    //           << std::chrono::duration_cast<std::chrono::microseconds>(
+    //                  adc_end - huff_end)
+    //                  .count()
+    //           << " us.\n";
   }
 };  // FelixCompressor
 
@@ -426,22 +456,64 @@ artdaq::Fragment FelixDecompress(const std::vector<char>& buff) {
   // Handle for filling fragment data.
   FelixFrame* frame = reinterpret_cast<FelixFrame*>(result.dataBeginBytes());
 
-  // Access saved WIB header and generate headers.
+  // Access error frames field.
+  std::vector<uint8_t> bad_headers(num_frames/8+1);
+  memcpy(&bad_headers[0], src, num_frames/8+1);
+  src += num_frames / 8 + 1;
+
+  // Access saved headers and generate headers.
+  unsigned sizeof_header_set = sizeof(WIBHeader) + 4 * sizeof(ColdataHeader);
   const WIBHeader* whead = reinterpret_cast<WIBHeader const*>(src);
-  for (unsigned i = 0; i < num_frames; ++i) {
-    (frame + i)->set_sof(whead->sof);
-    (frame + i)->set_version(whead->version);
-    (frame + i)->set_fiber_no(whead->fiber_no);
-    (frame + i)->set_crate_no(whead->crate_no);
-    (frame + i)->set_slot_no(whead->slot_no);
-    (frame + i)->set_mm(whead->mm);
-    (frame + i)->set_oos(whead->oos);
-    (frame + i)->set_wib_errors(whead->wib_errors);
-    (frame + i)->set_timestamp(whead->timestamp() + i * 25);
-    (frame + i)->set_wib_counter(whead->wib_counter());
-    (frame + i)->set_z(whead->z);
+  std::vector<const ColdataHeader*> chead(4);
+  for(unsigned i = 0; i < 4; ++i) {
+    chead[i] = reinterpret_cast<ColdataHeader const*>(
+        src + sizeof(WIBHeader) + i * sizeof(ColdataHeader));
   }
-  src += sizeof(WIBHeader) + sizeof(ColdataHeader);
+  size_t bad_header_counter = 0;
+  for (unsigned i = 0; i < num_frames; ++i) {
+    const WIBHeader* curr_whead;
+    std::vector<const ColdataHeader*> curr_chead(4);
+    // See if the current headers were bad.
+    bool bad_header = (bad_headers[i / 8] >> (7 - (1 % 8))) & 1;
+    if(bad_header) {
+      ++bad_header_counter;
+      // Set current headers to be the bad one.
+      std::cout << "BAD HEADER\n";
+      curr_whead = reinterpret_cast<WIBHeader const*>(
+          src + bad_header_counter * sizeof_header_set);
+      for (unsigned j = 0; j < 4; ++j) {
+        curr_chead[j] = reinterpret_cast<ColdataHeader const*>(
+            src + bad_header_counter * sizeof_header_set +
+            sizeof(WIBHeader) + j * sizeof(ColdataHeader));
+      }
+    } else {
+      // Set current headers to be the first.
+      curr_whead = whead;
+      for(unsigned j = 0; j < 4; ++j) {
+        curr_chead[j] = chead[j];
+      }
+    }
+    // Assign header fields.
+    (frame + i)->set_sof(curr_whead->sof);
+    (frame + i)->set_version(curr_whead->version);
+    (frame + i)->set_fiber_no(curr_whead->fiber_no);
+    (frame + i)->set_crate_no(curr_whead->crate_no);
+    (frame + i)->set_slot_no(curr_whead->slot_no);
+    (frame + i)->set_mm(curr_whead->mm);
+    (frame + i)->set_oos(curr_whead->oos);
+    (frame + i)->set_wib_errors(curr_whead->wib_errors);
+    (frame + i)->set_timestamp(curr_whead->timestamp() + i * 25);
+    (frame + i)->set_wib_counter(curr_whead->wib_counter());
+    (frame + i)->set_z(curr_whead->z);
+    for(unsigned j = 0; j < 4; ++j) {
+      (frame + i)->set_s1_error(j, curr_chead[j]->s1_error);
+      (frame + i)->set_s2_error(j, curr_chead[j]->s2_error);
+      (frame + i)->set_coldata_convert_count(
+          j, curr_chead[j]->coldata_convert_count + i * 25);
+      (frame + i)->set_error_register(j, curr_chead[j]->error_register);
+    }
+  }
+  src += (bad_header_counter+1) * sizeof_header_set;
 
   // Read frequency table and generate a Huffman tree.
   std::unordered_map<uint16_t, unsigned> freq_table;

@@ -186,9 +186,9 @@ dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& ps
   std::ifstream SSPinFile(SSPfullname, std::ios::in);
 
   while (std::getline(SSPinFile,line)) {
-    unsigned int onlineChannel, APA, SSP, SSPGlobal, ChanWithinSSP, SSPModule, offlineChannel;
+    unsigned int onlineChannel, APA, SSP, SSPGlobal, ChanWithinSSP, OpDetNo, offlineChannel;
     std::stringstream linestream(line);
-    linestream >> onlineChannel >> APA >> SSP >> SSPGlobal >> ChanWithinSSP >> SSPModule >> offlineChannel;
+    linestream >> onlineChannel >> APA >> SSP >> SSPGlobal >> ChanWithinSSP >> OpDetNo >> offlineChannel;
 
     // fill lookup tables.  Throw an exception if any number is out of expected bounds.
     // checking for negative values produces compiler warnings as these are unsigned ints
@@ -201,25 +201,25 @@ dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& ps
       {
 	throw cet::exception("PdspChannelMapService") << "Ununderstood SSP Offline Channel: " << offlineChannel << "\n";
       }
-    if (APA >= fNAPAs)
+    if (APA > fNAPAs) // APAs count from 1
       {
 	throw cet::exception("PdspChannelMapService") << "Ununderstood APA Number in SSP map file: " << APA << "\n";
       }
-    if (SSP >= fNSSPsPerAPA)
-      {
-	throw cet::exception("PdspChannelMapService") << "Ununderstood SSP number within this APA: " << SSP << " " << APA << "\n";
-      }
-    if (SSPGlobal >= fNSSPs)
-      {
-	throw cet::exception("PdspChannelMapService") << "Ununderstood Global SSP number: " << SSPGlobal << "\n";
-      }
+    //if (SSP >= fNSSPsPerAPA) -- These checks don't make sense
+    //  {
+    //     throw cet::exception("PdspChannelMapService") << "Ununderstood SSP number within this APA: " << SSP << " " << APA << "\n";
+    //  }
+    //if (SSPGlobal >= fNSSPs)
+    //  {
+    //     throw cet::exception("PdspChannelMapService") << "Ununderstood Global SSP number: " << SSPGlobal << "\n";
+    //  }
     if (ChanWithinSSP >= fNChansPerSSP)
       {
 	throw cet::exception("PdspChannelMapService") << "Ununderstood Channel within SSP Number: " << ChanWithinSSP << " " << SSPGlobal << "\n";
       }
-    if (SSPModule >= 10)
+    if (OpDetNo >= 60)
       {
-	throw cet::exception("PdspChannelMapService") << "Ununderstood SSP Module Number: " << SSPModule << "\n";
+	throw cet::exception("PdspChannelMapService") << "Ununderstood SSP Module Number: " << OpDetNo << "\n";
       }
 
     farraySSPOnlineToOffline[onlineChannel] = offlineChannel;
@@ -228,7 +228,7 @@ dune::PdspChannelMapService::PdspChannelMapService(fhicl::ParameterSet const& ps
     fvSSPWithinAPAMap[offlineChannel] = SSP;
     fvSSPGlobalMap[offlineChannel] = SSPGlobal;
     fvSSPChanWithinSSPMap[offlineChannel] = ChanWithinSSP;
-    fvSSPModuleMap[offlineChannel] = SSPModule;
+    fvOpDetNoMap[offlineChannel] = OpDetNo;
   }
   SSPinFile.close();
 }
@@ -483,10 +483,10 @@ unsigned int dune::PdspChannelMapService::SSPChanWithinSSPFromOfflineChannel(uns
   return fvSSPChanWithinSSPMap[offlineChannel];
 }
 
-unsigned int dune::PdspChannelMapService::SSPModuleFromOfflineChannel(unsigned int offlineChannel) const
+unsigned int dune::PdspChannelMapService::OpDetNoFromOfflineChannel(unsigned int offlineChannel) const
 {
   SSP_check_offline_channel(offlineChannel);
-  return fvSSPModuleMap[offlineChannel];
+  return fvOpDetNoMap[offlineChannel];
 }
 
 DEFINE_ART_SERVICE(dune::PdspChannelMapService)

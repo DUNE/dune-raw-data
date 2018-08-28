@@ -780,8 +780,10 @@ uint8_t* dune::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
           /// Issue the warning HERE:
           case dune::PennMicroSlice::WarnTimeout:
             mf::LogWarning("PennMicroSlice") << "The DMA timed out. Possible data loss after this point.";
+	    break;
           case dune::PennMicroSlice::WarnUnknownDataType:
             mf::LogWarning("PennMicroSlice") << "Unknown data type received.";
+	    break;
           case dune::PennMicroSlice::WarnFIFOHalfFull:
             mf::LogWarning("PennMicroSlice") << "FIFO reached half full state. Stop run recommended.";
             break;

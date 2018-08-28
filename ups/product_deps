@@ -1,7 +1,7 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
-parent dune_raw_data	v1_17_09
-defaultqual    e15:nu:s68
+parent dune_raw_data	v1_17_14
+defaultqual    e17:nu:s70
 
 # These optional lines define the installed directories where
 # headers, libraries, and executables will be found
@@ -31,15 +31,16 @@ artdaq_core	v3_01_04	online_monitoring
 art		v2_07_03	online_monitoring
 TRACE		v3_13_04	online_monitoring
 cetbuildtools	v5_08_01	online_monitoring	only_for_build
-artdaq_core	v3_02_03	nu
-art		v2_11_02	nu
+artdaq_core	v3_02_04	nu
+art		v2_11_03	nu
 TRACE		v3_13_07	nu
 cetbuildtools	v7_03_02	nu	only_for_build
-dunepdsprce     v0_0_4a
+dunepdsprce     v1_0_3
 end_product_list
 
 # e14 - with gcc v6_3_0
 # e15 - with gcc v6_4_0
+# e17 GCC v7.3.0, -std=c++17
 
 # s50 - with art v2_07_03
 # s56 - with art v2_08_04
@@ -47,6 +48,7 @@ end_product_list
 # s62 - with art v2_09_06
 # s63 - with art v2_10_03
 # s68 - with art v2_11_02
+# s70 - with art v2_11_03
 
 # -nq- here means there is no qualifier
 # a "-" here means the dependent product is not required by the parent and will not be setup
@@ -54,10 +56,12 @@ end_product_list
 qualifier	        	 artdaq_core         	art	    	       dunepdsprce		notes
 online:e14:s50:debug		 e14:s50:debug	 	e14:debug	       e14:gen:debug
 online:e14:s50:prof		 e14:s50:prof	 	e14:prof	       e14:gen:prof
-nu:e15:s68:debug		 e15:s68:debug		e15:debug	       e15:gen:debug
-nu:e15:s68:prof			 e15:s68:prof 		e15:prof	       e15:gen:prof
-nu:c2:s68:debug		         c2:s68:debug		c2:debug	       c2:gen:debug
-nu:c2:s68:prof			 c2:s68:prof 		c2:prof 	       c2:gen:prof
+nu:e15:s70:debug		 e15:s70:debug		e15:debug	       e15:gen:debug
+nu:e15:s70:prof			 e15:s70:prof 		e15:prof	       e15:gen:prof
+nu:e17:s70:debug		 e17:s70:debug		e17:debug	       e17:gen:debug
+nu:e17:s70:prof			 e17:s70:prof 		e17:prof	       e17:gen:prof
+nu:c2:s70:debug		         c2:s70:debug		c2:debug	       c2:gen:debug
+nu:c2:s70:prof			 c2:s70:prof 		c2:prof 	       c2:gen:prof
 online_monitoring:e14:s50:debug	 nu:e14:s50:debug      	nu:e14:debug	       e14:gen:debug
 online_monitoring:e14:s50:prof	 nu:e14:s50:prof 	nu:e14:prof	       e14:gen:prof
 

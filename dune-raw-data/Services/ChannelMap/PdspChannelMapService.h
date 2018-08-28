@@ -12,7 +12,6 @@
 #define PdspChannelMapService_H
 
 #include <map>
-#include <unordered_map>
 #include <vector>
 #include <iostream>
 #include <limits>
@@ -49,6 +48,9 @@ public:
   	  
   /// Returns APA/crate
   unsigned int APAFromOfflineChannel(unsigned int offlineChannel) const;
+
+  /// Returns APA/crate in installation notation
+  unsigned int InstalledAPAFromOfflineChannel(unsigned int offlineChannel) const;
   
   /// Returns WIB/slot
   unsigned int WIBFromOfflineChannel(unsigned int offlineChannel) const;
@@ -74,12 +76,20 @@ public:
   /// Returns chip channel number
   unsigned int ChipChannelFromOfflineChannel(unsigned int offlineChannel) const;
   
-  /// Returns ASIC number
-  unsigned int ASICFromOfflineChannel(unsigned int offlineChannel) const;
+  /// Returns ASIC number -- to be deprecated
+  unsigned int ASICFromOfflineChannel(unsigned int offlineChannel);
   
-  /// Returns ASIC channel number
-  unsigned int ASICChannelFromOfflineChannel(unsigned int offlineChannel) const;
+  /// Returns ASIC channel number -- to be deprecated
+  unsigned int ASICChannelFromOfflineChannel(unsigned int offlineChannel);
+
+  // replaced by these
   
+  unsigned int AsicFromOfflineChannel(unsigned int offlineChannel) const;
+
+  unsigned int AsicChannelFromOfflineChannel(unsigned int offlineChannel) const;
+
+  unsigned int AsicLinkFromOfflineChannel(unsigned int offlineChannel) const;
+
   /// Returns plane
   unsigned int PlaneFromOfflineChannel(unsigned int offlineChannel) const;
   
@@ -98,7 +108,7 @@ public:
 
   unsigned int SSPChanWithinSSPFromOfflineChannel(unsigned int offlineChannel) const;
 
-  unsigned int SSPModuleFromOfflineChannel(unsigned int offlineChannel) const;
+  unsigned int OpDetNoFromOfflineChannel(unsigned int offlineChannel) const;
 
 private:
 
@@ -115,17 +125,20 @@ private:
   // hardcoded SSP channel map sizes
 
   const size_t fNSSPChans = 288;
-  const size_t fNSSPs = 24;
-  const size_t fNSSPsPerAPA = 4;
+  //const size_t fNSSPs = 24;
+  //const size_t fNSSPsPerAPA = 4;
   const size_t fNChansPerSSP = 12;
   const size_t fNAPAs = 6;
 
   // control behavior in case we need to fall back to default behavior
 
-  bool fHaveWarnedAboutBadCrateNumber;
-  bool fHaveWarnedAboutBadSlotNumber;
-  bool fHaveWarnedAboutBadFiberNumber;
-  bool fSSPHaveWarnedAboutBadOnlineChannelNumber;
+  size_t fBadCrateNumberWarningsIssued;
+  size_t fBadSlotNumberWarningsIssued;
+  size_t fBadFiberNumberWarningsIssued;
+  size_t fSSPBadChannelNumberWarningsIssued;
+
+  size_t fASICWarningsIssued;
+  size_t fASICChanWarningsIssued;
 
   // TPC Maps
   unsigned int farrayCsfcToOffline[6][5][4][128];  // implement as an array.  Do our own bounds checking
@@ -159,16 +172,21 @@ private:
   unsigned int fFELIXvASICChannelMap[15360]; // ASIC internal channel
   unsigned int fFELIXvPlaneMap[15360]; // Plane type
 
+  unsigned int fvInstalledAPA[6];  // APA as installed.  This array maps the two conventions.  Argument = offline, value = installed
+  unsigned int fvTPCSet_VsInstalledAPA[6];  // inverse map
+
   // SSP Maps
 
   unsigned int farraySSPOnlineToOffline[288];  // all accesses to this array need to be bounds-checked first.
   unsigned int farraySSPOfflineToOnline[288];  
   unsigned int fvSSPAPAMap[288];
-  unsigned int fvSSPWithinAPAMap[288];  // SSP's within an APA -- 0 to 3
-  unsigned int fvSSPGlobalMap[288];   // SSP's counting from 0 and going up to 24
+  unsigned int fvSSPWithinAPAMap[288];  // Global SSP number 11, 12, 21, etc.
+  unsigned int fvSSPGlobalMap[288];     // Also global SSP number 11, 12, 21, etc. 
   unsigned int fvSSPChanWithinSSPMap[288];
-  unsigned int fvSSPModuleMap[288];   // PDS module within an APA (0..9)
+  unsigned int fvOpDetNoMap[288];   // PDS op det number
 
+  size_t count_bits(size_t i);  // returns the number of bits set, for use in determing whether to print a warning out
+ 
   //-----------------------------------------------
 
   void check_offline_channel(unsigned int offlineChannel) const

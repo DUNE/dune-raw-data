@@ -58,6 +58,15 @@ int felixCh[8][16] = {
                                                                                  {111, 110, 109, 108, 107, 106, 105, 104, 127, 126, 125, 124, 123, 122, 121, 120}
 };
 
+
+  // indexed by offline-oriented slot and fiber, to give online slot and fiber
+  // implements Table 4 and Fig. 3a in DocDB 4064. 
+// offline slot and fiber numbers increase counterclockwise around the even APA's
+
+  // Map for offline APA 0 (== online APA 3), and other even offline APA's
+
+int fibermap[4] = {2, 3, 0, 1};
+
 void MakePdspChannelMap_v4() {
  
   ofstream fmaprce;
@@ -80,7 +89,10 @@ void MakePdspChannelMap_v4() {
   
   int Asic = 0;
   int offlineChannel  = 0;
+
   for(int crateNo = 0; crateNo<nCrate; crateNo++) {
+    bool APAisLeft =  ( crateNo % 2 == 1 );   // if false, then APA is on the right-hand side of the beam
+
     int planeType = 0;
     vector<int> Uwire, Vwire, Zwire;
     for(int slotNo = 0;slotNo<nSlotPerCrate;slotNo++) {
@@ -98,27 +110,97 @@ void MakePdspChannelMap_v4() {
 
 	      RCEStreamChannel = rceCh[chipNo][chipChannel]; 
 	      FELIXStreamChannel = felixCh[chipNo][chipChannel];  
-     	 	        	
+
+	      int slotNoOnline = slotNo;
+	      int fiberNoOnline = fibermap[fiberNo];
+
+     	 	            	 	        	
 	      //offline number
 	      if(planeType == 0) {
 		Uwire.push_back(planeCh[chipNo][chipChannel]);
-		offlineChannel = 2560*crateNo + 40*(4*slotNo + fiberNo)+ (planeCh[chipNo][chipChannel]-1);
+		// old calc -- need to invert the order of U-plane channels
+		//offlineChannel = 2560*crateNo + 40*(4*slotNo + fiberNo)+ (planeCh[chipNo][chipChannel]-1);
+
+		int itmp = 40*(slotNo + 5*fiberNo)+ (planeCh[chipNo][chipChannel]-1);  // should go from 0 to 799
+
+		if (! APAisLeft)
+		  {
+		    if (itmp < 400)
+		      {
+			itmp = 399-itmp;
+		      }
+		    else
+		      {
+		        itmp = 799 + 400 - itmp;
+		      }
+		  }
+		else
+		  {
+	             itmp = 799 - itmp;
+		  }
+		offlineChannel = 2560*crateNo + itmp;
 	      }
 	      if(planeType == 1) {
 		Vwire.push_back(planeCh[chipNo][chipChannel]);
-		offlineChannel = 2560*crateNo +  800 + 40*(4*slotNo + fiberNo) + (planeCh[chipNo][chipChannel]-1);
+		//offlineChannel = 2560*crateNo +  800 + 40*(4*slotNo + fiberNo) + (planeCh[chipNo][chipChannel]-1);
+
+		int itmp = 40*(slotNo + 5*fiberNo) + (planeCh[chipNo][chipChannel]-1);  // goes from 0 to 799
+		if (APAisLeft) 
+		  {
+		    if (itmp < 400)
+		      {
+  		        itmp = itmp + 400;
+		      }
+		    else
+		      {
+			itmp = itmp - 400;
+		      }
+		  }
+		else
+		  {
+		    // nothing needs to be done here.
+		  }
+		offlineChannel = 2560*crateNo +  800 + itmp;
+
 	      }
 	      if(planeType == 2) {
-		Uwire.push_back(planeCh[chipNo][chipChannel]);
-		offlineChannel = 2560*crateNo + 1600 + 48*(4*slotNo + fiberNo)  + (planeCh[chipNo][chipChannel]-1);
+		Zwire.push_back(planeCh[chipNo][chipChannel]);   
+		//offlineChannel = 2560*crateNo + 1600 + 48*(4*slotNo + fiberNo)  + (planeCh[chipNo][chipChannel]-1);
+
+		int itmp = 48*(slotNo + 5*fiberNo)  + (planeCh[chipNo][chipChannel]-1);  // goes from 0 to 959
+		// the Z2 channels increase in the opposite order
+
+		if (! APAisLeft) 
+		  {
+		    if (itmp<480)
+		      {
+			// do nothing
+		      }
+		    else
+		      {
+			itmp = 480 + 959 - itmp;
+		      }
+		  }
+		else
+		  {
+		    if (itmp<480)
+		      {
+			itmp = 959 - itmp;
+		      }
+		    else
+		      {
+			itmp = itmp - 480;
+		      }
+		  }
+
+                offlineChannel = 2560*crateNo + 1600 + itmp;
 	      }
      	 	       
-     	 	       
-	      fmaprce<<crateNo<<"\t"<<slotNo<<"\t"<<fiberNo<<"\t"<<FEMBChannel
+	      fmaprce<<crateNo<<"\t"<<slotNoOnline<<"\t"<<fiberNoOnline<<"\t"<<FEMBChannel
 		     <<"\t"<<RCEStreamChannel<<"\t"<<slotID<<"\t"<<fiberID
 		     <<"\t"<<chipNo<<"\t"<<chipChannel<<"\t"<<asicNo<<"\t"
 		     <<asicChannel<<"\t"<<planeType<<"\t"<<offlineChannel<<endl;  
-	      fmapfelix<<crateNo<<"\t"<<slotNo<<"\t"<<fiberNo<<"\t"<<FEMBChannel
+	      fmapfelix<<crateNo<<"\t"<<slotNoOnline<<"\t"<<fiberNoOnline<<"\t"<<FEMBChannel
 		       <<"\t"<<FELIXStreamChannel<<"\t"<<slotID<<"\t"<<fiberID
 		       <<"\t"<<chipNo<<"\t"<<chipChannel<<"\t"<<asicNo<<"\t"
 		       <<asicChannel<<"\t"<<planeType<<"\t"<<offlineChannel<<endl;  

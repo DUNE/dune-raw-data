@@ -111,7 +111,7 @@ public:
   {
     const header_t * const h = header();
     if(h->magic != 'M'){
-      fprintf(stderr, "CRT header has wrong magic: %c\n", h->magic);
+      fprintf(stderr, "CRT header has wrong magic: %02hhx/%c\n", h->magic, h->magic);
       return false;
     }
     if(h->nhit == 0){
@@ -133,7 +133,7 @@ public:
   {
     const hit_t * const h = hit(i);
     if(h->magic != 'H'){
-      fprintf(stderr, "CRT hit has wrong magic: %c\n", h->magic);
+      fprintf(stderr, "CRT hit has wrong magic: %02hhx/%c\n", h->magic, h->magic);
       return false;
     }
     if(h->channel >= 64){
@@ -177,20 +177,26 @@ public:
     if(size() != expect_size){
       fprintf(stderr, "CRT fragment: N hit (%d -> %dB) mismatches size %uB\n",
               header()->nhit, expect_size, size());
-      for(char * c = (char *) thefrag.dataBeginBytes();
-                 c < (char *)thefrag.dataEndBytes();
-                 c++){
-        fprintf(stderr, "%02hhx/%c ", (unsigned char)*c,
-                isprint((unsigned char)*c)?(unsigned char)*c:'.');
-        if((c - (char*)thefrag.dataBeginBytes())%0x08 == 0x07)
-          fprintf(stderr, " ");
-        if((c - (char*)thefrag.dataBeginBytes())%0x10 == 0x0f)
-          fprintf(stderr, "\n");
-      }
-      fprintf(stderr, "\n");
+      hexdump();
       return false;
     }
     return true;
+  }
+
+  // Prints a hexdump of the entire fragment, regardless of content
+  void hexdump() const
+  {
+    for(char * c = (char *) thefrag.dataBeginBytes();
+               c < (char *)thefrag.dataEndBytes();
+               c++){
+      fprintf(stderr, "%02hhx/%c ", (unsigned char)*c,
+              isprint((unsigned char)*c)?(unsigned char)*c:'.');
+      if((c - (char*)thefrag.dataBeginBytes())%0x08 == 0x07)
+        fprintf(stderr, " ");
+      if((c - (char*)thefrag.dataBeginBytes())%0x10 == 0x0f)
+        fprintf(stderr, "\n");
+    }
+    fprintf(stderr, "\n");
   }
 
   // Return true if the fragment contains a complete and sensible event.

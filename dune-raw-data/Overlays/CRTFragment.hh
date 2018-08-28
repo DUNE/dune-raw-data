@@ -21,13 +21,20 @@ public:
     uint8_t nhit;
     uint16_t module_num;
     uint64_t fifty_mhz_time;
-  };
+
+    // Must tell GCC not to add padding, even at the cost of performance,
+    // because this struct is describing exactly how the input data is
+    // laid out.
+  } __attribute__((packed));
 
   struct hit_t{
     uint8_t magic; // must be 'H'
     uint8_t channel;
     int16_t adc;
-  };
+
+    // This time, disabling padding doesn't make a difference in struct
+    // layout, but I am including it for consistency.
+  } __attribute__((packed));
 
   // Return the module number for this fragment.  A CRT fragment consists
   // of a set of hits sharing a time stamp from one module.

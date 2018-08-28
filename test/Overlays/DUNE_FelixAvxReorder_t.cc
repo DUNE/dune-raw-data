@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     artdaq::Fragment reordfrg;
     reordfrg.resizeBytes(frames * dune::FelixReorderer::num_bytes_per_reord_frame);
     my_reorderer.do_reorder(reordfrg.dataBeginBytes(), frag_ptr->dataBeginBytes() + bufferstring.size(), frames);
-    dune::FelixFragment reordflxfrg(reordfrg, 1);
+    dune::FelixFragment reordflxfrg(reordfrg);
 
     std::cout << "  -> Total words: " << reordflxfrg.total_words() << '\n';
     std::cout << "  -> Total frames: " << reordflxfrg.total_frames() << '\n';

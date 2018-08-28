@@ -77,9 +77,9 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
 
     artdaq::Fragment reordfrg(
         dune::FelixReorder(frag_ptr->dataBeginBytes(), frames));
-    dune::FelixFragment reordflxfrg(reordfrg, 1);
+    dune::FelixFragment reordflxfrg(reordfrg);
 
-    std::cout << "FIRST CHANNEL: " << reordflxfrg.get_ADC(0, 0) << '\n';
+    // std::cout << "FIRST CHANNEL: " << reordflxfrg.get_ADC(0, 0) << '\n';
 
     std::cout << "  -> Total words: " << reordflxfrg.total_words() << '\n';
     std::cout << "  -> Total frames: " << reordflxfrg.total_frames() << '\n';

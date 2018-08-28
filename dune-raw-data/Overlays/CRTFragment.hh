@@ -111,7 +111,7 @@ public:
   {
     const header_t * const h = header();
     if(h->magic != 'M'){
-      fprintf(stderr, "CRT header has wrong magic: %c\n", h->magic);
+      fprintf(stderr, "CRT header has wrong magic: %02hhx/%c\n", h->magic, h->magic);
       return false;
     }
     if(h->nhit == 0){
@@ -133,7 +133,7 @@ public:
   {
     const hit_t * const h = hit(i);
     if(h->magic != 'H'){
-      fprintf(stderr, "CRT hit has wrong magic: %c\n", h->magic);
+      fprintf(stderr, "CRT hit has wrong magic: %02hhx/%c\n", h->magic, h->magic);
       return false;
     }
     if(h->channel >= 64){

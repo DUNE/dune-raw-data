@@ -136,21 +136,19 @@ class dune::FelixFragmentBase {
       : meta_(*(fragment.metadata<Metadata>())),
         artdaq_Fragment_(fragment.dataBeginBytes()),
         sizeBytes_(fragment.dataSizeBytes()) {
-    // Reset metadata number of frames if numbers don't match with the buffer size.
-    if(meta_.reordered && meta_.num_frames != sizeBytes_ / (sizeof(dune::WIBHeader) +
-                                       4 * sizeof(dune::ColdataHeader) +
-                                       256 * sizeof(dune::adc_t))) {
-      std::cout << "Changing number of frames from " << meta_.num_frames
-                << " to ";
-      meta_.num_frames = sizeBytes_ / (sizeof(dune::WIBHeader) +
-                                       4 * sizeof(dune::ColdataHeader) +
-                                       256 * sizeof(dune::adc_t));
-      std::cout << meta_.num_frames << '\n';
-    } else if (!meta_.reordered && meta_.num_frames != sizeBytes_ / sizeof(dune::FelixFrame)) {
-      std::cout << "Changing number of frames from " << meta_.num_frames << " to ";
-      meta_.num_frames = sizeBytes_ / sizeof(dune::FelixFrame);
-      std::cout << meta_.num_frames << '\n';
-    }
+    // // Reset metadata number of frames if the data isn't compressed.
+    // if(!meta_.compressed && meta_.reordered) {
+    //   std::cout << "Changing number of frames from " << meta_.num_frames
+    //             << " to ";
+    //   meta_.num_frames = sizeBytes_ / (sizeof(dune::WIBHeader) +
+    //                                    4 * sizeof(dune::ColdataHeader) +
+    //                                    256 * sizeof(dune::adc_t));
+    //   std::cout << meta_.num_frames << '\n';
+    // } else if (!meta_.compressed && !meta_.reordered) {
+    //   std::cout << "Changing number of frames from " << meta_.num_frames << " to ";
+    //   meta_.num_frames = sizeBytes_ / sizeof(dune::FelixFrame);
+    //   std::cout << meta_.num_frames << '\n';
+    // }
   }
   virtual ~FelixFragmentBase() {}
 
@@ -353,7 +351,12 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
     return head_(frame_ID)->wib_errors;
   }
   uint64_t timestamp(const unsigned& frame_ID = 0) const {
-    return head_(frame_ID)->timestamp();
+    uint64_t result = head_(frame_ID)->timestamp();
+    if(header_is_faulty(frame_ID) == false) {
+      // Deduce timestamp from first header,
+      result += frame_ID * 25;
+    }
+    return result;
   }
   uint16_t wib_counter(const unsigned& frame_ID = 0) const {
     return head_(frame_ID)->wib_counter();
@@ -376,7 +379,12 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
   }
   uint16_t coldata_convert_count(const unsigned& frame_ID,
                                  const uint8_t& block_num) const {
-    return blockhead_(frame_ID, block_num)->coldata_convert_count;
+    uint16_t result = blockhead_(frame_ID, block_num)->coldata_convert_count;
+    if(header_is_faulty(frame_ID) == false) {
+      // Deduce count from first header.
+      result += frame_ID;
+    }
+    return result;
   }
   uint16_t error_register(const unsigned& frame_ID,
                           const uint8_t& block_num) const {
@@ -443,7 +451,16 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
   // The constructor simply sets its const private member "artdaq_Fragment_"
   // to refer to the artdaq::Fragment object
   FelixFragmentReordered(artdaq::Fragment const& fragment)
-      : FelixFragmentBase(fragment) {}
+      : FelixFragmentBase(fragment), bad_header_num(total_frames(), 0) {
+    // Go through the bad headers and assign each a number.
+    unsigned int bad_header_count = 1;
+    for(unsigned int i = 0; i < total_frames(); ++i) {
+      if(header_is_faulty(i)) {
+        bad_header_num[i] = bad_header_count++;
+      }
+      // std::cout << bad_header_num[i] << '\n';
+    }
+  }
 
   // The number of words in the current event minus the header.
   size_t total_words() const { return sizeBytes_ / sizeof(word_t); }
@@ -457,28 +474,49 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
   }
 
  protected:
-  // // Allow access to individual frames according to the ReorderedFelixFrames
-  // structure. ReorderedFelixFrames const* frames_() const {
-  //   return static_cast<dune::ReorderedFelixFrames const*>(artdaq_Fragment_);
-  // }
-
   // Important positions within the data buffer.
-  // const unsigned int num_frames_ = meta_.num_frames;
-  const unsigned int coldata_head_start = total_frames() * sizeof(dune::WIBHeader);
-  const unsigned int adc_start =
-      coldata_head_start + total_frames() * 4 * sizeof(dune::ColdataHeader);
+  const unsigned int adc_start = 0;
+  const unsigned int bitlist_start = adc_start + total_frames() * 256 * sizeof(adc_t);
+  const unsigned int header_start = bitlist_start + (total_frames()+7)/8;
+  // Size of WIB header + four COLDATA headers.
+  const unsigned int header_set_size =
+      sizeof(dune::WIBHeader) + 4 * sizeof(dune::ColdataHeader);
+
+  // Faulty header information.
+  bool header_is_faulty(const unsigned int frame_num) const {
+    const uint8_t* curr_byte = static_cast<uint8_t const*>(artdaq_Fragment_) +
+                               bitlist_start + frame_num / 8;
+    return ((*curr_byte)>>(frame_num%8))&1;
+  }
+  // Number of the faulty header (0 if header is good).
+  std::vector<unsigned int> bad_header_num;
 
   // Reordered frame format overlaid on the data.
   dune::WIBHeader const* head_(const unsigned int frame_num) const {
-    return static_cast<dune::WIBHeader const*>(artdaq_Fragment_) + frame_num;
+    if(header_is_faulty(frame_num)) {
+      // Return faulty header.
+      return reinterpret_cast<dune::WIBHeader const*>(
+                static_cast<uint8_t const*>(artdaq_Fragment_) + header_start +
+            bad_header_num[frame_num] * header_set_size);
+    } else {
+      // Return the first header unchanged if requested header is good.
+      return reinterpret_cast<dune::WIBHeader const*>(static_cast<uint8_t const*>(artdaq_Fragment_) + header_start);
+    }
   }
 
   dune::ColdataHeader const* blockhead_(const unsigned int frame_num,
                                         const uint8_t block_num) const {
-    return reinterpret_cast<dune::ColdataHeader const*>(
-               static_cast<uint8_t const*>(artdaq_Fragment_) +
-               coldata_head_start) +
-           frame_num * 4 + block_num;
+    if(header_is_faulty(frame_num)) {
+      // Return faulty header.
+      return reinterpret_cast<dune::ColdataHeader const*>(
+                static_cast<uint8_t const*>(artdaq_Fragment_) +
+                header_start + sizeof(dune::WIBHeader) + bad_header_num[frame_num] * header_set_size) + block_num;
+    } else {
+      // Return the first header unchanged if the requested header is good.
+      return reinterpret_cast<dune::ColdataHeader const*>(
+                static_cast<uint8_t const*>(artdaq_Fragment_) +
+                header_start + sizeof(dune::WIBHeader)) + block_num;
+    }
   }
 
   dune::adc_t channel_(const unsigned int frame_num,
@@ -494,9 +532,9 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
 //=======================================
 class dune::FelixFragmentCompressed : public FelixFragmentBase {
  private:
-  void decompress_copy(const artdaq::Fragment& src, artdaq::Fragment& dest) {
-    // TODO: Decompress here!
-    unsigned int uncompSizeBytes;
+  int decompress_copy(const artdaq::Fragment& src, artdaq::Fragment& dest) {
+    // Determine and reserve new fragment size.
+    long unsigned int uncompSizeBytes;
     const Metadata meta = *src.metadata<Metadata>();
     if(meta.reordered) {
       uncompSizeBytes = meta.num_frames * (sizeof(dune::WIBHeader) +
@@ -506,18 +544,109 @@ class dune::FelixFragmentCompressed : public FelixFragmentBase {
       uncompSizeBytes = meta.num_frames * sizeof(dune::FelixFrame);
     }
     dest.resizeBytes(uncompSizeBytes);
-    memcpy(dest.dataBeginBytes(), src.dataBeginBytes(), src.dataSizeBytes());
+    std::cout << "Number of frames in metadata: " << meta.num_frames << '\n';
+    std::cout << "Calculated new size: " << uncompSizeBytes << '\n';
+
+    // uncompress(dest.dataBeginBytes(), &uncompSizeBytes, src.dataBeginBytes(), src.dataSizeBytes());
+
+    // // Zlib decompression.
+    // // Overly long initialisation to avoid compiler warnings.
+    // z_stream zInfo = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    // zInfo.total_in =  zInfo.avail_in = src.dataSizeBytes();
+    // zInfo.total_out = zInfo.avail_out = dest.dataSizeBytes();
+    // zInfo.next_in = (uint8_t*)src.dataBeginBytes();
+    // zInfo.next_out = dest.dataBeginBytes();
+
+    // int nErr, nRet = -1;
+    // // Extra MAX_WBITS | 16 argument to set gzip decompression.
+    // nErr = inflateInit2(&zInfo, MAX_WBITS | 16);
+    // if ( nErr == Z_OK ) {
+    //   // zInfo.avail_in = CHUNK;
+    //   // if(zInfo.total_in > )
+    //   // zInfo.avail_out = CHUNK;
+    //   nErr = inflate(&zInfo, Z_FINISH);
+    //   if (nErr == Z_STREAM_END) {
+    //     nRet = zInfo.total_out;
+    //   }
+    // }
+    // inflateEnd( &zInfo );
+    // return( nRet ); // -1 or len of output
+
+    #define CHUNK 65536
+
+    int ret;
+    z_stream strm;
+    // unsigned char in[CHUNK];
+    // unsigned char out[CHUNK];
+
+    /* allocate inflate state */
+    strm.zalloc = Z_NULL;
+    strm.zfree = Z_NULL;
+    strm.opaque = Z_NULL;
+    strm.avail_in = 0;
+    strm.next_in = Z_NULL;
+    ret = inflateInit2(&strm, MAX_WBITS | 16);
+    if (ret != Z_OK) return ret;
+
+    /* decompress until deflate stream ends or end of file */
+    do {
+      // Determine whether there is still data to decompress.
+      if(strm.total_in + CHUNK < src.dataSizeBytes()) {
+        strm.avail_in = CHUNK;
+      } else {
+        strm.avail_in = src.dataSizeBytes() - strm.total_in;
+      }
+      // return Z_ERRNO;
+      if (strm.avail_in == 0) break;
+      // memcpy(in, src.dataBeginBytes() + strm.total_in, strm.avail_in);
+      strm.next_in = (Bytef*)(src.dataBeginBytes() + strm.total_in);
+      // strm.total_in += strm.avail_in;
+
+      /* run inflate() on input until output buffer not full */
+      do {
+        static unsigned iterations = 0;
+        std::cout << "Inner: " << iterations++ << '\n';
+        if(strm.total_out + CHUNK < dest.dataSizeBytes()) {
+          strm.avail_out = CHUNK;
+        } else {
+          strm.avail_out = dest.dataSizeBytes() - strm.total_out;
+        }
+        std::cout << "strm.avail_in: " << strm.avail_in << '\n';
+        std::cout << "strm.total_in: " << strm.total_in << '\n';
+        std::cout << "strm.avail_out: " << strm.avail_out << '\n';
+        std::cout << "strm.total_out: " << strm.total_out << '\n';
+        strm.next_out = dest.dataBeginBytes() + strm.total_out;
+        ret = inflate(&strm, Z_NO_FLUSH);
+        strm.total_out += strm.avail_out;
+        std::cout << " new strm.avail_in: " << strm.avail_in << '\n';
+        std::cout << " new strm.total_in: " << strm.total_in << '\n';
+        std::cout << " new strm.avail_out: " << strm.avail_out << '\n';
+        std::cout << " new strm.total_out: " << strm.total_out << '\n';
+      } while (strm.avail_out == 0);
+      static unsigned outeriterations = 0;
+      std::cout << "Outer: " << outeriterations++ << '\n';
+
+      /* done when inflate() says it's done */
+    } while (ret != Z_STREAM_END);
+
+    /* clean up and return */
+    (void)inflateEnd(&strm);
+    return ret == Z_STREAM_END
+               ? Z_OK
+               : Z_DATA_ERROR;
+
+    // memcpy(dest.dataBeginBytes(), src.dataBeginBytes(), src.dataSizeBytes());
   }
 
  public:
   FelixFragmentCompressed(const artdaq::Fragment& fragment) : FelixFragmentBase(fragment) {
-    decompress_copy(fragment, uncompfrag_);
+    // Decompress.
+    std::cout << decompress_copy(fragment, uncompfrag_) << " returned from decompress_copy\n";
+
     // Handle metadata.
-    dune::FelixFragmentBase::Metadata meta =
-        *fragment.metadata<dune::FelixFragmentBase::Metadata>();
+    Metadata meta = *fragment.metadata<Metadata>();
     meta.compressed = 0;
     uncompfrag_.setMetadata(meta);
-
     if (meta_.reordered) {
       flxfrag = new FelixFragmentReordered(uncompfrag_);
     } else {

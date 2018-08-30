@@ -1,4 +1,4 @@
-#include <stdint.h>
+ #include <stdint.h>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -8,7 +8,7 @@
 #include "canvas/Utilities/InputTag.h"
 #include "dune-raw-data/Overlays/FelixDecode.hh"
 #include "dune-raw-data/Overlays/FelixFragment.hh"
-#include "dune-raw-data/Overlays/FelixReorder.hh"
+#include "dune-raw-data/Overlays/FelixReordererFacility.hh"
 #include "gallery/Event.h"
 
 #pragma GCC diagnostic push

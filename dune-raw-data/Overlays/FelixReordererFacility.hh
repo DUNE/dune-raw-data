@@ -1,71 +1,111 @@
-#ifndef FELIX_REORDERER_FACILITY_HH_
-#define FELIX_REORDERER_FACILITY_HH_
+#ifndef REORDER_FACILITY_HH_
+#define REORDER_FACILITY_HH_
 
 /*
- * FelixReordererFacility
+ * ReorderFacility
  * Author: Thijs Miedema
- * Description: Simple wrapper around FelixReorderer to make it plug and play
+ * Description: Simple wrapper around FelixReorder to make it plug and play
  * Date: July 2018
-*/
+ */
 
-#include <vector>
-#include <chrono>
 #include <atomic>
-#include "FelixReorderer.hh"
-#include "SlidingAverage.hh"
+#include <chrono>
+#include <string>
+#include <vector>
+
+#include "FelixReorder.hh"
+#include "artdaq-core/Data/Fragment.hh"
 
 namespace dune {
-enum ReordererType {
-    TypeMILO,
-    TypeAVX2,
-    TypeAVX512
+
+class ReorderFacility {
+ public:
+  ReorderFacility(bool force_no_avx = false) : m_force_no_avx(force_no_avx) {}
+
+  bool do_reorder(uint8_t *dst, const uint8_t *src, const unsigned num_frames) {
+    if (m_force_no_avx) {
+      return FelixReorder::do_reorder(dst, src, num_frames,
+                                      &m_num_faulty_frames);
+    }
+    if (FelixReorder::avx512_available) {
+      return FelixReorder::do_avx512_reorder(dst, src, num_frames,
+                                             &m_num_faulty_frames);
+    }
+    if (FelixReorder::avx_available) {
+      return FelixReorder::do_avx_reorder(dst, src, num_frames,
+                                          &m_num_faulty_frames);
+    }
+    return FelixReorder::do_reorder(dst, src, num_frames, &m_num_faulty_frames);
+  }
+
+  void do_reorder_start(unsigned num_frames) {
+    m_num_faulty_frames = 0;
+    m_num_frames = num_frames;
+  }
+
+  unsigned reorder_final_size() {
+    return FelixReorder::calculate_reordered_size(m_num_frames,
+                                                  m_num_faulty_frames);
+  }
+
+  bool do_reorder_part(uint8_t *dst, const uint8_t *src, const unsigned frames_start,
+                       const unsigned frames_stop, const unsigned num_frames) {
+    if (m_force_no_avx) {
+      return FelixReorder::do_reorder_part(dst, src, frames_start, frames_stop,
+                                           num_frames, &m_num_faulty_frames);
+    }
+    if (FelixReorder::avx512_available) {
+      return FelixReorder::do_avx512_reorder_part(dst, src, frames_start,
+                                                  frames_stop, num_frames,
+                                                  &m_num_faulty_frames);
+    }
+    if (FelixReorder::avx_available) {
+      return FelixReorder::do_avx_reorder_part(dst, src, frames_start,
+                                               frames_stop, num_frames,
+                                               &m_num_faulty_frames);
+    }
+    return FelixReorder::do_reorder_part(dst, src, frames_start, frames_stop,
+                                         num_frames, &m_num_faulty_frames);
+  }
+
+  std::string get_info() {
+    if (m_force_no_avx) {
+      return "Forced by config to not use AVX.";
+    }
+    if (FelixReorder::avx512_available) {
+      return "Going to use AVX512.";
+    }
+    if (FelixReorder::avx_available) {
+      return "Going to use AVX2.";
+    }
+    return "Going to use baseline.";
+  }
+
+  unsigned m_num_faulty_frames;
+  unsigned m_num_frames;
+
+ private:
+  bool m_force_no_avx;
 };
 
-class FelixReordererFacility {
-  public:
-    FelixReordererFacility(ReordererType reordertype): mytype(reordertype), timing(100), time_average(0) {}
-    
-    bool do_reorder(uint8_t *dst, uint8_t *src, const unsigned num_frames=10000) {
-        std::chrono::high_resolution_clock::time_point t1 = std::chrono::high_resolution_clock::now();
-        bool success = inner_do_reorder(dst, src, num_frames);
-        std::chrono::high_resolution_clock::time_point t2 = std::chrono::high_resolution_clock::now();
+artdaq::Fragment FelixReorder(const uint8_t *src,
+                              const uint16_t &num_frames = 6000) {
+  artdaq::Fragment result;
+  dune::FelixFragmentBase::Metadata meta = {num_frames, 1, 0};
+  result.setMetadata(meta);
+  result.resizeBytes(num_frames * (256*sizeof(adc_t) + sizeof(WIBHeader) + 4*sizeof(ColdataHeader))+ (num_frames+7)/8);
+  uint8_t *dest = result.dataBeginBytes();
 
-        std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(t2 - t1);
+  ReorderFacility facility(false);
+  facility.do_reorder_start(num_frames);
+  facility.do_reorder(dest, src, num_frames);
+  std::cout << "INFO: " << facility.get_info() << '\n';
+  unsigned size = facility.reorder_final_size();
+  result.resizeBytes(size);
 
-        /// Update rate
-        timing.add_value(time_span.count());
-        time_average.store(timing.avg(), std::memory_order_relaxed);
+  return result;
+}
 
-        return success;
-    }
-
-    bool do_reorder_no_timing(uint8_t *dst, uint8_t *src, const unsigned num_frames) {
-        return inner_do_reorder(dst, src, num_frames);
-    }
-
-  private:
-    bool inner_do_reorder(uint8_t *dst, uint8_t *src, const unsigned num_frames) {
-        switch(mytype) {
-            case ReordererType::TypeAVX512:
-                if (FelixReorderer::avx512_available)
-                  return FelixReorderer::do_avx512_reorder(dst, src, num_frames);
-                break;
-            case ReordererType::TypeAVX2:
-              if (FelixReorderer::avx_available)
-                return FelixReorderer::do_avx_reorder(dst, src, num_frames);
-              break;
-            case ReordererType::TypeMILO:
-              return FelixReorderer::do_reorder(dst, src, num_frames);  
-        }
-        return false;
-    }
-
-    ReordererType mytype; 
-    SlidingAverage<double> timing;
-  public:
-    /// Expose for statistics service ///
-    std::atomic<double> time_average;
-};
 } // namespace dune
 
-#endif /* FELIX_REORDERER_FACILITY_HH_ */
+#endif /* REORDER_FACILITY_HH_ */

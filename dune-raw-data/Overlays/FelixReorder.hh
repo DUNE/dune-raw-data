@@ -1,207 +1,167 @@
-// This code was written for the 1.0 WIB->FELIX frame format.
-// 10-10-2017 Milo Vermeulen
+#ifndef FELIX_REORDER_HH_
+#define FELIX_REORDER_HH_
 
-#ifndef artdaq_dune_Overlays_FelixReorder_hh
-#define artdaq_dune_Overlays_FelixReorder_hh
+/*
+ * FelixReorder
+ * Authors
+ *  Milo Vermeulen for base implementation
+ *  Thijs Miedema for AVX implementation
+ * Description: Reorder Felix Frames in software to group headers and
+ * channeldata. Date: July 2018
+ */
 
-#include <chrono>
-#include <fstream>
-#include <thread>
-#include <vector>
-
-#include "artdaq-core/Data/Fragment.hh"
-#include "dune-raw-data/Overlays/FelixFormat.hh"
-#include "dune-raw-data/Overlays/FelixFragment.hh"
-
-#define NUMBER_THREADS 1
+#include <immintrin.h>
+#include <inttypes.h>
+#include <cstring>
+#include <iomanip>
+#include <string>
 
 namespace dune {
 
-class FelixReorderer {
+class FelixReorder {
+ private:
+  /// SIZE CONSTANTS ///
+  static constexpr size_t m_num_blocks_per_frame = 4;
+  static constexpr size_t m_num_ch_per_frame = 256;
+  static constexpr size_t m_num_ch_per_block = 64;
+  static constexpr size_t m_num_seg_per_block = 8;
+  static constexpr size_t m_num_ch_per_seg = 8;
+
+  static constexpr size_t m_num_bytes_per_seg = 12;
+  static constexpr size_t m_num_bytes_per_reord_seg = 16;
+  static constexpr size_t m_num_bytes_per_block =
+      m_num_bytes_per_seg * m_num_seg_per_block;
+  static constexpr size_t m_coldata_header_size = 4 * 4;
+  static constexpr size_t m_wib_header_size = 4 * 4;
+  static constexpr size_t m_num_bytes_per_data = m_num_ch_per_frame * 2;
+  static constexpr size_t m_adc_size = 2;
+
+  /// BIT OFFSET CONSTANTS ///
+  // Segments //
+  static const unsigned b_seg_0 = 0;
+  static const unsigned b_seg_1 = 12;
+  static const unsigned b_seg_2 = 24;
+  static const unsigned b_seg_3 = 36;
+
+  // ADC value byte positions
+  static const uint8_t b_adc0_ch0_p0 = 0;
+  static const uint8_t b_adc0_ch0_p1 = 2;
+  static const uint8_t b_adc0_ch1_p0 = 2;
+  static const uint8_t b_adc0_ch1_p1 = 4;
+  static const uint8_t b_adc0_ch2_p0 = 6;
+  static const uint8_t b_adc0_ch2_p1 = 8;
+  static const uint8_t b_adc0_ch3_p0 = 8;
+  static const uint8_t b_adc0_ch3_p1 = 10;
+  static const uint8_t b_adc1_ch0_p0 = 1;
+  static const uint8_t b_adc1_ch0_p1 = 3;
+  static const uint8_t b_adc1_ch1_p0 = 3;
+  static const uint8_t b_adc1_ch1_p1 = 5;
+  static const uint8_t b_adc1_ch2_p0 = 7;
+  static const uint8_t b_adc1_ch2_p1 = 9;
+  static const uint8_t b_adc1_ch3_p0 = 9;
+  static const uint8_t b_adc1_ch3_p1 = 11;
+
  public:
-  static const unsigned netio_header_size = 0;
-  static const unsigned frame_size = sizeof(FelixFrame);
-  static const unsigned wib_header_size = sizeof(WIBHeader);
-  static const unsigned coldata_header_size = sizeof(ColdataHeader);
-  static const unsigned coldata_block_size = sizeof(ColdataBlock);
-  // static const unsigned crc_size = 4;
+  /// Framesize public constants
+  static constexpr size_t m_num_bytes_per_frame =
+      m_wib_header_size +
+      m_num_blocks_per_frame * (m_coldata_header_size + m_num_bytes_per_block);
+  static constexpr size_t m_num_bytes_per_reord_frame =
+      m_wib_header_size +
+      m_num_blocks_per_frame * (m_coldata_header_size + m_num_ch_per_block * 2);
 
-  static const unsigned adc_size = sizeof(adc_t);
+  /// METHODS ///
+  static bool do_reorder(uint8_t* dst, const uint8_t* src,
+                         const unsigned& num_frames,
+                         unsigned* num_faulty) noexcept;
+  static bool do_avx_reorder(uint8_t* dst, const uint8_t* src,
+                             const unsigned& num_frames,
+                             unsigned* num_faulty) noexcept;
+  static bool do_avx512_reorder(uint8_t* dst, const uint8_t* src,
+                                const unsigned& num_frames,
+                                unsigned* num_faulty) noexcept;
 
-  static const unsigned num_ch_per_frame = FelixFrame::num_ch_per_frame;
-  static const unsigned num_blocks_per_frame = FelixFrame::num_block_per_frame;
-  static const unsigned num_streams_per_block = 8;
+  static bool do_reorder_part(uint8_t* dst, const uint8_t* src,
+                              const unsigned frames_start,
+                              const unsigned frames_stop,
+                              const unsigned& num_frames,
+                              unsigned* num_faulty) noexcept;
+  static bool do_avx_reorder_part(uint8_t* dst, const uint8_t* src,
+                                  const unsigned frames_start,
+                                  const unsigned frames_stop,
+                                  const unsigned& num_frames,
+                                  unsigned* num_faulty) noexcept;
+  static bool do_avx512_reorder_part(uint8_t* dst, const uint8_t* src,
+                                     const unsigned frames_start,
+                                     const unsigned frames_stop,
+                                     const unsigned& num_frames,
+                                     unsigned* num_faulty) noexcept;
 
-  static const unsigned num_ch_per_block = FelixFrame::num_ch_per_block;
-    static const unsigned num_adcs_per_stream =
-      num_ch_per_block / num_streams_per_block;
+  static unsigned calculate_reordered_size(unsigned num_frames,
+                                           unsigned num_faulty) {
+    return m_num_bytes_per_data * num_frames +
+           (m_wib_header_size +
+            m_num_blocks_per_frame * m_coldata_header_size) *
+               (num_faulty + 1) +
+           (num_frames + 7) / 8;
+  }
+
+#ifdef __AVX2__
+  static const bool avx_available = true;
+#else
+  static const bool avx_available = false;
+#endif
+
+#ifdef __AVX512__REMOVE_ME_AFTER_GCC_PATCH
+  static const bool avx512_available = true;
+#else
+  static const bool avx512_available = false;
+#endif
 
  private:
-  const uint8_t* head;
-  const size_t num_frames;
-  const size_t size = num_frames * frame_size;
+  /// FRAME OFFSETS ///
+  static constexpr unsigned m_frame0 = 0 * m_num_bytes_per_frame;
+  static constexpr unsigned m_frame1 = 1 * m_num_bytes_per_frame;
+  static constexpr unsigned m_frame2 = 2 * m_num_bytes_per_frame;
+  static constexpr unsigned m_frame3 = 3 * m_num_bytes_per_frame;
 
-  uint16_t initial_adcs[num_ch_per_frame];
+  static void copy_headers(uint8_t* dst, const uint8_t* src);
+  static void handle_headers(uint8_t* dst, const uint8_t* src,
+                             const unsigned frame_index,
+                             const unsigned& num_frames, unsigned* num_faulty);
 
-  void wib_header_copy(uint8_t* dest);
-  void coldata_header_copy(uint8_t* dest);
-  void initial_adc_copy(uint8_t* dest);
-  void adc_copy(uint8_t* dest);
+  /// BASELINE REORDERING ///
+  static void baseline_handle_frames(uint8_t* dst, const uint8_t* src,
+                                     const unsigned frames_start,
+                                     const unsigned frames_stop,
+                                     const unsigned& num_frames,
+                                     unsigned* num_faulty);
 
- public:
-  FelixReorderer(const uint8_t* data, const size_t& num_frames = 10000)
-      : head(data), num_frames(num_frames){};
-
-  const unsigned newSize =
-      netio_header_size +
-      (wib_header_size + coldata_header_size * num_blocks_per_frame + adc_size * num_ch_per_frame) * num_frames;
-
-  // Locations in the destination buffer.
-  const unsigned wib_headers_begin = netio_header_size;
-  const unsigned coldata_headers_begin = wib_headers_begin + num_frames * wib_header_size;
-  const unsigned adc_begin =
-      coldata_headers_begin +
-      num_frames * coldata_header_size * num_blocks_per_frame;
-  const unsigned end =
-      adc_begin + (num_frames - 1) * num_ch_per_frame * adc_size;
-
-  void reorder_copy(uint8_t* dest);
-  friend void t_adc_copy_by_channel(FelixReorderer* reord, uint8_t* dest,
-                                    const unsigned& t_inst,
-                                    const unsigned& t_tot);
-  void single_frame_from_buffer(const uint8_t* src, uint8_t* dest,
-                                const size_t& i);
-  void frames_from_buffer(const uint8_t* src, uint8_t* dest,
-                          const size_t& num_frames);
+#ifdef __AVX2__
+  /// AVX2 REORDERING ///
+  static void reorder_avx_handle_four_segments(const uint8_t* src, uint8_t* dst,
+                                               const unsigned& num_frames);
+  static void reorder_avx_handle_block(const uint8_t* src, uint8_t* dst,
+                                       const unsigned& num_frames);
+  static void reorder_avx_handle_frame(const uint8_t* src, uint8_t* dst,
+                                       unsigned frame_num,
+                                       const unsigned& num_frames,
+                                       unsigned* num_faulty);
+#endif
+#ifdef __AVX512__REMOVE_ME_AFTER_GCC_PATCH
+  /// AVX512 REORDERING ///
+  static void reorder_avx512_handle_four_frames_two_segments(
+      const uint8_t* src, uint8_t* dst, const unsigned& num_frames);
+  static void reorder_avx512_handle_four_frames_one_block(
+      const uint8_t* src, uint8_t* dst, const unsigned& num_frames);
+  static void reorder_avx512_handle_four_frames(const uint8_t* src,
+                                                uint8_t* dst,
+                                                unsigned frame_num,
+                                                const unsigned& num_frames,
+                                                unsigned* num_faulty);
+#endif
 };
 
-void FelixReorderer::wib_header_copy(uint8_t* dest) {
-  // Store WIB-headers next to each other.
-  const dune::FelixFrame* src =
-      reinterpret_cast<dune::FelixFrame const*>(head + netio_header_size);
-  for (unsigned i = 0; i < num_frames; ++i) {
-    memcpy(dest, src->wib_header(), wib_header_size);
-    dest += wib_header_size;
-    ++src;
-  }
-}
+} // namespace dune
 
-void FelixReorderer::coldata_header_copy(uint8_t* dest) {
-  // Store COLDATA headers next to each other.
-  const dune::FelixFrame* src =
-      reinterpret_cast<dune::FelixFrame const*>(head + netio_header_size);
-  for (unsigned i = 0; i < num_frames; ++i) {
-    for (unsigned j = 0; j < num_blocks_per_frame; ++j) {
-      memcpy(dest, src->coldata_header(j), coldata_header_size);
-      dest += coldata_header_size;
-    }
-    ++src;
-  }
-}
-
-void FelixReorderer::initial_adc_copy(uint8_t* dest) {
-  // Store all initial ADC values in uint16_t.
-  const dune::FelixFrame* src =
-      reinterpret_cast<dune::FelixFrame const*>(head + netio_header_size);
-  for (unsigned i = 0; i < num_ch_per_frame; ++i) {
-    initial_adcs[i] = src->channel(i);
-    memcpy(dest, &initial_adcs[i], adc_size);
-    dest += adc_size;
-  }
-}
-
-// ADC copy function to be executed by individual threads.
-void t_adc_copy_by_channel(FelixReorderer* reord, uint8_t* dest,
-                           const unsigned& t_inst, const unsigned& t_tot) {
-  // Thread starting point and range in ADC channel space.
-  unsigned t_ch_range = reord->num_ch_per_frame / t_tot;
-  unsigned t_ch_begin = t_ch_range * t_inst;
-  // The last thread should clean up the remainder of the channels.
-  if (t_inst == t_tot - 1 && reord->num_ch_per_frame % t_tot != 0) {
-    t_ch_range = reord->num_ch_per_frame - t_ch_begin;
-  }
-
-  // Store all ADC values in uint16_t.
-  const dune::FelixFrame* src =
-      reinterpret_cast<dune::FelixFrame const*>(
-          reord->head + reord->netio_header_size);
-          
-  for (unsigned fr = 0; fr < reord->num_frames; ++fr) {
-    for (unsigned ch = t_ch_begin; ch < t_ch_begin + t_ch_range; ++ch) {
-      adc_t curr_val = (src + fr)->channel(ch);
-      // Only for previous value subtraction.
-      // if(fr != 0) {
-      //   curr_val -= (src + fr - 1)->channel(ch);
-      // }
-      memcpy(dest + (ch * reord->num_frames + fr) * reord->adc_size, &curr_val,
-             reord->adc_size);
-    }
-  }
-}
-
-void FelixReorderer::adc_copy(uint8_t* dest) {
-  const unsigned t_tot = NUMBER_THREADS;
-  std::thread* t_vec = new std::thread[t_tot - 1];
-
-  for (unsigned i = 0; i < t_tot - 1; ++i) {
-    t_vec[i] = std::thread(t_adc_copy_by_channel, this, dest, i, t_tot);
-  }
-  t_adc_copy_by_channel(this, dest, t_tot - 1, t_tot);
-  for (unsigned i = 0; i < t_tot - 1; ++i) {
-    t_vec[i].join();
-  }
-}
-
-void FelixReorderer::reorder_copy(uint8_t* dest) {
-  // auto wib_start = std::chrono::high_resolution_clock::now();
-  wib_header_copy(dest + wib_headers_begin);
-  // auto colhead_start = std::chrono::high_resolution_clock::now();
-  coldata_header_copy(dest + coldata_headers_begin);
-  // auto adc_start = std::chrono::high_resolution_clock::now();
-  adc_copy(dest + adc_begin);
-  // auto end = std::chrono::high_resolution_clock::now();
-
-  // Timing.
-  // std::cout
-  //     << "\nMemcpy speed tests:\n"
-  //     << "WIB header copy time: "
-  //     << std::chrono::duration_cast<std::chrono::microseconds>(colhead_start -
-  //                                                              wib_start)
-  //            .count()
-  //     << "usec\n"
-  //     // << "CRC copy time: "
-  //     // << std::chrono::duration_cast<std::chrono::microseconds>(crc_start -
-  //     //                                                          colhead_start)
-  //     //        .count()
-  //     // << "usec\n"
-  //     << "COLDATA header copy time: "
-  //     << std::chrono::duration_cast<std::chrono::microseconds>(adc_start -
-  //                                                              colhead_start)
-  //            .count()
-  //     << "usec\n"
-  //     << "ADC copy time: "
-  //     << std::chrono::duration_cast<std::chrono::microseconds>(end - adc_start)
-  //            .count()
-  //     << "usec\n"
-  //     << "Total copy time: "
-  //     << std::chrono::duration_cast<std::chrono::microseconds>(end - wib_start)
-  //            .count()
-  //     << "usec\n\n";
-}
-
-artdaq::Fragment FelixReorder(const uint8_t* src, const uint16_t& num_frames = 10000) {
-  FelixReorderer reorderer(src, num_frames);
-  artdaq::Fragment result;
-
-  dune::FelixFragmentBase::Metadata meta = {num_frames, 1, 0};
-  result.setMetadata(meta);
-
-  result.resizeBytes(reorderer.newSize);
-  reorderer.reorder_copy(result.dataBeginBytes());
-
-  return result;
-}
-
-}  // namespace dune
-
-#endif /* artdaq_dune_Overlays_FelixReorder_hh */
+#endif /* FELIX_REORDER_HH_ */

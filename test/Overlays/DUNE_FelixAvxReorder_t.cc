@@ -72,9 +72,9 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     // Test whether FelixFragment and FelixFragmentReordered correspond.
     std::cout << "### MEOW -> Reordered FELIX Fragment test.\n";
 
-    dune::FelixReordererFacility my_reorderer(dune::ReordererType::TypeMILO);
+    dune::ReorderFacility my_reorderer(false/* dune::ReordererType::TypeMILO */);
     artdaq::Fragment reordfrg;
-    reordfrg.resizeBytes(frames * dune::FelixReorderer::num_bytes_per_reord_frame);
+    reordfrg.resizeBytes(frames * dune::FelixReorder::m_num_bytes_per_reord_frame);
     my_reorderer.do_reorder(reordfrg.dataBeginBytes(), frag_ptr->dataBeginBytes() + bufferstring.size(), frames);
     dune::FelixFragment reordflxfrg(reordfrg);
 

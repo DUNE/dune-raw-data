@@ -5,21 +5,10 @@
 
 #include "dune-raw-data/Overlays/CTB_content.h"
 
-//#include "cetlib_except/exception.h"
-
-
-
 #include <ostream>
 #include <vector>
 
 
-
-namespace dune {
-  class CTBFragment;
-
-  // Let the "<<" operator dump the CTBFragment's data to stdout
-  std::ostream & operator << (std::ostream &, CTBFragment const & );
-}
 
 
 /* 
@@ -42,8 +31,10 @@ Brief guide to CTB fragments
 
 */
 
+namespace dune {
 
-class dune::CTBFragment {
+
+class CTBFragment {
   public:
 
   // The constructor simply sets its const private member "artdaq_Fragment_"
@@ -93,7 +84,9 @@ class dune::CTBFragment {
   static const ptb::content::word::trigger_t*   Trigger  ( const ptb::content::word::word_t & w ) ;
 
   static constexpr unsigned int WordSize() { return sizeof( ptb::content::word::word_t ) ; } 
- 
+
+  friend std::ostream & operator << (std::ostream &, CTBFragment const & ) ;
+  
 protected:
 
   //maybe let's put some utilities here
@@ -105,5 +98,8 @@ private:
   artdaq::Fragment const & artdaq_Fragment_;
 
 };
+
+
+}  // dune namespace 
 
 #endif /* dune_artdaq_Overlays_CTBFragment_hh */

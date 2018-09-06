@@ -1,25 +1,24 @@
 #include "dune-raw-data/Overlays/CTBFragment.hh"
 
-//#include "cetlib_except/exception.h"
-
 namespace dune {
 
 
   std::ostream & operator << (std::ostream & out, CTBFragment const & f ) {
 
+    out << "Fragment size: " << f.artdaq_Fragment_.dataSizeBytes() << " -> " << f._n_words << " words" << std::endl ;
+
     for ( unsigned int i = 0; i < f.NWords() ; ++i ) {
 
       if ( f.Trigger(i) ) {
         out << "Trigger word " << std::hex << f.Trigger(i) -> word_type
-            << ", payload: " << f.Trigger(i) -> trigger_word
+            << ", payload: "  << f.Trigger(i) -> trigger_word
             << ", TS: " << f.Trigger(i) -> timestamp << std::dec << std::endl ;
       }
       else if ( f.ChStatus(i) ) {
 	out << "Check Status word " << std::hex 
-            << " PDS " << f.ChStatus(i) -> pds
-            << ", CRT: " << f.ChStatus(i) -> crt 
-	    << ", Beam Hi: " << f.ChStatus(i) -> beam_hi 
-	    << ", Beam Low: " << f.ChStatus(i) -> beam_lo
+            << " PDS " << f.ChStatus(i) -> get_pds() 
+            << ", CRT: " << f.ChStatus(i) -> get_crt()
+	    << ", Beam: " << f.ChStatus(i) -> get_beam() 
 	    << ", TS: " << f.ChStatus(i) -> timestamp
 	    << std::dec << std::endl ;
 
@@ -61,7 +60,7 @@ namespace dune {
     
     if ( i >= NWords() ) return nullptr ;
 
-    return reinterpret_cast<const ptb::content::word::word_t*>( artdaq_Fragment_.dataBegin() + i * CTBFragment::WordSize() )  ;
+    return reinterpret_cast<const ptb::content::word::word_t*>( artdaq_Fragment_.dataBeginBytes() + i * CTBFragment::WordSize() )  ;
     
   }
 

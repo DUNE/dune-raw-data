@@ -22,15 +22,29 @@
 // These are stored in the fragment exactly as received and are manipulated
 // to be readable by the getters in this class.
 //
-// The definition of the timing commands (scmd) in the DAQ word 1 are
-//  0: spill_start
-//  1: spill_end
-//  2: calib
-//  3: trigger
-//  4: time_sync
 
 namespace dune {
   class TimingFragment;
+
+  enum class TimingCommand {
+    // From https://twiki.cern.ch/twiki/bin/view/CENF/TimingSystemAdvancedOp retrieved on 2018-09-07
+    // The 'sync' bus has the following commands at the moment:
+    TimeSync   = 0x0,
+    Echo       = 0x1,
+    SpillStart = 0x2,
+    SpillStop  = 0x3,
+    RunStart   = 0x4,
+    RunStop    = 0x5,
+    WibCalib   = 0x6,
+    SSPCalib   = 0x7,
+    FakeTrig0  = 0x8,
+    FakeTrig1  = 0x9,
+    FakeTrig2  = 0xa,
+    FakeTrig3  = 0xb,
+    BeamTrig   = 0xc,
+    NoBeamTrig = 0xd,
+    RandTrig   = 0xe
+  };
 
   // Let the "<<" operator dump the TimingFragment's data to stdout
   std::ostream & operator << (std::ostream &, TimingFragment const &);
@@ -44,6 +58,7 @@ class dune::TimingFragment {
   public: 
   TimingFragment(artdaq::Fragment const & f ) : artdaq_Fragment_(f) {}
 
+
   // The following structure is overlayed onto the data in the fragment, starting
   // at the beginning.
   struct Body {
@@ -54,8 +69,13 @@ class dune::TimingFragment {
     uint32_t tstamph : 32;
     uint32_t evtctr  : 32;
     uint32_t cksum   : 32;
-
-    static size_t const size = 6ul;   // Units of header uint32_t
+    uint32_t last_runstart_tstampl;
+    uint32_t last_runstart_tstamph;
+    uint32_t last_spillstart_tstampl;
+    uint32_t last_spillstart_tstamph;
+    uint32_t last_spillend_tstampl;
+    uint32_t last_spillend_tstamph;
+    static size_t const size = 12ul;   // Units of header uint32_t
   };
 
   // Here are the getters
@@ -68,10 +88,21 @@ class dune::TimingFragment {
   uint32_t get_cksum() const   { return body_()->cksum;   }
 
   uint64_t get_tstamp() const { 
-     uint64_t l = body_()->tstampl;
-     uint64_t h = body_()->tstamph;
-     return (l | (h<<32));
+    return make_tstamp64(body_()->tstampl, body_()->tstamph);
   } 
+
+  uint64_t get_last_runstart_timestamp() const {
+    return make_tstamp64(body_()->last_runstart_tstampl,
+                         body_()->last_runstart_tstamph);
+  }
+  uint64_t get_last_spillstart_timestamp() const {
+    return make_tstamp64(body_()->last_spillstart_tstampl,
+                         body_()->last_spillstart_tstamph);
+  }
+  uint64_t get_last_spillend_timestamp() const {
+    return make_tstamp64(body_()->last_spillend_tstampl,
+                         body_()->last_spillend_tstamph);
+  }
 
   static size_t size() { return Body::size; /* body_()->size; */}    
          // This returns the constant size of the block (cureently 6 uint32_ts)
@@ -84,6 +115,11 @@ protected:
     return reinterpret_cast<TimingFragment::Body const *>( artdaq_Fragment_.dataBeginBytes());
   }
 
+  uint64_t make_tstamp64(uint32_t tstampl, uint32_t tstamph) const {
+     uint64_t l = tstampl;
+     uint64_t h = tstamph;
+     return (l | (h<<32));
+  }
   // This asks the compiler to check if we change te format that we didn't forget to cheange the size as well
   // However if we do change the format, we must figure out how to make this class backward compatible.
   static_assert (sizeof (Body) == Body::size * sizeof (uint32_t), "TimingFragment::Data block size changed");

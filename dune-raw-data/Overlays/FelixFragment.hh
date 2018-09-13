@@ -4,23 +4,14 @@
 #ifndef artdaq_dune_Overlays_FelixFragment_hh
 #define artdaq_dune_Overlays_FelixFragment_hh
 
-// Uncomment to use the bit field ADC access method.
-// MAV 30-10-2017: The bit field ADC access method is ~twice as fast and
-// provides the same results as the alternative.
-#define BITFIELD_METHOD
-
 #include "FragmentType.hh"
 #include "artdaq-core/Data/Fragment.hh"
 #include "dune-raw-data/Overlays/FelixFormat.hh"
 
-#include <bitset>
-#include <cstdio>
-#include <fstream>
 #include <iostream>
 #include <map>
-#include <string>
 #include <vector>
-#include "zlib.h"
+#include <zlib.h>
 
 // Implementation of "FelixFragment", an artdaq::FelixFragment overlay
 // class used for WIB->FELIX frames.
@@ -35,12 +26,6 @@ class FelixFragmentUnordered;
 class FelixFragmentReordered;
 class FelixFragmentCompressed;
 class FelixFragment;
-
-// Bit access function (from FrameGen).
-inline uint32_t get32BitRange(const uint32_t& word, const uint8_t& begin,
-                              const uint8_t& end) {
-  return (word >> begin) & ((1 << (end - begin + 1)) - 1);
-}
 }  // namespace dune
 
 //============================
@@ -57,32 +42,17 @@ class dune::FelixFragmentBase {
     data_t compressed : 8;
 
     static size_t const size_words = 1ul; /* Units of Metadata::data_t */
+
+    bool operator==(const Metadata& rhs) {
+      return (num_frames == rhs.num_frames) &&
+             (reordered == rhs.reordered) &&
+             (compressed == rhs.compressed);
+    }
   };
 
   static_assert(sizeof(Metadata) ==
                     Metadata::size_words * sizeof(Metadata::data_t),
                 "FelixFragment::Metadata size changed");
-
-  /* Static file reader for debugging purpose. */
-  static artdaq::FragmentPtr fromFile(const std::string& fileName) {
-    std::ifstream in(fileName, std::ios::binary);
-    std::string contents((std::istreambuf_iterator<char>(in)),
-                         std::istreambuf_iterator<char>());
-    Metadata meta;
-    static size_t fragment_ID = 1;
-    std::unique_ptr<artdaq::Fragment> frag_ptr(artdaq::Fragment::FragmentBytes(
-        contents.size(), 1, fragment_ID, dune::toFragmentType("FELIX"), meta));
-    ++fragment_ID;
-
-    frag_ptr->resizeBytes(contents.size());
-    memcpy(frag_ptr->dataBeginBytes(), contents.c_str(), contents.size());
-    in.close();
-    return frag_ptr;
-  }
-
-  /* FELIX-specific metadata from the FelixBoardReader included here for
-   * debugging. */
-  struct FelixHeader;
 
   /* Frame field and accessors. */
   virtual uint8_t sof(const unsigned& frame_ID = 0) const = 0;
@@ -136,19 +106,29 @@ class dune::FelixFragmentBase {
       : meta_(*(fragment.metadata<Metadata>())),
         artdaq_Fragment_(fragment.dataBeginBytes()),
         sizeBytes_(fragment.dataSizeBytes()) {
-    // // Reset metadata number of frames if the data isn't compressed.
-    // if(!meta_.compressed && meta_.reordered) {
-    //   std::cout << "Changing number of frames from " << meta_.num_frames
-    //             << " to ";
-    //   meta_.num_frames = sizeBytes_ / (sizeof(dune::WIBHeader) +
-    //                                    4 * sizeof(dune::ColdataHeader) +
-    //                                    256 * sizeof(dune::adc_t));
-    //   std::cout << meta_.num_frames << '\n';
-    // } else if (!meta_.compressed && !meta_.reordered) {
-    //   std::cout << "Changing number of frames from " << meta_.num_frames << " to ";
-    //   meta_.num_frames = sizeBytes_ / sizeof(dune::FelixFrame);
-    //   std::cout << meta_.num_frames << '\n';
-    // }
+    // Check whether current metadata makes sense and guess the format otherwise.
+    Metadata bogus;
+    bogus.num_frames = 1;
+    bogus.reordered = 0;
+    bogus.compressed = 0;
+    if(meta_ == bogus || meta_.reordered > 1 || meta_.compressed > 1) {
+      // Assume 6024 frames in a fragment if there is no meaningful metadata.
+      meta_.num_frames = 6024;
+      // Try to predict reordered/compressed from fragment size.
+      unsigned sizeBytes = fragment.dataSizeBytes();
+      if(sizeBytes == meta_.num_frames * 464) {
+        meta_.reordered = 0;
+        meta_.compressed = 0;
+      } else if (sizeBytes > meta_.num_frames * 592) {
+        // Assume compression factor > 1.
+        meta_.reordered = 1;
+        meta_.compressed = 0;
+      } else {
+        // Assume reordered if compressed.
+        meta_.reordered = 1;
+        meta_.compressed = 1;
+      }
+    }
   }
   virtual ~FelixFragmentBase() {}
 
@@ -180,12 +160,6 @@ class dune::FelixFragmentBase {
 //==================================================
 class dune::FelixFragmentUnordered : public dune::FelixFragmentBase {
  public:
-  /* FELIX-specific metadata from the FelixBoardReader included here for
-   * debugging. */
-  struct FelixHeader {
-    word_t flx_head;  // 4byte: 00 00 cd ab
-  };
-
   /* Frame field and accessors. */
   uint8_t sof(const unsigned& frame_ID = 0) const {
     return frame_(frame_ID)->sof();
@@ -323,10 +297,6 @@ class dune::FelixFragmentUnordered : public dune::FelixFragmentBase {
 //=======================================================
 class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
  public:
-  /* FELIX-specific metadata from the FelixBoardReader included here for
-   * debugging. */
-  struct FelixHeader {};
-
   /* Frame field and accessors. */
   uint8_t sof(const unsigned& frame_ID = 0) const {
     return head_(frame_ID)->sof;
@@ -414,11 +384,7 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
     return output;
   }
   adc_v get_ADCs_by_channel(const uint8_t channel_ID) const {
-    adc_v output(total_frames());
-    for (size_t i = 0; i < total_frames(); i++) {
-      output[i] = get_ADC(i, channel_ID);
-    }
-    return output;
+    return get_ADCs_by_channel(channel_ID/64, channel_ID%64);
   }
   // Function to return all ADC values for all channels in a map.
   std::map<uint8_t, adc_v> get_all_ADCs() const {
@@ -532,121 +498,87 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
 //=======================================
 class dune::FelixFragmentCompressed : public FelixFragmentBase {
  private:
-  int decompress_copy(const artdaq::Fragment& src, artdaq::Fragment& dest) {
+  int decompress_copy(const artdaq::Fragment& src, artdaq::Fragment& dst) {
     // Determine and reserve new fragment size.
     long unsigned int uncompSizeBytes;
-    const Metadata meta = *src.metadata<Metadata>();
-    if(meta.reordered) {
-      uncompSizeBytes = meta.num_frames * (sizeof(dune::WIBHeader) +
+    if(meta_.reordered) {
+      uncompSizeBytes = meta_.num_frames * (sizeof(dune::WIBHeader) +
                                        4 * sizeof(dune::ColdataHeader) +
                                        256 * sizeof(dune::adc_t));
+      // Account for bitfields
+      uncompSizeBytes += (meta_.num_frames + 7) / 8;
     } else {
-      uncompSizeBytes = meta.num_frames * sizeof(dune::FelixFrame);
+      uncompSizeBytes = meta_.num_frames * sizeof(dune::FelixFrame);
     }
-    dest.resizeBytes(uncompSizeBytes);
-    std::cout << "Number of frames in metadata: " << meta.num_frames << '\n';
-    std::cout << "Calculated new size: " << uncompSizeBytes << '\n';
+    dst.resizeBytes(uncompSizeBytes);
 
-    // uncompress(dest.dataBeginBytes(), &uncompSizeBytes, src.dataBeginBytes(), src.dataSizeBytes());
+    int num_bytes = internal_inflate(src.dataBeginBytes(), src.dataSizeBytes(),
+                                     dst.dataBeginBytes(), dst.dataSizeBytes());
 
-    // // Zlib decompression.
-    // // Overly long initialisation to avoid compiler warnings.
-    // z_stream zInfo = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    // zInfo.total_in =  zInfo.avail_in = src.dataSizeBytes();
-    // zInfo.total_out = zInfo.avail_out = dest.dataSizeBytes();
-    // zInfo.next_in = (uint8_t*)src.dataBeginBytes();
-    // zInfo.next_out = dest.dataBeginBytes();
-
-    // int nErr, nRet = -1;
-    // // Extra MAX_WBITS | 16 argument to set gzip decompression.
-    // nErr = inflateInit2(&zInfo, MAX_WBITS | 16);
-    // if ( nErr == Z_OK ) {
-    //   // zInfo.avail_in = CHUNK;
-    //   // if(zInfo.total_in > )
-    //   // zInfo.avail_out = CHUNK;
-    //   nErr = inflate(&zInfo, Z_FINISH);
-    //   if (nErr == Z_STREAM_END) {
-    //     nRet = zInfo.total_out;
-    //   }
-    // }
-    // inflateEnd( &zInfo );
-    // return( nRet ); // -1 or len of output
-
-    #define CHUNK 65536
-
-    int ret;
-    z_stream strm;
-    // unsigned char in[CHUNK];
-    // unsigned char out[CHUNK];
-
-    /* allocate inflate state */
-    strm.zalloc = Z_NULL;
-    strm.zfree = Z_NULL;
-    strm.opaque = Z_NULL;
-    strm.avail_in = 0;
-    strm.next_in = Z_NULL;
-    ret = inflateInit2(&strm, MAX_WBITS | 16);
-    if (ret != Z_OK) return ret;
-
-    /* decompress until deflate stream ends or end of file */
-    do {
-      // Determine whether there is still data to decompress.
-      if(strm.total_in + CHUNK < src.dataSizeBytes()) {
-        strm.avail_in = CHUNK;
-      } else {
-        strm.avail_in = src.dataSizeBytes() - strm.total_in;
-      }
-      // return Z_ERRNO;
-      if (strm.avail_in == 0) break;
-      // memcpy(in, src.dataBeginBytes() + strm.total_in, strm.avail_in);
-      strm.next_in = (Bytef*)(src.dataBeginBytes() + strm.total_in);
-      // strm.total_in += strm.avail_in;
-
-      /* run inflate() on input until output buffer not full */
-      do {
-        static unsigned iterations = 0;
-        std::cout << "Inner: " << iterations++ << '\n';
-        if(strm.total_out + CHUNK < dest.dataSizeBytes()) {
-          strm.avail_out = CHUNK;
-        } else {
-          strm.avail_out = dest.dataSizeBytes() - strm.total_out;
-        }
-        std::cout << "strm.avail_in: " << strm.avail_in << '\n';
-        std::cout << "strm.total_in: " << strm.total_in << '\n';
-        std::cout << "strm.avail_out: " << strm.avail_out << '\n';
-        std::cout << "strm.total_out: " << strm.total_out << '\n';
-        strm.next_out = dest.dataBeginBytes() + strm.total_out;
-        ret = inflate(&strm, Z_NO_FLUSH);
-        strm.total_out += strm.avail_out;
-        std::cout << " new strm.avail_in: " << strm.avail_in << '\n';
-        std::cout << " new strm.total_in: " << strm.total_in << '\n';
-        std::cout << " new strm.avail_out: " << strm.avail_out << '\n';
-        std::cout << " new strm.total_out: " << strm.total_out << '\n';
-      } while (strm.avail_out == 0);
-      static unsigned outeriterations = 0;
-      std::cout << "Outer: " << outeriterations++ << '\n';
-
-      /* done when inflate() says it's done */
-    } while (ret != Z_STREAM_END);
-
-    /* clean up and return */
-    (void)inflateEnd(&strm);
-    return ret == Z_STREAM_END
-               ? Z_OK
-               : Z_DATA_ERROR;
-
-    // memcpy(dest.dataBeginBytes(), src.dataBeginBytes(), src.dataSizeBytes());
+    return num_bytes;
   }
+
+  int internal_inflate(const void *src, uint srcLen, void *dst, uint dstLen) {
+    z_stream strm  = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    strm.total_in  = strm.avail_in  = srcLen;
+    strm.total_out = strm.avail_out = dstLen;
+    strm.next_in   = (Bytef *) src;
+    strm.next_out  = (Bytef *) dst;
+
+    strm.zalloc = Z_NULL;
+    strm.zfree  = Z_NULL;
+    strm.opaque = Z_NULL;
+
+    unsigned read = 0;
+    unsigned write = 0;
+    int err = 0;
+
+    while(read < srcLen && write < dstLen) {
+      strm.next_in = (Bytef*)src + read;
+      strm.next_out  = (Bytef *) dst + write;
+
+      unsigned to_read = srcLen - read;
+      unsigned to_write = dstLen - write;
+
+      if (to_read < 20) {
+        // This cant possibly be a frag
+        break;
+      }
+
+      strm.total_in  = strm.avail_in  = to_read;
+      strm.total_out = strm.avail_out = to_write;
+
+      inflateInit2(&strm, MAX_WBITS | 16);
+      err = inflate(&strm, Z_FINISH);
+      // Just return the source if data error.
+      if(err == Z_DATA_ERROR) {
+        std::cout << "Warning: decompression data error. Returning compressed "
+                     "fragment.\n";
+        memcpy(dst, src, srcLen);
+        return srcLen;
+      }
+      inflateEnd(&strm);
+
+      read += to_read - strm.avail_in;
+      write += to_write - strm.avail_out;
+
+      if (err < 0) {
+        break;
+      }
+    }
+
+    return write;
+  } 
 
  public:
   FelixFragmentCompressed(const artdaq::Fragment& fragment) : FelixFragmentBase(fragment) {
     // Decompress.
-    std::cout << decompress_copy(fragment, uncompfrag_) << " returned from decompress_copy\n";
-
-    // Handle metadata.
-    Metadata meta = *fragment.metadata<Metadata>();
-    meta.compressed = 0;
-    uncompfrag_.setMetadata(meta);
+    decompress_copy(fragment, uncompfrag_);
+    // std::cout << decompress_copy(fragment, uncompfrag_) << " returned from decompress_copy\n";
+    
+    // Update metadata.
+    meta_.compressed = 0;
+    uncompfrag_.setMetadata(meta_);
     if (meta_.reordered) {
       flxfrag = new FelixFragmentReordered(uncompfrag_);
     } else {

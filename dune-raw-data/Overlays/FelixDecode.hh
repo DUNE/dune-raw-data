@@ -1,8 +1,6 @@
 // FelixDecode.hh serves to decode root files containing artdaq Fragments with
 // FELIX data.
 
-// I am so sorry. - Milo
-
 #ifndef artdaq_dune_Overlays_FelixDecode_hh
 #define artdaq_dune_Overlays_FelixDecode_hh
 
@@ -14,10 +12,12 @@
 #include <string>
 #include <valarray>
 #include <vector>
+#include <fstream>
 #include "art/Framework/Principal/Handle.h"
 #include "artdaq-core/Data/Fragment.hh"
 #include "canvas/Utilities/InputTag.h"
 #include "dune-raw-data/Overlays/FelixFragment.hh"
+#include "dune-raw-data/Overlays/FragmentType.hh"
 #include "gallery/Event.h"
 
 namespace dune {
@@ -85,7 +85,9 @@ class FelixDecoder {
   bool check_all_timestamps() const {
     bool failed = false;
     // Loop over fragments within an event.
+    std::cout << "Going through " << frags_.size() << " fragments.\n";
     for (unsigned i = 0; i < frags_.size(); ++i) {
+      std::cout << i << '\r';
       failed |= !(check_timestamps(i));
     }
 
@@ -109,7 +111,7 @@ class FelixDecoder {
     for (unsigned fr = 1; fr < flxfrag.total_frames(); ++fr) {
       // Check CCC1.
       if (flxfrag.coldata_convert_count(fr, 0) - prevCCC1 != 1 &&
-          flxfrag.coldata_convert_count(fr, 0) - prevCCC1 != -65535) {
+          flxfrag.coldata_convert_count(fr, 0) - prevCCC1 != -33919) {
         std::cout << "CCC1 does not increase by 1 at frame " << fr
                   << " in fragment " << frag_num << "!\n";
         std::cout << "It instead increases by "
@@ -119,7 +121,7 @@ class FelixDecoder {
 
         // Check CCC2.
         if (flxfrag.coldata_convert_count(fr, 2) - prevCCC2 != 1 &&
-            flxfrag.coldata_convert_count(fr, 2) - prevCCC2 != -65535) {
+            flxfrag.coldata_convert_count(fr, 2) - prevCCC2 != -33919) {
           std::cout << "CCC2 does not increase by 1 at frame " << fr
                     << " in fragment " << frag_num << "!\n";
           std::cout << "It instead increases by "
@@ -541,7 +543,15 @@ class FelixDecoder {
       gallery::ValidHandle<std::vector<artdaq::Fragment>> const& frags =
           evt.getValidHandle<std::vector<artdaq::Fragment>>(tag);
       for (const auto& frag : *frags) {
-        frags_.push_back(frag);
+        // Cut off extra header.
+        FelixFragment::Metadata meta(*frag.metadata<FelixFragment::Metadata>());
+        FragmentType fragment_type(toFragmentType("FELIX"));
+        std::unique_ptr<artdaq::Fragment> newfragptr(artdaq::Fragment::FragmentBytes (frag.dataSizeBytes()-32, 0, 0, fragment_type, meta));
+
+        memcpy(newfragptr->dataBeginBytes(), frag.dataBeginBytes() + 32,
+        frag.dataSizeBytes() - 32);
+
+        frags_.push_back(*newfragptr);
       }
     }
     std::cout << "Loaded " << total_fragments() << " fragments in "

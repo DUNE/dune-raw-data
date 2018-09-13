@@ -288,7 +288,9 @@ class dune::FelixFragmentUnordered : public dune::FelixFragmentBase {
  protected:
   // Allow access to individual frames according to the FelixFrame structure.
   FelixFrame const* frame_(const unsigned& frame_num = 0) const {
-    return static_cast<dune::FelixFrame const*>(artdaq_Fragment_) + frame_num;
+    // WARNING: CUSTOM OFFSET OF EIGHT WORDS FOR DEBUGGING -- backed out as it was not needed
+    //return reinterpret_cast<dune::FelixFrame const*>(static_cast<uint32_t const*>(artdaq_Fragment_)+8) + frame_num;
+    return reinterpret_cast<dune::FelixFrame const*>(static_cast<uint32_t const*>(artdaq_Fragment_)) + frame_num;
   }
 }; // class dune::FelixFragmentUnordered
 

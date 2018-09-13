@@ -12,7 +12,6 @@
 #define PdspChannelMapService_H
 
 #include <map>
-#include <unordered_map>
 #include <vector>
 #include <iostream>
 #include <limits>
@@ -31,17 +30,27 @@ public:
 
   PdspChannelMapService(fhicl::ParameterSet const& pset);
   PdspChannelMapService(fhicl::ParameterSet const& pset, art::ActivityRegistry&);
-  
+
+  typedef enum _FelixOrRCE
+  {
+    kRCE,
+    kFELIX
+  } FelixOrRCE;
+
+  /////////////////////////\ ProtoDUNE-SP channel map fundtions //////////////////////////////
 
   // TPC channel map accessors
 
-  unsigned int GetFEMBChannelFromRCEStreamChannel(unsigned int rceCh) const;
-  
   // Map instrumentation numbers (crate:slot:fiber:FEMBchannel) to offline channel number
-  unsigned int GetOfflineNumberFromDetectorElements(unsigned int crate, unsigned int slot, unsigned int fiber, unsigned int fembchannel);
+  // FEMB channel number is really the stream index number, but for FELIX, it is restricted to be in the range 0:127, so really it's more like an FEMB channel number
+
+  unsigned int GetOfflineNumberFromDetectorElements(unsigned int crate, unsigned int slot, unsigned int fiber, unsigned int fembchannel, FelixOrRCE frswitch);
   	  
   /// Returns APA/crate
   unsigned int APAFromOfflineChannel(unsigned int offlineChannel) const;
+
+  /// Returns APA/crate in installation notation
+  unsigned int InstalledAPAFromOfflineChannel(unsigned int offlineChannel) const;
   
   /// Returns WIB/slot
   unsigned int WIBFromOfflineChannel(unsigned int offlineChannel) const;
@@ -53,7 +62,7 @@ public:
   unsigned int FEMBChannelFromOfflineChannel(unsigned int offlineChannel) const;
   
   /// Returns RCE(FELIX) stream(frame) channel
-  unsigned int StreamChannelFromOfflineChannel(unsigned int offlineChannel) const;
+  unsigned int StreamChannelFromOfflineChannel(unsigned int offlineChannel, FelixOrRCE frswitch) const;
   
   /// Returns global slot ID
   unsigned int SlotIdFromOfflineChannel(unsigned int offlineChannel) const;
@@ -67,17 +76,23 @@ public:
   /// Returns chip channel number
   unsigned int ChipChannelFromOfflineChannel(unsigned int offlineChannel) const;
   
-  /// Returns ASIC number
-  unsigned int ASICFromOfflineChannel(unsigned int offlineChannel) const;
+  /// Returns ASIC number -- to be deprecated
+  unsigned int ASICFromOfflineChannel(unsigned int offlineChannel);
   
-  /// Returns ASIC channel number
-  unsigned int ASICChannelFromOfflineChannel(unsigned int offlineChannel) const;
+  /// Returns ASIC channel number -- to be deprecated
+  unsigned int ASICChannelFromOfflineChannel(unsigned int offlineChannel);
+
+  // replaced by these
   
+  unsigned int AsicFromOfflineChannel(unsigned int offlineChannel) const;
+
+  unsigned int AsicChannelFromOfflineChannel(unsigned int offlineChannel) const;
+
+  unsigned int AsicLinkFromOfflineChannel(unsigned int offlineChannel) const;
+
   /// Returns plane
   unsigned int PlaneFromOfflineChannel(unsigned int offlineChannel) const;
   
-  /////////////////////////\ ProtoDUNE-SP channel map fundtions //////////////////////////////
-  unsigned int OfflineFromCSFC;
 
   // SSP channel map accessors
 
@@ -93,7 +108,7 @@ public:
 
   unsigned int SSPChanWithinSSPFromOfflineChannel(unsigned int offlineChannel) const;
 
-  unsigned int SSPModuleFromOfflineChannel(unsigned int offlineChannel) const;
+  unsigned int OpDetNoFromOfflineChannel(unsigned int offlineChannel) const;
 
 private:
 
@@ -110,17 +125,20 @@ private:
   // hardcoded SSP channel map sizes
 
   const size_t fNSSPChans = 288;
-  const size_t fNSSPs = 24;
-  const size_t fNSSPsPerAPA = 4;
+  //const size_t fNSSPs = 24;
+  //const size_t fNSSPsPerAPA = 4;
   const size_t fNChansPerSSP = 12;
   const size_t fNAPAs = 6;
 
   // control behavior in case we need to fall back to default behavior
 
-  bool fHaveWarnedAboutBadCrateNumber;
-  bool fHaveWarnedAboutBadSlotNumber;
-  bool fHaveWarnedAboutBadFiberNumber;
-  bool fSSPHaveWarnedAboutBadOnlineChannelNumber;
+  size_t fBadCrateNumberWarningsIssued;
+  size_t fBadSlotNumberWarningsIssued;
+  size_t fBadFiberNumberWarningsIssued;
+  size_t fSSPBadChannelNumberWarningsIssued;
+
+  size_t fASICWarningsIssued;
+  size_t fASICChanWarningsIssued;
 
   // TPC Maps
   unsigned int farrayCsfcToOffline[6][5][4][128];  // implement as an array.  Do our own bounds checking
@@ -140,21 +158,40 @@ private:
   unsigned int fvASICChannelMap[15360]; // ASIC internal channel
   unsigned int fvPlaneMap[15360]; // Plane type
 
+  unsigned int fFELIXarrayCsfcToOffline[6][5][4][128];  // implement as an array.  Do our own bounds checking
+  unsigned int fFELIXvAPAMap[15360]; // APA(=crate)
+  unsigned int fFELIXvWIBMap[15360];	// WIB(slot)
+  unsigned int fFELIXvFEMBMap[15360];	// FEMB(fiber)
+  unsigned int fFELIXvFEMBChannelMap[15360];	// FEMB internal channel
+  unsigned int fFELIXvStreamChannelMap[15360];	// RCE(FELIX) internal channel
+  unsigned int fFELIXvSlotIdMap[15360]; // global WIB(slot) ID
+  unsigned int fFELIXvFiberIdMap[15360]; // global FEMB(fiber) ID
+  unsigned int fFELIXvChipMap[15360]; // Chip
+  unsigned int fFELIXvChipChannelMap[15360]; //Chip internal channel 
+  unsigned int fFELIXvASICMap[15360]; // ASIC
+  unsigned int fFELIXvASICChannelMap[15360]; // ASIC internal channel
+  unsigned int fFELIXvPlaneMap[15360]; // Plane type
+
+  unsigned int fvInstalledAPA[6];  // APA as installed.  This array maps the two conventions.  Argument = offline, value = installed
+  unsigned int fvTPCSet_VsInstalledAPA[6];  // inverse map
+
   // SSP Maps
 
   unsigned int farraySSPOnlineToOffline[288];  // all accesses to this array need to be bounds-checked first.
   unsigned int farraySSPOfflineToOnline[288];  
   unsigned int fvSSPAPAMap[288];
-  unsigned int fvSSPWithinAPAMap[288];  // SSP's within an APA -- 0 to 3
-  unsigned int fvSSPGlobalMap[288];   // SSP's counting from 0 and going up to 24
+  unsigned int fvSSPWithinAPAMap[288];  // Global SSP number 11, 12, 21, etc.
+  unsigned int fvSSPGlobalMap[288];     // Also global SSP number 11, 12, 21, etc. 
   unsigned int fvSSPChanWithinSSPMap[288];
-  unsigned int fvSSPModuleMap[288];   // PDS module within an APA (0..9)
+  unsigned int fvOpDetNoMap[288];   // PDS op det number
 
+  size_t count_bits(size_t i);  // returns the number of bits set, for use in determing whether to print a warning out
+ 
   //-----------------------------------------------
 
   void check_offline_channel(unsigned int offlineChannel) const
   {
-  if (offlineChannel > fNChans)
+  if (offlineChannel >= fNChans)
     {      
       throw cet::exception("PdspChannelMapService") << "Offline TPC Channel Number out of range: " << offlineChannel << "\n"; 
     }
@@ -162,7 +199,7 @@ private:
 
   void SSP_check_offline_channel(unsigned int offlineChannel) const
   {
-  if (offlineChannel > fNSSPChans)
+  if (offlineChannel >= fNSSPChans)
     {      
       throw cet::exception("PdspChannelMapService") << "Offline SSP Channel Number out of range: " << offlineChannel << "\n"; 
     }

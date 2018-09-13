@@ -1,6 +1,6 @@
 # The parent line must be the first non-comment line in the file
 # This line defines the product name and version
-parent dune_raw_data	v1_17_07
+parent dune_raw_data	v1_17_14
 defaultqual    e17:nu:s70
 
 # These optional lines define the installed directories where
@@ -35,12 +35,13 @@ artdaq_core	v3_02_04	nu
 art		v2_11_03	nu
 TRACE		v3_13_07	nu
 cetbuildtools	v7_03_02	nu	only_for_build
-dunepdsprce     v0_0_4b
+dunepdsprce     v1_0_3
 gallery		v1_08_03
 end_product_list
 
 # e14 - with gcc v6_3_0
 # e15 - with gcc v6_4_0
+# e17 GCC v7.3.0, -std=c++17
 
 # s50 - with art v2_07_03
 # s56 - with art v2_08_04

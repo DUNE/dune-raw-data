@@ -26,15 +26,21 @@ void dune::RceFragment::_init()
     if ( header.isData() )
     {
         _data_fragment = std::make_unique<DataFragmentUnpack>(_data_ptr);
-        if (_data_fragment->isTpcNormal())
-        {
-            _tpc_fragment = std::make_unique<TpcFragmentUnpack>(*_data_fragment);
-            _n_streams = _tpc_fragment->getNStreams();
-        }
+        //  if (_data_fragment->isTpcNormal())
+        // {
+
+        _tpc_fragment = std::make_unique<TpcFragmentUnpack>(*_data_fragment);
+        _n_streams = _tpc_fragment->getNStreams();
+
+        // }
+	//else
+	// {
+	//std::cout << "Fragment skipped in RceFragment::_init() because not TpcNormal." << std::endl;
+	//}
     }
     else
     {
-        // LogWarning
+      //std::cout << "Fragment skipped in RceFragment::_init() because header says is not data." << std::endl;
     }
 }
 

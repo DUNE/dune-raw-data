@@ -72,20 +72,24 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
   // Initialise a decoder object from the file.
   dune::FelixDecoder flxdec(filename);
 
-  for(unsigned i = 0; i < 10 /* flxdec.total_fragments() */; ++i) {
+  for(unsigned i = 0; i < flxdec.total_fragments(); ++i) {
     // Load fragments into overlay.
     artdaq::Fragment frag = flxdec.Fragment(i);
     dune::FelixFragment flxfrag(frag);
-    std::cout << "\nFragment " << i << "\tCrate " << (unsigned)flxfrag.crate_no() << '\t';
-    std::cout << "Slot " << (unsigned)flxfrag.slot_no() << '\t';
-    std::cout << "Fiber " << (unsigned)flxfrag.fiber_no() << '\n';
+    if(frag.timestamp() - flxfrag.timestamp() >= 12525 || frag.timestamp() - flxfrag.timestamp() < 12500) {
+      std::cout << "\nFragment " << i << "\tCrate " << (unsigned)flxfrag.crate_no() << '\t';
+      std::cout << "Slot " << (unsigned)flxfrag.slot_no() << '\t';
+      std::cout << "Fiber " << (unsigned)flxfrag.fiber_no() << '\n';
 
-    dune::FelixFragment::Metadata meta =
-        *frag.metadata<dune::FelixFragment::Metadata>();
-    std::cout << "METADATA: " << (unsigned)meta.num_frames << "   " << (unsigned)meta.reordered << "   " << (unsigned)meta.compressed << '\n';
-    // artdaq::Fragment uncompfrag(flxfrag.uncompressed_fragment());
-    // dune::FelixFragment uncompflxfrag(uncompfrag);
-    // std::cout << "Uncompressed fragment size: " << uncompfrag.dataSizeBytes() << '\n';
+      dune::FelixFragment::Metadata meta =
+          *frag.metadata<dune::FelixFragment::Metadata>();
+      std::cout << "Metadata: " << (unsigned)meta.num_frames << "   " << (unsigned)meta.reordered << "   " << (unsigned)meta.compressed << "   " << (unsigned)meta.offset_frames << "   " << (unsigned)meta.window_frames << '\n';
+
+      std::cout << "Timestamp difference: " << frag.timestamp() - flxfrag.timestamp() << '\n';
+    }
+
+    std::cout << "Timestamp difference: " << frag.timestamp() - flxfrag.timestamp() << '\n';
+
     
     // std::ofstream ofile("frag.dat");
     // ofile.write((char*)flxfrag.dataBeginBytes(), flxfrag.dataSizeBytes());
@@ -102,7 +106,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     // std::cout << "Reordered: " << (unsigned)meta.reordered << '\n';
     // std::cout << "Compressed: " << (unsigned)meta.compressed << '\n';
     // std::cout << "Number of frames considered: " << flxfrag.total_frames() << '\n';
-    std::cout << "Fragment data size: " << frag.dataSizeBytes() << '\n';
+    // std::cout << "Fragment data size: " << frag.dataSizeBytes() << '\n';
 
     // for(unsigned fr = 0; fr < flxfrag.total_frames(); ++fr) {
     //   for(unsigned b = 0; b < 4; ++b) {

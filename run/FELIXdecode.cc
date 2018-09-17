@@ -33,7 +33,10 @@ int main(int argc, char *argv[]) {
   // Check fragment length here for now.
   artdaq::Fragment frag = flxdec.Fragment(0);
   dune::FelixFragment::Metadata meta = *frag.metadata<dune::FelixFragment::Metadata>();
-  std::cout << "METADATA: " << (unsigned)meta.num_frames << "   " << (unsigned)meta.reordered << "   " << (unsigned)meta.compressed << '\n';
+  std::cout << "METADATA: " << (unsigned)meta.num_frames << "   "
+            << (unsigned)meta.reordered << "   " << (unsigned)meta.compressed
+            << "   " << (unsigned)meta.offset_frames << "   "
+            << (unsigned)meta.window_frames << '\n';
   dune::FelixFragment flxfrag(frag);
   if(flxfrag.total_frames() < 6000 || flxfrag.total_frames() > 6036) {
     std::cout << "WARNING: first fragment has a strange size: " << flxfrag.total_frames() << ".\n";

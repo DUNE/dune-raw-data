@@ -22,6 +22,7 @@ art_make(BASENAME_ONLY
   ${ART_LIB}
   art_Framework_Principal
   pthread
+  z
   )
 
 install_headers()

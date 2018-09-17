@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
   // std::string outputDestination = "noise_records/test";
   std::string filename =
       "/pnfs/dune/tape_backed/dunepro/protodune/np04/beam/detector/None/raw/05/"
-      "05/09/39/np04_raw_run004314_0019_dl11.root";
+      "16/24/57/np04_raw_run004424_0001_dl5.root";
 
   // Initialise a decoder object from the file.
   dune::FelixDecoder flxdec(filename);
@@ -79,6 +79,10 @@ BOOST_AUTO_TEST_CASE(BaselineTest) {
     std::cout << "\nFragment " << i << "\tCrate " << (unsigned)flxfrag.crate_no() << '\t';
     std::cout << "Slot " << (unsigned)flxfrag.slot_no() << '\t';
     std::cout << "Fiber " << (unsigned)flxfrag.fiber_no() << '\n';
+
+    dune::FelixFragment::Metadata meta =
+        *frag.metadata<dune::FelixFragment::Metadata>();
+    std::cout << "METADATA: " << (unsigned)meta.num_frames << "   " << (unsigned)meta.reordered << "   " << (unsigned)meta.compressed << '\n';
     // artdaq::Fragment uncompfrag(flxfrag.uncompressed_fragment());
     // dune::FelixFragment uncompflxfrag(uncompfrag);
     // std::cout << "Uncompressed fragment size: " << uncompfrag.dataSizeBytes() << '\n';

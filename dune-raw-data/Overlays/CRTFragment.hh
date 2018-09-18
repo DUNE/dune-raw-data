@@ -20,7 +20,15 @@ public:
     uint8_t magic; // must be 'M'
     uint8_t nhit;
     uint16_t module_num;
+
+    // The global ProtoDUNE-SP timestamp
     uint64_t fifty_mhz_time;
+
+    // The raw timestamp held by the CRT's internal 32-bit counter.  You don't
+    // want to look at this unless you are a CRT expert.  Should start at zero
+    // at the start of the run, increment one-to-one with fifty_mhz_time, and
+    // roll over every 86 seconds.
+    uint32_t raw_backend_time;
 
     // Must tell GCC not to add padding, even at the cost of performance,
     // because this struct is describing exactly how the input data is
@@ -49,7 +57,13 @@ public:
     return header()->nhit;
   }
 
-  // Return the value of the 50MHz counter
+  // Return the value of the 50MHz counter that holds the raw internal CRT time
+  uint64_t raw_backend_time()
+  {
+    return header()->raw_backend_time;
+  }
+
+  // Return the value of the 50MHz counter that holds the global ProtoDUNE time
   uint64_t fifty_mhz_time()
   {
     return header()->fifty_mhz_time;
@@ -80,9 +94,11 @@ public:
     printf("CRT header: Magic = '%c'\n"
            "            n hit = %2u\n"
            "            module = %5u\n"
-           "            50Mhz time = %10lu (0x%8lx)\n",
+           "            50Mhz time = %10lu (0x%8lx)\n"
+           "            raw time   = %10u (0x%8x)\n",
            header()->magic, header()->nhit, header()->module_num,
-           header()->fifty_mhz_time, header()->fifty_mhz_time);
+           header()->fifty_mhz_time, header()->fifty_mhz_time,
+           header()->raw_backend_time);
   }
 
   // Print the given hit to stdout, even if it is bad, but not if it

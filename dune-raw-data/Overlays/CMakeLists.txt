@@ -19,6 +19,8 @@ art_make(BASENAME_ONLY
   ${RCEDAMLIB}
   ${GALLERY_LIB}
   gallery
+  canvas
+  ${ROOT_BASIC_LIB_LIST}
   ${ART_LIB}
   art_Framework_Principal
   pthread

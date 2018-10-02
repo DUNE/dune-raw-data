@@ -51,16 +51,37 @@ namespace dune {
 }
 
 class dune::TimingFragment {
-  // There is no metadata in the timing block
+    
+  public:
+
+  struct Metadata {
+    typedef uint32_t data_t;
+
+    Metadata(data_t v) : fragment_version(v) {}
+    // "8 bits ought to be enough for anyone"
+    data_t fragment_version : 8;
+    // Give a name to the rest of the bits in case we ever want them for something else
+    data_t unused : 24;
+
+    static size_t const size_words = 1ul; // Units of Metadata::data_t
+  };
 
   // Constructor.  This class keeps a copy of a pointer to the fragment.
   // Basically that is how it works.
   public: 
-  TimingFragment(artdaq::Fragment const & f ) : artdaq_Fragment_(f) {}
+  TimingFragment(artdaq::Fragment const & f ) : artdaq_Fragment_(f) 
+    {}
 
 
-  // The following structure is overlayed onto the data in the fragment, starting
-  // at the beginning.
+  // The following structure is overlayed onto the data in the
+  // fragment, starting at the beginning. The spill timestamps are
+  // added by the board reader, and don't exist in the object read
+  // directly from the timing board.
+  //
+  // *******************************************************
+  // * If you change anything here, update                 *
+  // * TimingFragment::VERSION below!                      *
+  // *******************************************************
   struct Body {
     uint32_t cookie  : 32;
     uint32_t scmd    :  4;
@@ -77,6 +98,8 @@ class dune::TimingFragment {
     uint32_t last_spillend_tstamph;
     static size_t const size = 12ul;   // Units of header uint32_t
   };
+  // Update this version number if you update anything in the class!
+  static constexpr uint32_t VERSION = 3;
 
   // Here are the getters
   uint32_t get_cookie() const  { return body_()->cookie;  }

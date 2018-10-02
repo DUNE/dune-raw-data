@@ -27,7 +27,7 @@ namespace dune {
   class TimingFragment;
 
   enum class TimingCommand {
-    // From https://twiki.cern.ch/twiki/bin/view/CENF/TimingSystemAdvancedOp retrieved on 2018-09-07
+    // From https://twiki.cern.ch/twiki/bin/view/CENF/TimingSystemAdvancedOp retrieved on 2018-10-02
     // The 'sync' bus has the following commands at the moment:
     TimeSync   = 0x0,
     Echo       = 0x1,
@@ -43,7 +43,7 @@ namespace dune {
     FakeTrig3  = 0xb,
     BeamTrig   = 0xc,
     NoBeamTrig = 0xd,
-    RandTrig   = 0xe
+    ExtFakeTrig   = 0xe
   };
 
   // Let the "<<" operator dump the TimingFragment's data to stdout

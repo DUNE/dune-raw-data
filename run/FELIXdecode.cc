@@ -36,6 +36,14 @@ int main(int argc, char *argv[]) {
 
   // Check fragment length here for now.
   artdaq::Fragment frag = flxdec.Fragment(0);
+  // artdaq::Fragment newfrag;
+  // newfrag.setTimestamp(frag.timestamp());
+  // newfrag.resize(frag.dataSizeBytes());
+  // memcpy(newfrag.dataBeginBytes(), frag.dataBeginBytes(), frag.dataSizeBytes());
+
+  // dune::FelixFragment::Metadata newmeta = {0xabc, 1, 0, 0, 6024, 500, 6000};
+  // newfrag.setMetadata(newmeta);
+
   dune::FelixFragment::Metadata meta = *frag.metadata<dune::FelixFragment::Metadata>();
   std::cout << "METADATA: " << (unsigned)meta.num_frames << "   "
             << (unsigned)meta.reordered << "   " << (unsigned)meta.compressed

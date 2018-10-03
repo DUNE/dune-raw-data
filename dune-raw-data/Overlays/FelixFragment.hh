@@ -107,7 +107,13 @@ class dune::FelixFragmentBase {
       : meta_(*(fragment.metadata<Metadata>())),
         artdaq_Fragment_(fragment.dataBeginBytes()),
         sizeBytes_(fragment.dataSizeBytes()) {
+    Metadata meta = *fragment.metadata<Metadata>();
+    std::cout << "INPUT METADATA: " << (unsigned)meta.num_frames << '\t' << (unsigned)meta.reordered << '\t' << (unsigned)meta.compressed << '\t' << (unsigned)meta.offset_frames << '\t' << (unsigned)meta.window_frames << '\n';
+    std::cout << "FRAGMENT SIZE: " << fragment.dataSizeBytes() << " BYTES OR " << fragment.dataSizeBytes()/464 << " RAW FRAMES.\n";
     // Check whether current metadata makes sense and guess the format otherwise.
+    std::cout << "Words in fragment metadata: "
+              << fragment.fragmentHeader()->metadata_word_count << '\n';
+
     Metadata bogus;
     bogus.num_frames = 1;
     bogus.reordered = 0;

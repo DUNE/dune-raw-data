@@ -12,23 +12,27 @@
 
 int main(int argc, char *argv[]) {
   // Checking of input arguments.
-  if (argc > 4) {
-    std::cout << "WARNING: only the first three input arguments are accepted.\n";
-  } else if (argc < 3) {
-    std::cout << "ERROR: need both inputfile and destination.\n";
+  if (argc < 3) {
+    std::cout << "ERROR: need both inputfile(s) and destination.\n";
     return 1;
   }
 
+  // Number of files to be considered.
+  const unsigned total_files = 10;
+
   // The user has to input both an input file and a destination.
-  std::string filename = argv[1];
-  std::string destination = argv[2];
+  std::vector<std::string> filenames;
+  for(unsigned file = 1; file < std::min<unsigned>(total_files, argc-1); ++file) {
+    filenames.push_back(argv[file]);
+  }
+  std::string destination = argv[argc-1];
   std::string print = "";
   if (argc == 4) {
     print = argv[3];
   }
 
   // Initialise a decoder object from the file.
-  dune::FelixDecoder flxdec(filename);
+  dune::FelixDecoder flxdec(filenames);
 
   // Check fragment length here for now.
   artdaq::Fragment frag = flxdec.Fragment(0);
@@ -42,14 +46,19 @@ int main(int argc, char *argv[]) {
     std::cout << "WARNING: first fragment has a strange size: " << flxfrag.total_frames() << ".\n";
   }
 
-  flxdec.check_all_timestamps();
-  flxdec.check_all_CCCs();
-  flxdec.check_all_IDs();
-
-  // // Print RMS values to file.
-  // if(print != "noNoise") {
-  //   flxdec.calculateNoiseRMS(destination);
+  // // Print identifiers.
+  // for (unsigned f = 0; f < flxdec.total_fragments(); ++f) {
+  //   artdaq::Fragment frag = flxdec.Fragment(f);
+  //   dune::FelixFragment flxfrag(frag);
+  //   std::cout << (unsigned)flxfrag.slot_no() << ' ';
   // }
+
+  // flxdec.check_all_timestamps();
+  // flxdec.check_all_CCCs();
+  // flxdec.check_all_IDs();
+
+  // Print RMS values to file.
+  flxdec.analyse(destination);
 
   return 0;
 }

@@ -38,16 +38,39 @@ class dune::FelixFragmentBase {
   struct Metadata {
     typedef uint32_t data_t;
 
+    // Old metadata.
+    // data_t num_frames : 16, reordered : 8, compressed : 8;
+    // data_t offset_frames : 16, window_frames : 16;
+
+    data_t control_word : 12, version : 4, reordered : 8, compressed : 8;
+    data_t num_frames;
+    data_t offset_frames;
+    data_t window_frames;
+
+    static size_t const size_words = 4ul; /* Units of Metadata::data_t */
+
+    bool operator==(const Metadata& rhs) {
+      return (control_word == rhs.control_word) &&
+             (version == rhs.version) &&
+             (reordered == rhs.reordered) &&
+             (compressed == rhs.compressed) &&
+             (num_frames == rhs.num_frames) &&
+             (offset_frames == rhs.offset_frames) &&
+             (window_frames == rhs.window_frames);
+    }
+  };
+
+  struct Old_Metadata {
+    typedef uint32_t data_t;
     data_t num_frames : 16, reordered : 8, compressed : 8;
     data_t offset_frames : 16, window_frames : 16;
-
-
-    static size_t const size_words = 2ul; /* Units of Metadata::data_t */
 
     bool operator==(const Metadata& rhs) {
       return (num_frames == rhs.num_frames) &&
              (reordered == rhs.reordered) &&
-             (compressed == rhs.compressed);
+             (compressed == rhs.compressed) &&
+             (offset_frames == rhs.offset_frames) &&
+             (window_frames == rhs.window_frames);
     }
   };
 
@@ -107,14 +130,22 @@ class dune::FelixFragmentBase {
       : meta_(*(fragment.metadata<Metadata>())),
         artdaq_Fragment_(fragment.dataBeginBytes()),
         sizeBytes_(fragment.dataSizeBytes()) {
+
+    // Check whether the metadata is of the old format.
+    if(meta_.control_word != 0xabc) {
+      // mf::LogInfo("dune::FelixFragment") << "Fragment has old metadata format.";
+      const Old_Metadata* old_meta = fragment.metadata<Old_Metadata>();
+      meta_ = {0,
+               0,
+               old_meta->reordered,
+               old_meta->compressed,
+               old_meta->num_frames,
+               old_meta->offset_frames,
+               old_meta->window_frames};
+    }
+
     // Check whether current metadata makes sense and guess the format otherwise.
-    Metadata bogus;
-    bogus.num_frames = 1;
-    bogus.reordered = 0;
-    bogus.compressed = 0;
-    bogus.offset_frames = 0;
-    bogus.window_frames = 0;
-    if(meta_ == bogus || meta_.reordered > 1 || meta_.compressed > 1 || meta_.num_frames < meta_.window_frames) {
+    if(meta_.reordered > 1 || meta_.compressed > 1 || meta_.num_frames < meta_.window_frames) {
       // Assume 6024 frames in a fragment if there is no meaningful metadata.
       meta_.num_frames = 6024;
       meta_.offset_frames = 500;
@@ -147,7 +178,8 @@ class dune::FelixFragmentBase {
       uint64_t remaining_frame_diff = (fragment.timestamp() - first_frame->timestamp())/25 - meta_.offset_frames;
       artdaq_Fragment_ = reinterpret_cast<FelixFrame const*>(artdaq_Fragment_) + remaining_frame_diff;
     } else {
-      mf::LogInfo("dune::FelixFragment") << "Can't find the trigger window in the FELIX fragment.";
+      mf::LogWarning("dune::FelixFragment") << "Can't find the trigger window in FELIX fragment " << fragment.fragmentID() << ".\nFragment TS: " << fragment.timestamp()
+                << " first frame TS: " << first_frame->timestamp() << '\n';
     }
   }
   virtual ~FelixFragmentBase() {}

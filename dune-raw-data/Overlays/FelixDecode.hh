@@ -7,15 +7,15 @@
 #include <math.h>
 #include <stdint.h>
 #include <complex>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <string>
 #include <valarray>
 #include <vector>
-#include <fstream>
 #include "art/Framework/Principal/Handle.h"
-#include "artdaq-core/Data/Fragment.hh"
 #include "artdaq-core/Data/ContainerFragment.hh"
+#include "artdaq-core/Data/Fragment.hh"
 #include "canvas/Utilities/InputTag.h"
 #include "dune-raw-data/Overlays/FelixFragment.hh"
 #include "dune-raw-data/Overlays/FragmentType.hh"
@@ -29,18 +29,30 @@ class FelixDecoder {
   std::vector<std::string> filenames;
   std::vector<artdaq::Fragment> frags_;
 
-  std::vector<unsigned> Uch = {
-      0,  1,  2,   3,   4,   16,  17,  18,  19,  20,  43,  44, 45, 46,
-      47, 59, 60,  61,  62,  63,  64,  65,  66,  67,  68,  80, 81, 82,
-      83, 84, 107, 108, 109, 110, 111, 123, 124, 125, 126, 127};
-  std::vector<unsigned> Vch = {
-      5,  6,  7,   8,   9,   21,  22,  23,  24,  25,  38,  39, 40, 41,
-      42, 54, 55,  56,  57,  58,  69,  70,  71,  72,  73,  85, 86, 87,
-      88, 89, 102, 103, 104, 105, 106, 118, 119, 120, 121, 122};
-  std::vector<unsigned> Wch = {
-      10, 11, 12, 13, 14, 15, 26, 27, 28,  29,  30,  31,  32,  33,  34,  35,
-      36, 37, 48, 49, 50, 51, 52, 53, 74,  75,  76,  77,  78,  79,  90,  91,
-      92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 112, 113, 114, 115, 116, 117};
+  std::vector<unsigned> Uch = {3, 4, 5, 6, 7, 24, 25, 26, 27, 28};
+  std::vector<unsigned> Vch = {0, 1, 2, 8, 9, 22, 23, 29, 30, 31};
+  std::vector<unsigned> Wch = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21};
+
+  // Vectors to contain channel averages, RMSes and test results.
+  std::vector<double> ch_avgsU;
+  std::vector<double> ch_avgsV;
+  std::vector<double> ch_avgsW;
+  std::vector<double> ch_rmsU;
+  std::vector<double> ch_rmsV;
+  std::vector<double> ch_rmsW;
+  std::vector<unsigned> ch_freqU;
+  std::vector<unsigned> ch_freqV;
+  std::vector<unsigned> ch_freqW;
+  // Vector to contain fragment test results.
+  std::vector<bool> frag_good;
+  // Vector to contain FFT results per FEMB.
+  std::vector<std::vector<double>> FEMB_FFT;
+  // Number of fragments to be analysed.
+  unsigned num_frags_ana;
+  // Bad channels.
+  const unsigned bad_channel_threshold_ = 400000;
+  const unsigned bad_channel_threshold_lower_ = 1;
+  std::vector<bool> bad_channel_;
 
  public:
   // General information accessors.
@@ -244,8 +256,8 @@ class FelixDecoder {
 
     // Determine the length of the vector to be processed.
     unsigned N = 1;
-    for(unsigned i = 0; i < 16; ++i) {
-      if(N<<1 < x.size()) {
+    for (unsigned i = 0; i < 16; ++i) {
+      if (N << 1 < x.size()) {
         N <<= 1;
       }
     }
@@ -294,44 +306,11 @@ class FelixDecoder {
     // }
   }
 
-  // Function to determine channel RMS and print to file.
-  void calculateNoiseRMS(std::string destination) {
-    // Number of fragments to run this code over.
-    unsigned num_frags = total_fragments() / total_events();
-
-    // Ugly way to get all the channels in the planes.
-    unsigned Usize = Uch.size();
-    unsigned Vsize = Vch.size();
-    unsigned Wsize = Wch.size();
-    for (unsigned i = 0; i < Usize; ++i) {
-      Uch.push_back(Uch[i] + 128);
-    }
-    for (unsigned i = 0; i < Vsize; ++i) {
-      Vch.push_back(Vch[i] + 128);
-    }
-    for (unsigned i = 0; i < Wsize; ++i) {
-      Wch.push_back(Wch[i] + 128);
-    }
-
-    // Vectors to contain channel averages, RMSes and test results.
-    std::vector<double> ch_avgsU(2 * 5 * 256, 0);
-    std::vector<double> ch_avgsV(2 * 5 * 256, 0);
-    std::vector<double> ch_avgsW(2 * 5 * 256, 0);
-    std::vector<double> ch_rmsU(2 * 5 * 256, 0);
-    std::vector<double> ch_rmsV(2 * 5 * 256, 0);
-    std::vector<double> ch_rmsW(2 * 5 * 256, 0);
-    std::vector<unsigned> ch_freqU(2 * 5 * 256, 0);
-    std::vector<unsigned> ch_freqV(2 * 5 * 256, 0);
-    std::vector<unsigned> ch_freqW(2 * 5 * 256, 0);
-    // Vector to contain fragment test results.
-    std::vector<bool> frag_good(num_frags, false);
-    // Vector to contain FFT results per FEMB.
-    std::vector<std::vector<std::complex<double>>> FEMB_FFT(
-        20, std::vector<std::complex<double>>(total_frames(), 0));
-
+  // Check the integrity of all stored fragments and store the information.
+  void checkFragments() {
     // Test fragments for data integrity.
     std::cout << "Testing fragments for integrity.\n";
-    for (unsigned frag_num = 0; frag_num < num_frags; ++frag_num) {
+    for (unsigned frag_num = 0; frag_num < num_frags_ana; ++frag_num) {
       bool data_good = true;
       data_good |= check_timestamps(frag_num);  // Checks increments by 25.
       data_good |= check_CCCs(
@@ -340,10 +319,13 @@ class FelixDecoder {
                                          // all the frames in fragments.
       frag_good[frag_num] = data_good;
     }
+  }
 
+  // Fill the channel averages and frequencies for good fragments.
+  void calculateAveragesAndFreqs() {
     // Record the average of all channels of good fragments.
     std::cout << "Calculating channel averages.\n";
-    for (unsigned frag_num = 0; frag_num < num_frags; ++frag_num) {
+    for (unsigned frag_num = 0; frag_num < num_frags_ana; ++frag_num) {
       if (!frag_good[frag_num]) {
         continue;
       }
@@ -384,10 +366,12 @@ class FelixDecoder {
         ch_avgsW[ch_num] /= ch_freqW[ch_num];
       }
     }
+  }
 
+  void calculateNoiseRMS() {
     // Record the RMS of each channel.
-    std::cout << "Calculating RMS values per channel.\n";
-    for (unsigned frag_num = 0; frag_num < num_frags; ++frag_num) {
+    std::cout << "Calculating noise RMS values per channel.\n";
+    for (unsigned frag_num = 0; frag_num < num_frags_ana; ++frag_num) {
       if (!frag_good[frag_num]) {
         continue;
       }
@@ -395,33 +379,85 @@ class FelixDecoder {
       // Load the fragment and put it in the overlay.
       artdaq::Fragment frag = Fragment(frag_num);
       dune::FelixFragment flxfrag(frag);
-      // std::cout << "Fragment " << frag_num << " has crate " << (unsigned)flxfrag.crate_no()
-      //           << " slot " << (unsigned)flxfrag.slot_no() << " and fiber " << (unsigned)flxfrag.fiber_no() << '\n';
+      // std::cout << "Fragment " << frag_num << " has crate " <<
+      // (unsigned)flxfrag.crate_no()
+      //           << " slot " << (unsigned)flxfrag.slot_no() << " and fiber "
+      //           << (unsigned)flxfrag.fiber_no() << '\n';
       unsigned ch_num_base =
           flxfrag.slot_no() * 512 + (flxfrag.fiber_no() - 1) * 256;
       // Loop through channels and frames.
       // Add to noise RMS vectors.
       for (unsigned u = 0; u < Uch.size(); ++u) {
-        for(unsigned fr_num = 0; fr_num < flxfrag.total_frames(); ++fr_num) {
+        for (unsigned fr_num = 0; fr_num < flxfrag.total_frames(); ++fr_num) {
           ch_rmsU[ch_num_base + Uch[u]] += pow(
               ch_avgsU[ch_num_base + Uch[u]] - flxfrag.get_ADC(fr_num, Uch[u]),
               2);
         }
       }
       for (unsigned v = 0; v < Vch.size(); ++v) {
-        for(unsigned fr_num = 0; fr_num < flxfrag.total_frames(); ++fr_num) {
+        for (unsigned fr_num = 0; fr_num < flxfrag.total_frames(); ++fr_num) {
           ch_rmsV[ch_num_base + Vch[v]] += pow(
               ch_avgsV[ch_num_base + Vch[v]] - flxfrag.get_ADC(fr_num, Vch[v]),
               2);
         }
       }
       for (unsigned w = 0; w < Wch.size(); ++w) {
-        for(unsigned fr_num = 0; fr_num < flxfrag.total_frames(); ++fr_num) {
+        for (unsigned fr_num = 0; fr_num < flxfrag.total_frames(); ++fr_num) {
           ch_rmsW[ch_num_base + Wch[w]] += pow(
               ch_avgsW[ch_num_base + Wch[w]] - flxfrag.get_ADC(fr_num, Wch[w]),
               2);
         }
       }
+    }
+
+    // Final value manipulation.
+    unsigned num_bad_channels = 0;
+    for (unsigned ch = 0; ch < 2560; ++ch) {
+      ch_rmsU[ch] = sqrt(ch_rmsU[ch] / ch_freqU[ch]);
+      ch_rmsV[ch] = sqrt(ch_rmsV[ch] / ch_freqV[ch]);
+      ch_rmsW[ch] = sqrt(ch_rmsW[ch] / ch_freqW[ch]);
+
+      // Fill bad channel vector.
+      if (ch_rmsU[ch] > bad_channel_threshold_ ||
+          ch_rmsV[ch] > bad_channel_threshold_ ||
+          ch_rmsW[ch] > bad_channel_threshold_ || (ch_rmsU[ch]<bad_channel_threshold_lower_ && ch_rmsV[ch]<bad_channel_threshold_lower_ && ch_rmsW[ch]<bad_channel_threshold_lower_)) {
+        bad_channel_[ch] = true;
+        ++num_bad_channels;
+      }
+    }
+    std::cout << "Number of bad channels: " << num_bad_channels << ".\n";
+  }
+
+  void calculateFFT() {
+    // Track how many occurrences of every FEMB there are.
+    std::vector<unsigned> FEMB_freq(20, 0);
+    for (unsigned frag_num = 0; frag_num < num_frags_ana; ++frag_num) {
+      if (!frag_good[frag_num]) {
+        continue;
+      }
+
+      // Load the fragment and put it in the overlay.
+      artdaq::Fragment frag = Fragment(frag_num);
+      dune::FelixFragment flxfrag(frag);
+
+      // Increment the frequency of the two FEMBs contained within a fragment.
+      ++FEMB_freq[flxfrag.slot_no() * 4 + (flxfrag.fiber_no() - 1) * 2];
+      ++FEMB_freq[flxfrag.slot_no() * 4 + (flxfrag.fiber_no() - 1) * 2 + 1];
+    }
+    // for(unsigned i = 0; i < FEMB_freq.size(); ++i) {
+    //   std::cout << "FEMB " << i << " occurred " << FEMB_freq[i] << "
+    //   times.\n";
+    // }
+
+    for (unsigned frag_num = 0; frag_num < num_frags_ana; ++frag_num) {
+      if (!frag_good[frag_num]) {
+        continue;
+      }
+
+      // Load the fragment and put it in the overlay.
+      artdaq::Fragment frag = Fragment(frag_num);
+      dune::FelixFragment flxfrag(frag);
+      // FFT calculations.
       for (unsigned ch_num = 0; ch_num < 256; ++ch_num) {
         // FFT vector.
         std::vector<std::complex<double>> ch_fft_waveform(
@@ -434,12 +470,50 @@ class FelixDecoder {
         // Add to master FFT waveform.
         unsigned FEMB_num = (flxfrag.slot_no() - 0) * 4 +
                             (flxfrag.fiber_no() - 1) * 2 + ch_num / 128;
+        if(bad_channel_[FEMB_num*128 + ch_num]) { continue; }
+        // if (std::abs(ch_fft_waveform[5000]) / (FEMB_freq[FEMB_num] * 128) >
+        //     4.3) {
+        //   std::cout << "BAD CHANNEL: " << ch_num << " IN FEMB " << FEMB_num << '\n';
+        // }
         for (unsigned i = 0; i < ch_fft_waveform.size(); ++i) {
-          FEMB_FFT[FEMB_num][i] += ch_fft_waveform[i];
+          FEMB_FFT[FEMB_num][i] +=
+              std::abs(ch_fft_waveform[i])/(FEMB_freq[FEMB_num]*128);
         }
       }
     }
-    // Write RMS to file.
+  }
+
+  // Function to determine channel RMS and print to file.
+  void analyse(std::string destination) {
+    // Number of fragments to run this code over.
+    std::cout << "calculateNoiseRMS: found " << frags_.size()
+              << " fragments.\n";
+    num_frags_ana = std::min<unsigned>(frags_.size(), 100);
+
+    // Resize noise calculation vectors.
+    ch_avgsU.resize(2 * 5 * 256, 0);
+    ch_avgsV.resize(2 * 5 * 256, 0);
+    ch_avgsW.resize(2 * 5 * 256, 0);
+    ch_rmsU.resize(2 * 5 * 256, 0);
+    ch_rmsV.resize(2 * 5 * 256, 0);
+    ch_rmsW.resize(2 * 5 * 256, 0);
+    ch_freqU.resize(2 * 5 * 256, 0);
+    ch_freqV.resize(2 * 5 * 256, 0);
+    ch_freqW.resize(2 * 5 * 256, 0);
+    frag_good.resize(num_frags_ana, false);
+    FEMB_FFT.resize(20, std::vector<double>(total_frames(), 0));
+    bad_channel_.resize(2 * 5 * 256, 0);
+
+    // Set integrity flags.
+    checkFragments();
+    // Fill averages and frequencies for each channel.
+    calculateAveragesAndFreqs();
+    // Populate noise RMS vectors.
+    calculateNoiseRMS();
+    // Populate FFT vectors.
+    calculateFFT();
+
+    // Write noise RMS to file.
     std::cout << "Writing to file " << destination + "/RMSU.dat"
               << ".\n";
     std::ofstream rmsfileU(destination + "/RMSU.dat");
@@ -450,7 +524,7 @@ class FelixDecoder {
       }
       rmsfileU << ch_num / 512 + 1 << "   " << (ch_num % 512) / 256 + 1
                << "    " << ch_num % 256 << "    " << ch_num << "    "
-               << sqrt(ch_rmsU[ch_num] / ch_freqU[ch_num]) << '\n';
+               << ch_rmsU[ch_num] << '\n';
     }
     rmsfileU.close();
 
@@ -464,7 +538,7 @@ class FelixDecoder {
       }
       rmsfileV << ch_num / 512 + 1 << "   " << (ch_num % 512) / 256 + 1
                << "    " << ch_num % 256 << "    " << ch_num << "    "
-               << sqrt(ch_rmsV[ch_num] / ch_freqV[ch_num]) << '\n';
+               << ch_rmsV[ch_num] << '\n';
     }
     rmsfileV.close();
 
@@ -478,7 +552,7 @@ class FelixDecoder {
       }
       rmsfileW << ch_num / 512 + 1 << "   " << (ch_num % 512) / 256 + 1
                << "    " << ch_num % 256 << "    " << ch_num << "    "
-               << sqrt(ch_rmsW[ch_num] / ch_freqW[ch_num]) << '\n';
+               << ch_rmsW[ch_num] << '\n';
     }
     rmsfileW.close();
 
@@ -508,8 +582,7 @@ class FelixDecoder {
     // Write the first row a little wider.
     fftfile << std::left << std::setw(5) << 0 << std::right;
     for (unsigned femb = 0; femb < 20; ++femb) {
-      fftfile << std::setw(15)
-              << log10(pow(std::abs(FEMB_FFT[femb][0]) / num_frags, 2));
+      fftfile << std::setw(15) << log10(pow(FEMB_FFT[femb][0], 2));
     }
     fftfile << '\n';
 
@@ -518,8 +591,7 @@ class FelixDecoder {
       fftfile << std::left << std::setw(10) << tick << std::right;
       // Write FFT for each FEMB.
       for (unsigned femb = 0; femb < 20; ++femb) {
-        fftfile << std::setw(15)
-                << log10(pow(std::abs(FEMB_FFT[femb][tick]) / num_frags, 2));
+        fftfile << std::setw(15) << log10(pow(FEMB_FFT[femb][tick], 2));
       }
       fftfile << '\n';
     }
@@ -528,7 +600,7 @@ class FelixDecoder {
   }
 
   // Print function.
-  void printFrames(const size_t& begin_frame, const size_t& end_frame,
+  void printFrames(const size_t& begin_frame = 0, const size_t& end_frame = 1,
                    const size_t& frag_num = 0) const {
     artdaq::Fragment frag(Fragment(frag_num));
     dune::FelixFragment flxfrag(frag);
@@ -538,22 +610,51 @@ class FelixDecoder {
     }
   }
 
+  // Overloaded loadFiles to deal with one or multiple files.
+  void loadFiles(const std::string& filename) { filenames.push_back(filename); }
+  void loadFiles(const std::vector<std::string>& input_files) {
+    filenames = input_files;
+  }
+
   // Constructors that load a file.
   FelixDecoder() = delete;
-  FelixDecoder(const std::string& filename) {
-    filenames.push_back(filename);
+
+  template <class T>
+  FelixDecoder(const T& input_files) {
+    loadFiles(input_files);
+    unsigned num_evts = 0;
     for (gallery::Event evt(filenames); !evt.atEnd(); evt.next()) {
+      ++num_evts;
       gallery::ValidHandle<std::vector<artdaq::Fragment>> const& frags =
           evt.getValidHandle<std::vector<artdaq::Fragment>>(tag);
       for (const auto& frag : *frags) {
         artdaq::ContainerFragment cont_frag(frag);
-        for(unsigned b = 0; b < cont_frag.block_count(); ++b) {
+        for (unsigned b = 0; b < cont_frag.block_count(); ++b) {
           frags_.push_back(*cont_frag[b]);
         }
       }
+      if (frags_.size() >= 50) {
+        break;
+      }
     }
-    std::cout << "Loaded " << total_fragments() << " fragments in "
-              << total_events() << " events.\n";
+    std::cout << "Loaded " << total_fragments() << " fragments in " << num_evts
+              << " events.\n";
+
+    // Ugly way to get the rest of the channel map from a repeating pattern.
+    unsigned Usize = Uch.size();
+    unsigned Vsize = Vch.size();
+    unsigned Wsize = Wch.size();
+    for (unsigned j = 0; j < 8; ++j) {
+      for (unsigned i = 0; i < Usize; ++i) {
+        Uch.push_back(Uch[i] + 32 * j);
+      }
+      for (unsigned i = 0; i < Vsize; ++i) {
+        Vch.push_back(Vch[i] + 32 * j);
+      }
+      for (unsigned i = 0; i < Wsize; ++i) {
+        Wch.push_back(Wch[i] + 32 * j);
+      }
+    }
   }
 };  // class FelixDecoder
 

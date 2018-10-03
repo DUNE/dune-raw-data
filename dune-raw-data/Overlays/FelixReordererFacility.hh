@@ -91,7 +91,7 @@ class ReorderFacility {
 artdaq::Fragment FelixReorder(const uint8_t *src,
                               const uint16_t &num_frames = 6000) {
   artdaq::Fragment result;
-  dune::FelixFragmentBase::Metadata meta = {num_frames, 1, 0, 0, num_frames};
+  dune::FelixFragmentBase::Metadata meta = {0xabc, 1, 1, 0, num_frames, 0, num_frames};
   result.setMetadata(meta);
   result.resizeBytes(num_frames * (256*sizeof(adc_t) + sizeof(WIBHeader) + 4*sizeof(ColdataHeader))+ (num_frames+7)/8);
   uint8_t *dest = result.dataBeginBytes();

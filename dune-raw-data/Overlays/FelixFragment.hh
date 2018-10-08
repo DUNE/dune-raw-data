@@ -9,10 +9,10 @@
 #include "dune-raw-data/Overlays/FelixFormat.hh"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include <zlib.h>
 #include <iostream>
 #include <map>
 #include <vector>
-#include <zlib.h>
 
 // Implementation of "FelixFragment", an artdaq::FelixFragment overlay
 // class used for WIB->FELIX frames.
@@ -50,14 +50,14 @@ class dune::FelixFragmentBase {
     static size_t const size_words = 4ul; /* Units of Metadata::data_t */
 
     bool operator==(const Metadata& rhs) {
-      return (control_word == rhs.control_word) &&
-             (version == rhs.version) &&
-             (reordered == rhs.reordered) &&
-             (compressed == rhs.compressed) &&
+      return (control_word == rhs.control_word) && (version == rhs.version) &&
+             (reordered == rhs.reordered) && (compressed == rhs.compressed) &&
              (num_frames == rhs.num_frames) &&
              (offset_frames == rhs.offset_frames) &&
              (window_frames == rhs.window_frames);
     }
+
+    bool operator!=(const Metadata& rhs) { return !(*this == rhs); }
   };
 
   struct Old_Metadata {
@@ -66,12 +66,13 @@ class dune::FelixFragmentBase {
     data_t offset_frames : 16, window_frames : 16;
 
     bool operator==(const Metadata& rhs) {
-      return (num_frames == rhs.num_frames) &&
-             (reordered == rhs.reordered) &&
+      return (num_frames == rhs.num_frames) && (reordered == rhs.reordered) &&
              (compressed == rhs.compressed) &&
              (offset_frames == rhs.offset_frames) &&
              (window_frames == rhs.window_frames);
     }
+
+    bool operator!=(const Metadata& rhs) { return !(*this == rhs); }
   };
 
   static_assert(sizeof(Metadata) ==
@@ -130,10 +131,16 @@ class dune::FelixFragmentBase {
       : meta_(*(fragment.metadata<Metadata>())),
         artdaq_Fragment_(fragment.dataBeginBytes()),
         sizeBytes_(fragment.dataSizeBytes()) {
-
+    // Temporary template metadata to deal with metadata version transition.
+    // Metadata template_meta = {0, 0, 1, 1, 6024, 500, 6000};
+    // Metadata template_meta_decomp = {0, 0, 1, 0, 6024, 500, 6000};
     // Check whether the metadata is of the old format.
-    if(meta_.control_word != 0xabc) {
-      // mf::LogInfo("dune::FelixFragment") << "Fragment has old metadata format.";
+    if (meta_.control_word != 0xabc &&
+        !(meta_.num_frames == 6024 && meta_.offset_frames == 500 &&
+          meta_.window_frames == 6000)) {
+      // mf::LogInfo("dune::FelixFragment")
+      //     << "Fragment has old metadata format. (Control word "
+      //     << (unsigned)meta_.control_word << ")\n";
       const Old_Metadata* old_meta = fragment.metadata<Old_Metadata>();
       meta_ = {0,
                0,
@@ -144,15 +151,17 @@ class dune::FelixFragmentBase {
                old_meta->window_frames};
     }
 
-    // Check whether current metadata makes sense and guess the format otherwise.
-    if(meta_.reordered > 1 || meta_.compressed > 1 || meta_.num_frames < meta_.window_frames) {
+    // Check whether current metadata makes sense and guess the format
+    // otherwise.
+    if (meta_.reordered > 1 || meta_.compressed > 1 ||
+        meta_.num_frames < meta_.window_frames) {
       // Assume 6024 frames in a fragment if there is no meaningful metadata.
       meta_.num_frames = 6024;
       meta_.offset_frames = 500;
       meta_.window_frames = 6000;
       // Try to predict reordered/compressed from fragment size.
       unsigned sizeBytes = fragment.dataSizeBytes();
-      if(sizeBytes == meta_.num_frames * 464) {
+      if (sizeBytes == meta_.num_frames * 464) {
         meta_.reordered = 0;
         meta_.compressed = 0;
       } else if (sizeBytes > meta_.num_frames * 592) {
@@ -164,22 +173,6 @@ class dune::FelixFragmentBase {
         meta_.reordered = 1;
         meta_.compressed = 1;
       }
-    }
-
-    // Try to set the offset to the metadata offset.
-    const FelixFrame* first_frame = reinterpret_cast<FelixFrame const*>(artdaq_Fragment_);
-    bool shift_good = true;
-    // Is the first requested frame in the data?
-    shift_good &= fragment.timestamp() - meta_.offset_frames*25 >= first_frame->timestamp();
-    // Is the data big enough to accommodate the window size?
-    shift_good &= fragment.timestamp() - (meta_.offset_frames + meta_.window_frames)*25 <= first_frame->timestamp() + meta_.num_frames*25;
-
-    if(shift_good) {
-      uint64_t remaining_frame_diff = (fragment.timestamp() - first_frame->timestamp())/25 - meta_.offset_frames;
-      artdaq_Fragment_ = reinterpret_cast<FelixFrame const*>(artdaq_Fragment_) + remaining_frame_diff;
-    } else {
-      mf::LogWarning("dune::FelixFragment") << "Can't find the trigger window in FELIX fragment " << fragment.fragmentID() << ".\nFragment TS: " << fragment.timestamp()
-                << " first frame TS: " << first_frame->timestamp() << '\n';
     }
   }
   virtual ~FelixFragmentBase() {}
@@ -205,7 +198,7 @@ class dune::FelixFragmentBase {
   Metadata meta_;
   const void* artdaq_Fragment_;
   size_t sizeBytes_;
-}; // class dune::FelixFragmentBase
+};  // class dune::FelixFragmentBase
 
 //==================================================
 // FELIX fragment for an array of bare FELIX frames
@@ -329,9 +322,7 @@ class dune::FelixFragmentUnordered : public dune::FelixFragmentBase {
   // The number of words in the current event minus the header.
   size_t total_words() const { return sizeBytes_ / sizeof(word_t); }
   // The number of frames in the current event.
-  size_t total_frames() const {
-    return meta_.window_frames;
-  }
+  size_t total_frames() const { return meta_.window_frames; }
   // The number of ADC values describing data beyond the header
   size_t total_adc_values() const {
     return total_frames() * FelixFrame::num_ch_per_frame;
@@ -340,11 +331,15 @@ class dune::FelixFragmentUnordered : public dune::FelixFragmentBase {
  protected:
   // Allow access to individual frames according to the FelixFrame structure.
   FelixFrame const* frame_(const unsigned& frame_num = 0) const {
-    // WARNING: CUSTOM OFFSET OF EIGHT WORDS FOR DEBUGGING -- backed out as it was not needed
-    //return reinterpret_cast<dune::FelixFrame const*>(static_cast<uint32_t const*>(artdaq_Fragment_)+8) + frame_num;
-    return reinterpret_cast<dune::FelixFrame const*>(static_cast<uint32_t const*>(artdaq_Fragment_)) + frame_num;
+    // WARNING: CUSTOM OFFSET OF EIGHT WORDS FOR DEBUGGING -- backed out as it
+    // was not needed
+    // return reinterpret_cast<dune::FelixFrame const*>(static_cast<uint32_t
+    // const*>(artdaq_Fragment_)+8) + frame_num;
+    return reinterpret_cast<dune::FelixFrame const*>(
+               static_cast<uint32_t const*>(artdaq_Fragment_)) +
+           frame_num;
   }
-}; // class dune::FelixFragmentUnordered
+};  // class dune::FelixFragmentUnordered
 
 //=======================================================
 // FELIX fragment for an array of reordered FELIX frames
@@ -376,7 +371,7 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
   }
   uint64_t timestamp(const unsigned& frame_ID = 0) const {
     uint64_t result = head_(frame_ID)->timestamp();
-    if(header_is_faulty(frame_ID) == false) {
+    if (header_is_faulty(frame_ID) == false) {
       // Deduce timestamp from first header,
       result += frame_ID * 25;
     }
@@ -404,7 +399,7 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
   uint16_t coldata_convert_count(const unsigned& frame_ID,
                                  const uint8_t& block_num) const {
     uint16_t result = blockhead_(frame_ID, block_num)->coldata_convert_count;
-    if(header_is_faulty(frame_ID) == false) {
+    if (header_is_faulty(frame_ID) == false) {
       // Deduce count from first header.
       result += frame_ID;
     }
@@ -438,7 +433,7 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
     return output;
   }
   adc_v get_ADCs_by_channel(const uint8_t channel_ID) const {
-    return get_ADCs_by_channel(channel_ID/64, channel_ID%64);
+    return get_ADCs_by_channel(channel_ID / 64, channel_ID % 64);
   }
   // Function to return all ADC values for all channels in a map.
   std::map<uint8_t, adc_v> get_all_ADCs() const {
@@ -474,8 +469,8 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
       : FelixFragmentBase(fragment), bad_header_num(meta_.num_frames, 0) {
     // Go through the bad headers and assign each a number.
     unsigned int bad_header_count = 1;
-    for(unsigned int i = 0; i < total_frames(); ++i) {
-      if(header_is_faulty(i)) {
+    for (unsigned int i = 0; i < total_frames(); ++i) {
+      if (header_is_faulty(i)) {
         bad_header_num[i] = bad_header_count++;
       }
       // std::cout << bad_header_num[i] << '\n';
@@ -496,8 +491,9 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
  protected:
   // Important positions within the data buffer.
   const unsigned int adc_start = 0;
-  const unsigned int bitlist_start = adc_start + meta_.num_frames * 256 * sizeof(adc_t);
-  const unsigned int header_start = bitlist_start + (meta_.num_frames+7)/8;
+  const unsigned int bitlist_start =
+      adc_start + meta_.num_frames * 256 * sizeof(adc_t);
+  const unsigned int header_start = bitlist_start + (meta_.num_frames + 7) / 8;
   // Size of WIB header + four COLDATA headers.
   const unsigned int header_set_size =
       sizeof(dune::WIBHeader) + 4 * sizeof(dune::ColdataHeader);
@@ -506,36 +502,40 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
   bool header_is_faulty(const unsigned int frame_num) const {
     const uint8_t* curr_byte = static_cast<uint8_t const*>(artdaq_Fragment_) +
                                bitlist_start + frame_num / 8;
-    return ((*curr_byte)>>(frame_num%8))&1;
+    return ((*curr_byte) >> (frame_num % 8)) & 1;
   }
   // Number of the faulty header (0 if header is good).
   std::vector<unsigned int> bad_header_num;
 
   // Reordered frame format overlaid on the data.
   dune::WIBHeader const* head_(const unsigned int frame_num) const {
-    if(header_is_faulty(frame_num)) {
+    if (header_is_faulty(frame_num)) {
       // Return faulty header.
       return reinterpret_cast<dune::WIBHeader const*>(
-                static_cast<uint8_t const*>(artdaq_Fragment_) + header_start +
-            bad_header_num[frame_num] * header_set_size);
+          static_cast<uint8_t const*>(artdaq_Fragment_) + header_start +
+          bad_header_num[frame_num] * header_set_size);
     } else {
       // Return the first header unchanged if requested header is good.
-      return reinterpret_cast<dune::WIBHeader const*>(static_cast<uint8_t const*>(artdaq_Fragment_) + header_start);
+      return reinterpret_cast<dune::WIBHeader const*>(
+          static_cast<uint8_t const*>(artdaq_Fragment_) + header_start);
     }
   }
 
   dune::ColdataHeader const* blockhead_(const unsigned int frame_num,
                                         const uint8_t block_num) const {
-    if(header_is_faulty(frame_num)) {
+    if (header_is_faulty(frame_num)) {
       // Return faulty header.
       return reinterpret_cast<dune::ColdataHeader const*>(
-                static_cast<uint8_t const*>(artdaq_Fragment_) +
-                header_start + sizeof(dune::WIBHeader) + bad_header_num[frame_num] * header_set_size) + block_num;
+                 static_cast<uint8_t const*>(artdaq_Fragment_) + header_start +
+                 sizeof(dune::WIBHeader) +
+                 bad_header_num[frame_num] * header_set_size) +
+             block_num;
     } else {
       // Return the first header unchanged if the requested header is good.
       return reinterpret_cast<dune::ColdataHeader const*>(
-                static_cast<uint8_t const*>(artdaq_Fragment_) +
-                header_start + sizeof(dune::WIBHeader)) + block_num;
+                 static_cast<uint8_t const*>(artdaq_Fragment_) + header_start +
+                 sizeof(dune::WIBHeader)) +
+             block_num;
     }
   }
 
@@ -545,7 +545,7 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
                  static_cast<uint8_t const*>(artdaq_Fragment_) + adc_start) +
              frame_num + ch_num * meta_.num_frames);
   }
-}; // class dune::FelixFragmentReordered
+};  // class dune::FelixFragmentReordered
 
 //=======================================
 // FELIX fragment for compressed frames.
@@ -555,10 +555,10 @@ class dune::FelixFragmentCompressed : public FelixFragmentBase {
   int decompress_copy(const artdaq::Fragment& src, artdaq::Fragment& dst) {
     // Determine and reserve new fragment size.
     long unsigned int uncompSizeBytes;
-    if(meta_.reordered) {
+    if (meta_.reordered) {
       uncompSizeBytes = meta_.num_frames * (sizeof(dune::WIBHeader) +
-                                       4 * sizeof(dune::ColdataHeader) +
-                                       256 * sizeof(dune::adc_t));
+                                            4 * sizeof(dune::ColdataHeader) +
+                                            256 * sizeof(dune::adc_t));
       // Account for bitfields
       uncompSizeBytes += (meta_.num_frames + 7) / 8;
     } else {
@@ -572,24 +572,24 @@ class dune::FelixFragmentCompressed : public FelixFragmentBase {
     return num_bytes;
   }
 
-  int internal_inflate(const void *src, uint srcLen, void *dst, uint dstLen) {
-    z_stream strm  = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    strm.total_in  = strm.avail_in  = srcLen;
+  int internal_inflate(const void* src, uint srcLen, void* dst, uint dstLen) {
+    z_stream strm = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    strm.total_in = strm.avail_in = srcLen;
     strm.total_out = strm.avail_out = dstLen;
-    strm.next_in   = (Bytef *) src;
-    strm.next_out  = (Bytef *) dst;
+    strm.next_in = (Bytef*)src;
+    strm.next_out = (Bytef*)dst;
 
     strm.zalloc = Z_NULL;
-    strm.zfree  = Z_NULL;
+    strm.zfree = Z_NULL;
     strm.opaque = Z_NULL;
 
     unsigned read = 0;
     unsigned write = 0;
     int err = 0;
 
-    while(read < srcLen && write < dstLen) {
+    while (read < srcLen && write < dstLen) {
       strm.next_in = (Bytef*)src + read;
-      strm.next_out  = (Bytef *) dst + write;
+      strm.next_out = (Bytef*)dst + write;
 
       unsigned to_read = srcLen - read;
       unsigned to_write = dstLen - write;
@@ -599,13 +599,13 @@ class dune::FelixFragmentCompressed : public FelixFragmentBase {
         break;
       }
 
-      strm.total_in  = strm.avail_in  = to_read;
+      strm.total_in = strm.avail_in = to_read;
       strm.total_out = strm.avail_out = to_write;
 
       inflateInit2(&strm, MAX_WBITS | 16);
       err = inflate(&strm, Z_FINISH);
       // Just return the source if data error.
-      if(err == Z_DATA_ERROR) {
+      if (err == Z_DATA_ERROR) {
         std::cout << "Warning: decompression data error. Returning compressed "
                      "fragment.\n";
         memcpy(dst, src, srcLen);
@@ -622,14 +622,16 @@ class dune::FelixFragmentCompressed : public FelixFragmentBase {
     }
 
     return write;
-  } 
+  }
 
  public:
-  FelixFragmentCompressed(const artdaq::Fragment& fragment) : FelixFragmentBase(fragment) {
+  FelixFragmentCompressed(const artdaq::Fragment& fragment)
+      : FelixFragmentBase(fragment) {
     // Decompress.
     decompress_copy(fragment, uncompfrag_);
-    // std::cout << decompress_copy(fragment, uncompfrag_) << " returned from decompress_copy\n";
-    
+    // std::cout << decompress_copy(fragment, uncompfrag_) << " returned from
+    // decompress_copy\n";
+
     // Update metadata.
     meta_.compressed = 0;
     uncompfrag_.setMetadata(meta_);
@@ -746,7 +748,7 @@ class dune::FelixFragmentCompressed : public FelixFragmentBase {
   artdaq::Fragment uncompfrag_;
   // Member pointer to access uncompressed data.
   const FelixFragmentBase* flxfrag;
-}; // class dune::FelixFragmentCompressed
+};  // class dune::FelixFragmentCompressed
 
 //======================
 // FELIX fragment class
@@ -755,12 +757,39 @@ class dune::FelixFragment : public FelixFragmentBase {
  public:
   FelixFragment(const artdaq::Fragment& fragment)
       : FelixFragmentBase(fragment) {
-    if(meta_.compressed) {
+    if (meta_.compressed) {
       flxfrag = new FelixFragmentCompressed(fragment);
     } else if (meta_.reordered) {
       flxfrag = new FelixFragmentReordered(fragment);
     } else {
       flxfrag = new FelixFragmentUnordered(fragment);
+    }
+
+    // Try to set the timestamp offset to the metadata offset.
+    bool shift_good = true;
+    // Is the first requested frame in the data?
+    shift_good &=
+        fragment.timestamp() - meta_.offset_frames * 25 >= flxfrag->timestamp();
+    // Is the data big enough to accommodate the window size?
+    shift_good &= fragment.timestamp() -
+                      (meta_.offset_frames + meta_.window_frames) * 25 <=
+                  flxfrag->timestamp() + meta_.num_frames * 25;
+
+    if (shift_good) {
+      uint64_t remaining_frame_diff =
+          (fragment.timestamp() - flxfrag->timestamp()) / 25 -
+          meta_.offset_frames;
+      // std::cout << "Good shift: "
+      //           << -(remaining_frame_diff * 25 -
+      //                  ((fragment.timestamp() - flxfrag->timestamp()) -
+      //                   meta_.offset_frames * 25)) << '\n';
+      artdaq_Fragment_ = reinterpret_cast<FelixFrame const*>(artdaq_Fragment_) +
+                         remaining_frame_diff;
+    } else {
+      mf::LogWarning("dune::FelixFragment")
+          << "Can't find the trigger window in FELIX fragment "
+          << fragment.fragmentID() << ".\nFragment TS: " << fragment.timestamp()
+          << " first frame TS: " << flxfrag->timestamp() << '\n';
     }
   }
 
@@ -864,6 +893,6 @@ class dune::FelixFragment : public FelixFragmentBase {
 
  private:
   const FelixFragmentBase* flxfrag;
-}; // class dune::FelixFragment
+};  // class dune::FelixFragment
 
 #endif /* artdaq_dune_Overlays_FelixFragment_hh */

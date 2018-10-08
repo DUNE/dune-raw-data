@@ -45,9 +45,11 @@ int main(int argc, char *argv[]) {
   // newfrag.setMetadata(newmeta);
 
   dune::FelixFragment::Metadata meta = *frag.metadata<dune::FelixFragment::Metadata>();
-  std::cout << "METADATA: " << (unsigned)meta.num_frames << "   "
-            << (unsigned)meta.reordered << "   " << (unsigned)meta.compressed
-            << "   " << (unsigned)meta.offset_frames << "   "
+  std::cout << "METADATA: " << (unsigned)meta.control_word << "   "
+            << (unsigned)meta.version << "   " << (unsigned)meta.reordered
+            << "   " << (unsigned)meta.compressed << "   "
+            << (unsigned)meta.num_frames << "   "
+            << (unsigned)meta.offset_frames << "   "
             << (unsigned)meta.window_frames << '\n';
   dune::FelixFragment flxfrag(frag);
   if(flxfrag.total_frames() < 6000 || flxfrag.total_frames() > 6036) {

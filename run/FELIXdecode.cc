@@ -56,12 +56,12 @@ int main(int argc, char *argv[]) {
     std::cout << "WARNING: first fragment has a strange size: " << flxfrag.total_frames() << ".\n";
   }
 
-  // // Print identifiers.
-  // for (unsigned f = 0; f < flxdec.total_fragments(); ++f) {
-  //   artdaq::Fragment frag = flxdec.Fragment(f);
-  //   dune::FelixFragment flxfrag(frag);
-  //   std::cout << (unsigned)flxfrag.slot_no() << ' ';
-  // }
+  // Print identifiers.
+  for (unsigned f = 0; f < flxdec.total_fragments(); ++f) {
+    artdaq::Fragment frag = flxdec.Fragment(f);
+    dune::FelixFragment flxfrag(frag);
+    std::cout << f << '\t' << frag.timestamp() - flxfrag.timestamp() << '\n';
+  }
 
   // flxdec.check_all_timestamps();
   // flxdec.check_all_CCCs();

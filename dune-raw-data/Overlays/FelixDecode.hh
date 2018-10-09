@@ -630,7 +630,9 @@ class FelixDecoder {
       for (const auto& frag : *frags) {
         artdaq::ContainerFragment cont_frag(frag);
         for (unsigned b = 0; b < cont_frag.block_count(); ++b) {
-          frags_.push_back(*cont_frag[b]);
+          if(cont_frag[b]->dataSizeBytes() != 0) {
+            frags_.push_back(*cont_frag[b]);
+          }
         }
       }
       if (frags_.size() >= 50) {

@@ -131,9 +131,6 @@ class dune::FelixFragmentBase {
       : meta_(*(fragment.metadata<Metadata>())),
         artdaq_Fragment_(fragment.dataBeginBytes()),
         sizeBytes_(fragment.dataSizeBytes()) {
-    // Temporary template metadata to deal with metadata version transition.
-    // Metadata template_meta = {0, 0, 1, 1, 6024, 500, 6000};
-    // Metadata template_meta_decomp = {0, 0, 1, 0, 6024, 500, 6000};
     // Check whether the metadata is of the old format.
     if (meta_.control_word != 0xabc &&
         !(meta_.num_frames == 6024 && meta_.offset_frames == 500 &&
@@ -469,7 +466,7 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
       : FelixFragmentBase(fragment), bad_header_num(meta_.num_frames, 0) {
     // Go through the bad headers and assign each a number.
     unsigned int bad_header_count = 1;
-    for (unsigned int i = 0; i < total_frames(); ++i) {
+    for (unsigned int i = 0; i < meta_.num_frames; ++i) {
       if (header_is_faulty(i)) {
         bad_header_num[i] = bad_header_count++;
       }
@@ -776,15 +773,7 @@ class dune::FelixFragment : public FelixFragmentBase {
                   flxfrag->timestamp() + meta_.num_frames * 25;
 
     if (shift_good) {
-      uint64_t remaining_frame_diff =
-          (fragment.timestamp() - flxfrag->timestamp()) / 25 -
-          meta_.offset_frames;
-      // std::cout << "Good shift: "
-      //           << -(remaining_frame_diff * 25 -
-      //                  ((fragment.timestamp() - flxfrag->timestamp()) -
-      //                   meta_.offset_frames * 25)) << '\n';
-      artdaq_Fragment_ = reinterpret_cast<FelixFrame const*>(artdaq_Fragment_) +
-                         remaining_frame_diff;
+      trig_offset = (fragment.timestamp() - flxfrag->timestamp()) / 25 - meta_.offset_frames;
     } else {
       mf::LogWarning("dune::FelixFragment")
           << "Can't find the trigger window in FELIX fragment "
@@ -797,71 +786,71 @@ class dune::FelixFragment : public FelixFragmentBase {
 
   /* Frame field and accessors. */
   uint8_t sof(const unsigned& frame_ID = 0) const {
-    return flxfrag->sof(frame_ID);
+    return flxfrag->sof(frame_ID + trig_offset);
   }
   uint8_t version(const unsigned& frame_ID = 0) const {
-    return flxfrag->version(frame_ID);
+    return flxfrag->version(frame_ID + trig_offset);
   }
   uint8_t fiber_no(const unsigned& frame_ID = 0) const {
-    return flxfrag->fiber_no(frame_ID);
+    return flxfrag->fiber_no(frame_ID + trig_offset);
   }
   uint8_t slot_no(const unsigned& frame_ID = 0) const {
-    return flxfrag->slot_no(frame_ID);
+    return flxfrag->slot_no(frame_ID + trig_offset);
   }
   uint8_t crate_no(const unsigned& frame_ID = 0) const {
-    return flxfrag->crate_no(frame_ID);
+    return flxfrag->crate_no(frame_ID + trig_offset);
   }
   uint8_t mm(const unsigned& frame_ID = 0) const {
-    return flxfrag->mm(frame_ID);
+    return flxfrag->mm(frame_ID + trig_offset);
   }
   uint8_t oos(const unsigned& frame_ID = 0) const {
-    return flxfrag->oos(frame_ID);
+    return flxfrag->oos(frame_ID + trig_offset);
   }
   uint16_t wib_errors(const unsigned& frame_ID = 0) const {
-    return flxfrag->wib_errors(frame_ID);
+    return flxfrag->wib_errors(frame_ID + trig_offset);
   }
   uint64_t timestamp(const unsigned& frame_ID = 0) const {
-    return flxfrag->timestamp(frame_ID);
+    return flxfrag->timestamp(frame_ID + trig_offset);
   }
   uint16_t wib_counter(const unsigned& frame_ID = 0) const {
-    return flxfrag->wib_counter(frame_ID);
+    return flxfrag->wib_counter(frame_ID + trig_offset);
   }
 
   /* Coldata block accessors. */
   uint8_t s1_error(const unsigned& frame_ID, const uint8_t& block_num) const {
-    return flxfrag->s1_error(frame_ID, block_num);
+    return flxfrag->s1_error(frame_ID + trig_offset, block_num);
   }
   uint8_t s2_error(const unsigned& frame_ID, const uint8_t& block_num) const {
-    return flxfrag->s2_error(frame_ID, block_num);
+    return flxfrag->s2_error(frame_ID + trig_offset, block_num);
   }
   uint16_t checksum_a(const unsigned& frame_ID,
                       const uint8_t& block_num) const {
-    return flxfrag->checksum_a(frame_ID, block_num);
+    return flxfrag->checksum_a(frame_ID + trig_offset, block_num);
   }
   uint16_t checksum_b(const unsigned& frame_ID,
                       const uint8_t& block_num) const {
-    return flxfrag->checksum_b(frame_ID, block_num);
+    return flxfrag->checksum_b(frame_ID + trig_offset, block_num);
   }
   uint16_t coldata_convert_count(const unsigned& frame_ID,
                                  const uint8_t& block_num) const {
-    return flxfrag->coldata_convert_count(frame_ID, block_num);
+    return flxfrag->coldata_convert_count(frame_ID + trig_offset, block_num);
   }
   uint16_t error_register(const unsigned& frame_ID,
                           const uint8_t& block_num) const {
-    return flxfrag->error_register(frame_ID, block_num);
+    return flxfrag->error_register(frame_ID + trig_offset, block_num);
   }
   uint8_t hdr(const unsigned& frame_ID, const uint8_t& block_num,
               const uint8_t& hdr_num) const {
-    return flxfrag->hdr(frame_ID, block_num, hdr_num);
+    return flxfrag->hdr(frame_ID + trig_offset, block_num, hdr_num);
   }
 
   // Functions to return a certain ADC value.
   adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
                 const uint8_t channel_ID) const {
-    return flxfrag->get_ADC(frame_ID, block_ID, channel_ID);
+    return flxfrag->get_ADC(frame_ID + trig_offset, block_ID, channel_ID);
   }
   adc_t get_ADC(const unsigned& frame_ID, const uint8_t channel_ID) const {
-    return flxfrag->get_ADC(frame_ID, channel_ID);
+    return flxfrag->get_ADC(frame_ID + trig_offset, channel_ID);
   }
 
   // Function to return all ADC values for a single channel.
@@ -892,6 +881,7 @@ class dune::FelixFragment : public FelixFragmentBase {
   size_t total_adc_values() const { return flxfrag->total_adc_values(); }
 
  private:
+  size_t trig_offset = 0;
   const FelixFragmentBase* flxfrag;
 };  // class dune::FelixFragment
 

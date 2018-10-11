@@ -772,21 +772,22 @@ class dune::FelixFragment : public FelixFragmentBase {
   }
   adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
                 const uint8_t channel_ID) const {
-    return get_ADC(frame_ID + trig_offset, block_ID, channel_ID);
+    return get_ADC(frame_ID, channel_ID + block_ID * 64);
   }
 
   // Function to return all ADC values for a single channel.
-  adc_v get_ADCs_by_channel(const uint8_t block_ID,
-                            const uint8_t channel_ID) const {
+  adc_v get_ADCs_by_channel(const uint8_t channel_ID) const {
     adc_v output(total_frames());
     for (size_t i = 0; i < total_frames(); i++) {
-      output[i] = get_ADC(i, block_ID, channel_ID);
+      output[i] = get_ADC(i, channel_ID);
     }
     return output;
   }
-  adc_v get_ADCs_by_channel(const uint8_t channel_ID) const {
-    return get_ADCs_by_channel(channel_ID / 64, channel_ID % 64);
+  adc_v get_ADCs_by_channel(const uint8_t block_ID,
+                            const uint8_t channel_ID) const {
+    return get_ADCs_by_channel(channel_ID + block_ID * 64);
   }
+
   // Function to return all ADC values for all channels in a map.
   std::map<uint8_t, adc_v> get_all_ADCs() const {
     std::map<uint8_t, adc_v> output;

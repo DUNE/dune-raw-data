@@ -107,18 +107,9 @@ class dune::FelixFragmentBase {
   virtual uint8_t hdr(const unsigned& frame_ID, const uint8_t& block_num,
                       const uint8_t& hdr_num) const = 0;
 
-  // Functions to return a certain ADC value.
-  virtual adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
-                        const uint8_t channel_ID) const = 0;
+  // Function to return a certain ADC value.
   virtual adc_t get_ADC(const unsigned& frame_ID,
                         const uint8_t channel_ID) const = 0;
-
-  // Function to return all ADC values for a single channel.
-  virtual adc_v get_ADCs_by_channel(const uint8_t block_ID,
-                                    const uint8_t channel_ID) const = 0;
-  virtual adc_v get_ADCs_by_channel(const uint8_t channel_ID) const = 0;
-  // Function to return all ADC values for all channels in a map.
-  virtual std::map<uint8_t, adc_v> get_all_ADCs() const = 0;
 
   // Function to print all timestamps.
   virtual void print_timestamps() const = 0;
@@ -262,37 +253,9 @@ class dune::FelixFragmentUnordered : public dune::FelixFragmentBase {
     return frame_(frame_ID)->hdr(block_num, hdr_num);
   }
 
-  // Functions to return a certain ADC value.
-  adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
-                const uint8_t channel_ID) const {
-    return frame_(frame_ID)->channel(block_ID, channel_ID);
-  }
+  // Function to return a certain ADC value.
   adc_t get_ADC(const unsigned& frame_ID, const uint8_t channel_ID) const {
     return frame_(frame_ID)->channel(channel_ID);
-  }
-
-  // Function to return all ADC values for a single channel.
-  adc_v get_ADCs_by_channel(const uint8_t block_ID,
-                            const uint8_t channel_ID) const {
-    adc_v output(total_frames());
-    for (size_t i = 0; i < total_frames(); i++) {
-      output[i] = get_ADC(i, block_ID, channel_ID);
-    }
-    return output;
-  }
-  adc_v get_ADCs_by_channel(const uint8_t channel_ID) const {
-    adc_v output(total_frames());
-    for (size_t i = 0; i < total_frames(); i++) {
-      output[i] = get_ADC(i, channel_ID);
-    }
-    return output;
-  }
-  // Function to return all ADC values for all channels in a map.
-  std::map<uint8_t, adc_v> get_all_ADCs() const {
-    std::map<uint8_t, adc_v> output;
-    for (int i = 0; i < 256; i++)
-      output.insert(std::pair<uint8_t, adc_v>(i, get_ADCs_by_channel(i)));
-    return output;
   }
 
   // Function to print all timestamps.
@@ -411,33 +374,9 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
     return blockhead_(frame_ID, block_num)->hdr(hdr_num);
   }
 
-  // Functions to return a certain ADC value.
-  adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
-                const uint8_t channel_ID) const {
-    return channel_(frame_ID, block_ID * 64 + channel_ID);
-  }
+  // Function to return a certain ADC value.
   adc_t get_ADC(const unsigned& frame_ID, const uint8_t channel_ID) const {
     return channel_(frame_ID, channel_ID);
-  }
-
-  // Function to return all ADC values for a single channel.
-  adc_v get_ADCs_by_channel(const uint8_t block_ID,
-                            const uint8_t channel_ID) const {
-    adc_v output(total_frames());
-    for (size_t i = 0; i < total_frames(); i++) {
-      output[i] = get_ADC(i, block_ID, channel_ID);
-    }
-    return output;
-  }
-  adc_v get_ADCs_by_channel(const uint8_t channel_ID) const {
-    return get_ADCs_by_channel(channel_ID / 64, channel_ID % 64);
-  }
-  // Function to return all ADC values for all channels in a map.
-  std::map<uint8_t, adc_v> get_all_ADCs() const {
-    std::map<uint8_t, adc_v> output;
-    for (int i = 0; i < 256; i++)
-      output.insert(std::pair<uint8_t, adc_v>(i, get_ADCs_by_channel(i)));
-    return output;
   }
 
   // Function to print all timestamps.
@@ -701,26 +640,9 @@ class dune::FelixFragmentCompressed : public FelixFragmentBase {
     return flxfrag->hdr(frame_ID, block_num, hdr_num);
   }
 
-  // Functions to return a certain ADC value.
-  adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
-                const uint8_t channel_ID) const {
-    return flxfrag->get_ADC(frame_ID, block_ID, channel_ID);
-  }
+  // Function to return a certain ADC value.
   adc_t get_ADC(const unsigned& frame_ID, const uint8_t channel_ID) const {
     return flxfrag->get_ADC(frame_ID, channel_ID);
-  }
-
-  // Function to return all ADC values for a single channel.
-  adc_v get_ADCs_by_channel(const uint8_t block_ID,
-                            const uint8_t channel_ID) const {
-    return flxfrag->get_ADCs_by_channel(block_ID, channel_ID);
-  }
-  adc_v get_ADCs_by_channel(const uint8_t channel_ID) const {
-    return flxfrag->get_ADCs_by_channel(channel_ID);
-  }
-  // Function to return all ADC values for all channels in a map.
-  std::map<uint8_t, adc_v> get_all_ADCs() const {
-    return flxfrag->get_all_ADCs();
   }
 
   // Function to print all timestamps.
@@ -845,25 +767,33 @@ class dune::FelixFragment : public FelixFragmentBase {
   }
 
   // Functions to return a certain ADC value.
-  adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
-                const uint8_t channel_ID) const {
-    return flxfrag->get_ADC(frame_ID + trig_offset, block_ID, channel_ID);
-  }
   adc_t get_ADC(const unsigned& frame_ID, const uint8_t channel_ID) const {
     return flxfrag->get_ADC(frame_ID + trig_offset, channel_ID);
   }
+  adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
+                const uint8_t channel_ID) const {
+    return get_ADC(frame_ID, channel_ID + block_ID * 64);
+  }
 
   // Function to return all ADC values for a single channel.
+  adc_v get_ADCs_by_channel(const uint8_t channel_ID) const {
+    adc_v output(total_frames());
+    for (size_t i = 0; i < total_frames(); i++) {
+      output[i] = get_ADC(i, channel_ID);
+    }
+    return output;
+  }
   adc_v get_ADCs_by_channel(const uint8_t block_ID,
                             const uint8_t channel_ID) const {
-    return flxfrag->get_ADCs_by_channel(block_ID, channel_ID);
+    return get_ADCs_by_channel(channel_ID + block_ID * 64);
   }
-  adc_v get_ADCs_by_channel(const uint8_t channel_ID) const {
-    return flxfrag->get_ADCs_by_channel(channel_ID);
-  }
+
   // Function to return all ADC values for all channels in a map.
   std::map<uint8_t, adc_v> get_all_ADCs() const {
-    return flxfrag->get_all_ADCs();
+    std::map<uint8_t, adc_v> output;
+    for (int i = 0; i < 256; i++)
+      output.insert(std::pair<uint8_t, adc_v>(i, get_ADCs_by_channel(i)));
+    return output;
   }
 
   // Function to print all timestamps.

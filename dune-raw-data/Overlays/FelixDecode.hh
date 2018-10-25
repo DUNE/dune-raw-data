@@ -241,9 +241,10 @@ class FelixDecoder {
 
   // Accessor for artdaq::Fragments.
   artdaq::Fragment Fragment(const size_t& frag_num) const {
-    if (frag_num > total_fragments()) {
+    if (frag_num >= total_fragments()) {
       std::cout << "Fragment index out of range.\n";
-      return frags_[0];
+      artdaq::Fragment emptyfrag;
+      return emptyfrag;
     }
     return frags_[frag_num];
   }
@@ -635,6 +636,7 @@ class FelixDecoder {
           }
         }
       }
+      std::cout << "Event " << num_evts << " loaded.\n";
       if (frags_.size() >= 50) {
         break;
       }

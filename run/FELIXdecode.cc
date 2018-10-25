@@ -36,15 +36,9 @@ int main(int argc, char *argv[]) {
 
   // Check fragment length here for now.
   artdaq::Fragment frag = flxdec.Fragment(0);
-  // artdaq::Fragment newfrag;
-  // newfrag.setTimestamp(frag.timestamp());
-  // newfrag.resize(frag.dataSizeBytes());
-  // memcpy(newfrag.dataBeginBytes(), frag.dataBeginBytes(), frag.dataSizeBytes());
 
-  // dune::FelixFragment::Metadata newmeta = {0xabc, 1, 0, 0, 6024, 500, 6000};
-  // newfrag.setMetadata(newmeta);
-
-  dune::FelixFragment::Metadata meta = *frag.metadata<dune::FelixFragment::Metadata>();
+  dune::FelixFragment::Metadata meta =
+      *frag.metadata<dune::FelixFragment::Metadata>();
   std::cout << "METADATA: " << (unsigned)meta.control_word << "   "
             << (unsigned)meta.version << "   " << (unsigned)meta.reordered
             << "   " << (unsigned)meta.compressed << "   "
@@ -52,23 +46,43 @@ int main(int argc, char *argv[]) {
             << (unsigned)meta.offset_frames << "   "
             << (unsigned)meta.window_frames << '\n';
   dune::FelixFragment flxfrag(frag);
-  if(flxfrag.total_frames() < 6000 || flxfrag.total_frames() > 6036) {
-    std::cout << "WARNING: first fragment has a strange size: " << flxfrag.total_frames() << ".\n";
+  if (flxfrag.total_frames() < 6000 || flxfrag.total_frames() > 6036) {
+    std::cout << "WARNING: first fragment has a strange size: "
+              << flxfrag.total_frames() << ".\n";
   }
 
-  // Print identifiers.
+  // // Print uncompressed fragment to file.
+  // std::cout << "Going to decompress fragment.\n";
+  // dune::FelixFragmentCompressed compflxfrag(frag);
+  // artdaq::Fragment uncompfrag = compflxfrag.uncompressed_fragment();
+  // std::ofstream ofile("outfrag.dat");
+  // ofile.write(reinterpret_cast<const char *>(uncompfrag.dataBeginBytes()),
+  //             uncompfrag.dataSizeBytes());
+  // ofile.close();
+  // std::cout << "Produced uncompressed fragment to file.\n";
+
+  // artdaq::Fragment newfrag;
+  // newfrag.setTimestamp(frag.timestamp());
+  // newfrag.resize(frag.dataSizeBytes());
+  // memcpy(newfrag.dataBeginBytes(), frag.dataBeginBytes(),
+  // frag.dataSizeBytes());
+
+  // dune::FelixFragment::Metadata newmeta = {0xabc, 1, 0, 0, 6024, 500, 6000};
+  // newfrag.setMetadata(newmeta);
+
+  // Print some value.
   for (unsigned f = 0; f < flxdec.total_fragments(); ++f) {
     artdaq::Fragment frag = flxdec.Fragment(f);
     dune::FelixFragment flxfrag(frag);
-    std::cout << f << '\t' << frag.timestamp() - flxfrag.timestamp() << '\n';
+    std::cout << f << '\t' << flxfrag.get_ADC(259,37) << '\n';
   }
 
-  // flxdec.check_all_timestamps();
-  // flxdec.check_all_CCCs();
-  // flxdec.check_all_IDs();
+  flxdec.check_all_timestamps();
+  flxdec.check_all_CCCs();
+  flxdec.check_all_IDs();
 
-  // Print RMS values to file.
-  flxdec.analyse(destination);
+  // // Print RMS values to file.
+  // flxdec.analyse(destination);
 
   return 0;
 }

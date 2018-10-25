@@ -139,9 +139,18 @@ class dune::FelixFragmentBase {
                old_meta->window_frames};
     }
 
+    // Deal with very long fragments that overflow the frame counter.
+    if (fragment.dataSizeBytes() > meta_.num_frames*sizeof(dune::FelixFrame)*3) {
+      // Assume uncompressed data.
+      meta_.reordered = 0;
+      meta_.compressed = 0;
+      meta_.num_frames = fragment.dataSizeBytes()/sizeof(dune::FelixFrame);
+      // Assume the offset is 11 frames at most.
+      meta_.window_frames = fragment.dataSizeBytes()/sizeof(dune::FelixFrame)-12;
+    }
     // Check whether current metadata makes sense and guess the format
     // otherwise.
-    if (meta_.reordered > 1 || meta_.compressed > 1 ||
+    else if (meta_.reordered > 1 || meta_.compressed > 1 ||
         meta_.num_frames < meta_.window_frames) {
       // Assume 6024 frames in a fragment if there is no meaningful metadata.
       meta_.num_frames = 6024;

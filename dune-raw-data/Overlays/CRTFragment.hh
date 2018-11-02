@@ -98,7 +98,7 @@ public:
            "            raw time   = %10u (0x%8x)\n",
            header()->magic, header()->nhit, header()->module_num,
            header()->fifty_mhz_time, header()->fifty_mhz_time,
-           header()->raw_backend_time);
+           header()->raw_backend_time, header()->raw_backend_time);
   }
 
   // Print the given hit to stdout, even if it is bad, but not if it

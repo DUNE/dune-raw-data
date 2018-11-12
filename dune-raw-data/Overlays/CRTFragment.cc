@@ -54,7 +54,7 @@ namespace CRT
     }
 
     std::cout << "CRT header: Magic = '" << header()->magic << "'\n"
-              << "            n hit = " << header()->nhit << "\n"
+              << "            n hit = " << +(header()->nhit) << "\n"
               << "            module = " << header()->module_num << "\n"
               << "            50Mhz time = " << header()->fifty_mhz_time 
               << " (0x" << std::hex << header()->fifty_mhz_time << std::dec << ")\n"
@@ -75,8 +75,8 @@ namespace CRT
     }
 
     std::cout << "CRT hit " << i << ": Magic = '" << hit(i)->magic << "'\n"
-              << "            channel = " << hit(i)->channel << "\n"
-              << "            ADC     = " << hit(i)->adc << "\n";
+              << "           channel = " << +(hit(i)->channel) << "\n"
+              << "           ADC     = " << hit(i)->adc << "\n";
   }
 
   // Print all the hits

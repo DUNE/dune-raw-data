@@ -25,7 +25,7 @@ simple_plugin(PdspChannelMapService "service"
               ${persistency_lib}
               ${SQLITE3}
               ${MF_MESSAGELOGGER}
-              ${MF_UTILITIES}
+              
               ${CETLIB_LIBS}
               ${ROOT_BASIC_LIB_LIST}
 )

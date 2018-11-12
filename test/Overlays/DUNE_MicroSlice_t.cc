@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <memory>
 
-#include "cetlib/exception.h"
+#include "cetlib_except/exception.h"
 
 // JCF, 9/29/14
 

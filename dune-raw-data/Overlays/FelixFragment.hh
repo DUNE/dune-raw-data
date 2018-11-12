@@ -4,21 +4,14 @@
 #ifndef artdaq_dune_Overlays_FelixFragment_hh
 #define artdaq_dune_Overlays_FelixFragment_hh
 
-// Uncomment to use the bit field ADC access method.
-// MAV 30-10-2017: The bit field ADC access method is ~twice as fast and
-// provides the same results as the alternative.
-#define BITFIELD_METHOD
-
 #include "FragmentType.hh"
 #include "artdaq-core/Data/Fragment.hh"
 #include "dune-raw-data/Overlays/FelixFormat.hh"
+#include "messagefacility/MessageLogger/MessageLogger.h"
 
-#include <bitset>
-#include <cstdio>
-#include <fstream>
+#include <zlib.h>
 #include <iostream>
 #include <map>
-#include <string>
 #include <vector>
 
 // Implementation of "FelixFragment", an artdaq::FelixFragment overlay
@@ -32,13 +25,8 @@ namespace dune {
 class FelixFragmentBase;
 class FelixFragmentUnordered;
 class FelixFragmentReordered;
+class FelixFragmentCompressed;
 class FelixFragment;
-
-// Bit access function (from FrameGen).
-inline uint32_t get32BitRange(const uint32_t& word, const uint8_t& begin,
-                              const uint8_t& end) {
-  return (word >> begin) & ((1 << (end - begin + 1)) - 1);
-}
 }  // namespace dune
 
 //============================
@@ -46,43 +34,50 @@ inline uint32_t get32BitRange(const uint32_t& word, const uint8_t& begin,
 //============================
 class dune::FelixFragmentBase {
  public:
-  /* Struct to hold FelixFragment Metadata.
-   * Currently not used, but it will be important
-   * for the more complex Fragment version. */
+  /* Struct to hold FelixFragment Metadata. */
   struct Metadata {
     typedef uint32_t data_t;
 
-    data_t board_serial_number : 16;
-    data_t num_adc_bits : 8;
-    data_t unused : 8;
+    // Old metadata.
+    // data_t num_frames : 16, reordered : 8, compressed : 8;
+    // data_t offset_frames : 16, window_frames : 16;
 
-    static size_t const size_words = 1ul; /* Units of Metadata::data_t */
+    data_t control_word : 12, version : 4, reordered : 8, compressed : 8;
+    data_t num_frames;
+    data_t offset_frames;
+    data_t window_frames;
+
+    static size_t const size_words = 4ul; /* Units of Metadata::data_t */
+
+    bool operator==(const Metadata& rhs) {
+      return (control_word == rhs.control_word) && (version == rhs.version) &&
+             (reordered == rhs.reordered) && (compressed == rhs.compressed) &&
+             (num_frames == rhs.num_frames) &&
+             (offset_frames == rhs.offset_frames) &&
+             (window_frames == rhs.window_frames);
+    }
+
+    bool operator!=(const Metadata& rhs) { return !(*this == rhs); }
+  };
+
+  struct Old_Metadata {
+    typedef uint32_t data_t;
+    data_t num_frames : 16, reordered : 8, compressed : 8;
+    data_t offset_frames : 16, window_frames : 16;
+
+    bool operator==(const Metadata& rhs) {
+      return (num_frames == rhs.num_frames) && (reordered == rhs.reordered) &&
+             (compressed == rhs.compressed) &&
+             (offset_frames == rhs.offset_frames) &&
+             (window_frames == rhs.window_frames);
+    }
+
+    bool operator!=(const Metadata& rhs) { return !(*this == rhs); }
   };
 
   static_assert(sizeof(Metadata) ==
                     Metadata::size_words * sizeof(Metadata::data_t),
                 "FelixFragment::Metadata size changed");
-
-  /* Static file reader for debugging purpose. */
-  static artdaq::FragmentPtr fromFile(const std::string& fileName) {
-    std::ifstream in(fileName, std::ios::binary);
-    std::string contents((std::istreambuf_iterator<char>(in)),
-                         std::istreambuf_iterator<char>());
-    Metadata meta;
-    static size_t fragment_ID = 1;
-    std::unique_ptr<artdaq::Fragment> frag_ptr(artdaq::Fragment::FragmentBytes(
-        contents.size(), 1, fragment_ID, dune::toFragmentType("FELIX"), meta));
-    ++fragment_ID;
-
-    frag_ptr->resizeBytes(contents.size());
-    memcpy(frag_ptr->dataBeginBytes(), contents.c_str(), contents.size());
-    in.close();
-    return frag_ptr;
-  }
-
-  /* FELIX-specific metadata from the FelixBoardReader included here for
-   * debugging. */
-  struct FelixHeader;
 
   /* Frame field and accessors. */
   virtual uint8_t sof(const unsigned& frame_ID = 0) const = 0;
@@ -112,21 +107,9 @@ class dune::FelixFragmentBase {
   virtual uint8_t hdr(const unsigned& frame_ID, const uint8_t& block_num,
                       const uint8_t& hdr_num) const = 0;
 
-  /* CRC */
-  virtual word_t CRC(const unsigned& frame_ID = 0) const = 0;
-
-  // Functions to return a certain ADC value.
-  virtual adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
-                        const uint8_t channel_ID) const = 0;
+  // Function to return a certain ADC value.
   virtual adc_t get_ADC(const unsigned& frame_ID,
                         const uint8_t channel_ID) const = 0;
-
-  // Function to return all ADC values for a single channel.
-  virtual adc_v get_ADCs_by_channel(const uint8_t block_ID,
-                                    const uint8_t channel_ID) const = 0;
-  virtual adc_v get_ADCs_by_channel(const uint8_t channel_ID) const = 0;
-  // Function to return all ADC values for all channels in a map.
-  virtual std::map<uint8_t, adc_v> get_all_ADCs() const = 0;
 
   // Function to print all timestamps.
   virtual void print_timestamps() const = 0;
@@ -136,8 +119,59 @@ class dune::FelixFragmentBase {
   virtual void print_frames() const = 0;
 
   FelixFragmentBase(const artdaq::Fragment& fragment)
-      : artdaq_Fragment_(fragment.dataBeginBytes()),
-        sizeBytes_(fragment.dataSizeBytes()) {}
+      : meta_(*(fragment.metadata<Metadata>())),
+        artdaq_Fragment_(fragment.dataBeginBytes()),
+        sizeBytes_(fragment.dataSizeBytes()) {
+    // Check whether the metadata is of the old format.
+    if (meta_.control_word != 0xabc &&
+        !(meta_.num_frames == 6024 && meta_.offset_frames == 500 &&
+          meta_.window_frames == 6000)) {
+      // mf::LogInfo("dune::FelixFragment")
+      //     << "Fragment has old metadata format. (Control word "
+      //     << (unsigned)meta_.control_word << ")\n";
+      const Old_Metadata* old_meta = fragment.metadata<Old_Metadata>();
+      meta_ = {0,
+               0,
+               old_meta->reordered,
+               old_meta->compressed,
+               old_meta->num_frames,
+               old_meta->offset_frames,
+               old_meta->window_frames};
+    }
+
+    // Deal with very long fragments that overflow the frame counter.
+    if (fragment.dataSizeBytes() > meta_.num_frames*sizeof(dune::FelixFrame)*3) {
+      // Assume uncompressed data.
+      meta_.reordered = 0;
+      meta_.compressed = 0;
+      meta_.num_frames = fragment.dataSizeBytes()/sizeof(dune::FelixFrame);
+      // Assume the offset is 11 frames at most.
+      meta_.window_frames = fragment.dataSizeBytes()/sizeof(dune::FelixFrame)-12;
+    }
+    // Check whether current metadata makes sense and guess the format
+    // otherwise.
+    else if (meta_.reordered > 1 || meta_.compressed > 1 ||
+        meta_.num_frames < meta_.window_frames) {
+      // Assume 6024 frames in a fragment if there is no meaningful metadata.
+      meta_.num_frames = 6024;
+      meta_.offset_frames = 500;
+      meta_.window_frames = 6000;
+      // Try to predict reordered/compressed from fragment size.
+      unsigned sizeBytes = fragment.dataSizeBytes();
+      if (sizeBytes == meta_.num_frames * 464) {
+        meta_.reordered = 0;
+        meta_.compressed = 0;
+      } else if (sizeBytes > meta_.num_frames * 592) {
+        // Assume compression factor > 1.
+        meta_.reordered = 1;
+        meta_.compressed = 0;
+      } else {
+        // Assume reordered if compressed.
+        meta_.reordered = 1;
+        meta_.compressed = 1;
+      }
+    }
+  }
   virtual ~FelixFragmentBase() {}
 
   // The number of words in the current event minus the header.
@@ -155,26 +189,19 @@ class dune::FelixFragmentBase {
   const uint8_t* dataBeginBytes() const {
     return reinterpret_cast<uint8_t const*>(artdaq_Fragment_);
   }
-  size_t dataSizeBytes() const {
-    return sizeBytes_;
-  }
+  size_t dataSizeBytes() const { return sizeBytes_; }
 
  protected:
+  Metadata meta_;
   const void* artdaq_Fragment_;
   size_t sizeBytes_;
-};
+};  // class dune::FelixFragmentBase
 
 //==================================================
 // FELIX fragment for an array of bare FELIX frames
 //==================================================
 class dune::FelixFragmentUnordered : public dune::FelixFragmentBase {
  public:
-  /* FELIX-specific metadata from the FelixBoardReader included here for
-   * debugging. */
-  struct FelixHeader {
-    word_t flx_head;  // 4byte: 00 00 cd ab
-  };
-
   /* Frame field and accessors. */
   uint8_t sof(const unsigned& frame_ID = 0) const {
     return frame_(frame_ID)->sof();
@@ -235,42 +262,9 @@ class dune::FelixFragmentUnordered : public dune::FelixFragmentBase {
     return frame_(frame_ID)->hdr(block_num, hdr_num);
   }
 
-  /* CRC */
-  word_t CRC(const unsigned& frame_ID = 0) const {
-    return frame_(frame_ID)->CRC();
-  }
-
-  // Functions to return a certain ADC value.
-  adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
-                const uint8_t channel_ID) const {
-    return frame_(frame_ID)->channel(block_ID, channel_ID);
-  }
+  // Function to return a certain ADC value.
   adc_t get_ADC(const unsigned& frame_ID, const uint8_t channel_ID) const {
     return frame_(frame_ID)->channel(channel_ID);
-  }
-
-  // Function to return all ADC values for a single channel.
-  adc_v get_ADCs_by_channel(const uint8_t block_ID,
-                            const uint8_t channel_ID) const {
-    adc_v output(total_frames());
-    for (size_t i = 0; i < total_frames(); i++) {
-      output[i] = get_ADC(i, block_ID, channel_ID);
-    }
-    return output;
-  }
-  adc_v get_ADCs_by_channel(const uint8_t channel_ID) const {
-    adc_v output(total_frames());
-    for (size_t i = 0; i < total_frames(); i++) {
-      output[i] = get_ADC(i, channel_ID);
-    }
-    return output;
-  }
-  // Function to return all ADC values for all channels in a map.
-  std::map<uint8_t, adc_v> get_all_ADCs() const {
-    std::map<uint8_t, adc_v> output;
-    for (int i = 0; i < 256; i++)
-      output.insert(std::pair<uint8_t, adc_v>(i, get_ADCs_by_channel(i)));
-    return output;
   }
 
   // Function to print all timestamps.
@@ -292,16 +286,12 @@ class dune::FelixFragmentUnordered : public dune::FelixFragmentBase {
   // The constructor simply sets its const private member "artdaq_Fragment_"
   // to refer to the artdaq::Fragment object
   FelixFragmentUnordered(artdaq::Fragment const& fragment)
-      : FelixFragmentBase(fragment) {
-    std::cout << "Attempting to create a FELIX Fragment.\n";
-  }
+      : FelixFragmentBase(fragment) {}
 
   // The number of words in the current event minus the header.
   size_t total_words() const { return sizeBytes_ / sizeof(word_t); }
   // The number of frames in the current event.
-  size_t total_frames() const {
-    return total_words() / FelixFrame::num_frame_words;
-  }
+  size_t total_frames() const { return meta_.window_frames; }
   // The number of ADC values describing data beyond the header
   size_t total_adc_values() const {
     return total_frames() * FelixFrame::num_ch_per_frame;
@@ -310,149 +300,133 @@ class dune::FelixFragmentUnordered : public dune::FelixFragmentBase {
  protected:
   // Allow access to individual frames according to the FelixFrame structure.
   FelixFrame const* frame_(const unsigned& frame_num = 0) const {
-    return static_cast<dune::FelixFrame const*>(artdaq_Fragment_) + frame_num;
+    // WARNING: CUSTOM OFFSET OF EIGHT WORDS FOR DEBUGGING -- backed out as it
+    // was not needed
+    // return reinterpret_cast<dune::FelixFrame const*>(static_cast<uint32_t
+    // const*>(artdaq_Fragment_)+8) + frame_num;
+    return reinterpret_cast<dune::FelixFrame const*>(
+               static_cast<uint32_t const*>(artdaq_Fragment_)) +
+           frame_num;
   }
-};
+};  // class dune::FelixFragmentUnordered
 
 //=======================================================
 // FELIX fragment for an array of reordered FELIX frames
 //=======================================================
 class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
  public:
-  /* FELIX-specific metadata from the FelixBoardReader included here for
-   * debugging. */
-  struct FelixHeader {};
-
   /* Frame field and accessors. */
   uint8_t sof(const unsigned& frame_ID = 0) const {
-    return frames_()->sof(frame_ID);
+    return head_(frame_ID)->sof;
   }
   uint8_t version(const unsigned& frame_ID = 0) const {
-    return frames_()->version(frame_ID);
+    return head_(frame_ID)->version;
   }
   uint8_t fiber_no(const unsigned& frame_ID = 0) const {
-    return frames_()->fiber_no(frame_ID);
+    return head_(frame_ID)->fiber_no;
   }
   uint8_t slot_no(const unsigned& frame_ID = 0) const {
-    return frames_()->slot_no(frame_ID);
+    return head_(frame_ID)->slot_no;
   }
   uint8_t crate_no(const unsigned& frame_ID = 0) const {
-    return frames_()->crate_no(frame_ID);
+    return head_(frame_ID)->crate_no;
   }
-  uint8_t mm(const unsigned& frame_ID = 0) const {
-    return frames_()->mm(frame_ID);
-  }
+  uint8_t mm(const unsigned& frame_ID = 0) const { return head_(frame_ID)->mm; }
   uint8_t oos(const unsigned& frame_ID = 0) const {
-    return frames_()->oos(frame_ID);
+    return head_(frame_ID)->oos;
   }
   uint16_t wib_errors(const unsigned& frame_ID = 0) const {
-    return frames_()->wib_errors(frame_ID);
+    return head_(frame_ID)->wib_errors;
   }
   uint64_t timestamp(const unsigned& frame_ID = 0) const {
-    return frames_()->timestamp(frame_ID);
+    uint64_t result = head_(frame_ID)->timestamp();
+    if (header_is_faulty(frame_ID) == false) {
+      // Deduce timestamp from first header,
+      result += frame_ID * 25;
+    }
+    return result;
   }
   uint16_t wib_counter(const unsigned& frame_ID = 0) const {
-    return frames_()->wib_counter(frame_ID);
+    return head_(frame_ID)->wib_counter();
   }
 
   /* Coldata block accessors. */
   uint8_t s1_error(const unsigned& frame_ID, const uint8_t& block_num) const {
-    return frames_()->s1_error(frame_ID, block_num);
+    return blockhead_(frame_ID, block_num)->s1_error;
   }
   uint8_t s2_error(const unsigned& frame_ID, const uint8_t& block_num) const {
-    return frames_()->s2_error(frame_ID, block_num);
+    return blockhead_(frame_ID, block_num)->s2_error;
   }
   uint16_t checksum_a(const unsigned& frame_ID,
                       const uint8_t& block_num) const {
-    return frames_()->checksum_a(frame_ID, block_num);
+    return blockhead_(frame_ID, block_num)->checksum_a();
   }
   uint16_t checksum_b(const unsigned& frame_ID,
                       const uint8_t& block_num) const {
-    return frames_()->checksum_b(frame_ID, block_num);
+    return blockhead_(frame_ID, block_num)->checksum_b();
   }
   uint16_t coldata_convert_count(const unsigned& frame_ID,
                                  const uint8_t& block_num) const {
-    return frames_()->coldata_convert_count(frame_ID, block_num);
+    uint16_t result = blockhead_(frame_ID, block_num)->coldata_convert_count;
+    if (header_is_faulty(frame_ID) == false) {
+      // Deduce count from first header.
+      result += frame_ID;
+    }
+    return result;
   }
   uint16_t error_register(const unsigned& frame_ID,
                           const uint8_t& block_num) const {
-    return frames_()->error_register(frame_ID, block_num);
+    return blockhead_(frame_ID, block_num)->error_register;
   }
   uint8_t hdr(const unsigned& frame_ID, const uint8_t& block_num,
               const uint8_t& hdr_num) const {
-    return frames_()->hdr(frame_ID, block_num, hdr_num);
+    return blockhead_(frame_ID, block_num)->hdr(hdr_num);
   }
 
-  /* CRC */
-  word_t CRC(const unsigned& frame_ID = 0) const {
-    return frames_()->CRC(frame_ID);
-  }
-
-  // Functions to return a certain ADC value.
-  adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
-                const uint8_t channel_ID) const {
-    return frames_()->channel(frame_ID, block_ID, channel_ID);
-  }
+  // Function to return a certain ADC value.
   adc_t get_ADC(const unsigned& frame_ID, const uint8_t channel_ID) const {
-    return frames_()->channel(frame_ID, channel_ID);
-  }
-
-  // Function to return all ADC values for a single channel.
-  adc_v get_ADCs_by_channel(const uint8_t block_ID,
-                            const uint8_t channel_ID) const {
-    adc_v output(total_frames());
-    for (size_t i = 0; i < total_frames(); i++) {
-      output[i] = get_ADC(i, block_ID, channel_ID);
-    }
-    return output;
-  }
-  adc_v get_ADCs_by_channel(const uint8_t channel_ID) const {
-    adc_v output(total_frames());
-    for (size_t i = 0; i < total_frames(); i++) {
-      output[i] = get_ADC(i, channel_ID);
-    }
-    return output;
-  }
-  // Function to return all ADC values for all channels in a map.
-  std::map<uint8_t, adc_v> get_all_ADCs() const {
-    std::map<uint8_t, adc_v> output;
-    for (int i = 0; i < 256; i++)
-      output.insert(std::pair<uint8_t, adc_v>(i, get_ADCs_by_channel(i)));
-    return output;
+    return channel_(frame_ID, channel_ID);
   }
 
   // Function to print all timestamps.
   void print_timestamps() const {
-    for (unsigned int i = 0; i < total_frames(); i++) {
-      std::cout << std::hex << frames_()->timestamp(i) << '\t' << std::dec << i
-                << std::endl;
-    }
+    // for (unsigned int i = 0; i < total_frames(); i++) {
+    //   std::cout << std::hex << frames_()->timestamp(i) << '\t' << std::dec <<
+    //   i
+    //             << std::endl;
+    // }
   }
 
-  void print(const unsigned i) const { frames_()->print(i); }
+  void print(const unsigned i) const {
+    std::cout << "Frame " << i
+              << " should be printed here.\n"; /* frames_()->print(i); */
+  }
 
   void print_frames() const {
-    for (unsigned i = 0; i < total_frames(); i++) {
-      frames_()->print(i);
-    }
+    // for (unsigned i = 0; i < total_frames(); i++) {
+    //   frames_()->print(i);
+    // }
   }
 
   // The constructor simply sets its const private member "artdaq_Fragment_"
   // to refer to the artdaq::Fragment object
   FelixFragmentReordered(artdaq::Fragment const& fragment)
-      : FelixFragmentBase(fragment) {
-    std::cout << "Attempting to create a FELIX Fragment.\n";
+      : FelixFragmentBase(fragment), bad_header_num(meta_.num_frames, 0) {
+    // Go through the bad headers and assign each a number.
+    unsigned int bad_header_count = 1;
+    for (unsigned int i = 0; i < meta_.num_frames; ++i) {
+      if (header_is_faulty(i)) {
+        bad_header_num[i] = bad_header_count++;
+      }
+      // std::cout << bad_header_num[i] << '\n';
+    }
   }
-  // FelixFragmentReordered(const void* fragmentP, const size_t sizeBytes)
-  //     : artdaq_Fragment_(fragmentP), sizeBytes_(sizeBytes) {
-  //   std::cout << "Attempting to create a FELIX Fragment.\n";
-  // }
 
   // The number of words in the current event minus the header.
   size_t total_words() const { return sizeBytes_ / sizeof(word_t); }
 
   // The number of frames in the current event.
-  size_t total_frames() const { return frames_()->total_frames(); }
+  size_t total_frames() const { return meta_.window_frames; }
 
   // The number of ADC values describing data beyond the header
   size_t total_adc_values() const {
@@ -460,26 +434,160 @@ class dune::FelixFragmentReordered : public dune::FelixFragmentBase {
   }
 
  protected:
-  // Allow access to individual frames according to the ReorderedFelixFrames structure.
-  ReorderedFelixFrames const* frames_() const {
-    return static_cast<dune::ReorderedFelixFrames const*>(artdaq_Fragment_);
-  }
-};
+  // Important positions within the data buffer.
+  const unsigned int adc_start = 0;
+  const unsigned int bitlist_start =
+      adc_start + meta_.num_frames * 256 * sizeof(adc_t);
+  const unsigned int header_start = bitlist_start + (meta_.num_frames + 7) / 8;
+  // Size of WIB header + four COLDATA headers.
+  const unsigned int header_set_size =
+      sizeof(dune::WIBHeader) + 4 * sizeof(dune::ColdataHeader);
 
-//======================
-// FELIX fragment class
-//======================
-class dune::FelixFragment: public FelixFragmentBase {
- public:
-  FelixFragment(const artdaq::Fragment& fragment, const bool reordered = 0): FelixFragmentBase(fragment) {
-    if (reordered) {
-      flxfrag = new FelixFragmentReordered(fragment);
+  // Faulty header information.
+  bool header_is_faulty(const unsigned int frame_num) const {
+    const uint8_t* curr_byte = static_cast<uint8_t const*>(artdaq_Fragment_) +
+                               bitlist_start + frame_num / 8;
+    return ((*curr_byte) >> (frame_num % 8)) & 1;
+  }
+  // Number of the faulty header (0 if header is good).
+  std::vector<unsigned int> bad_header_num;
+
+  // Reordered frame format overlaid on the data.
+  dune::WIBHeader const* head_(const unsigned int frame_num) const {
+    if (header_is_faulty(frame_num)) {
+      // Return faulty header.
+      return reinterpret_cast<dune::WIBHeader const*>(
+          static_cast<uint8_t const*>(artdaq_Fragment_) + header_start +
+          bad_header_num[frame_num] * header_set_size);
     } else {
-      flxfrag = new FelixFragmentUnordered(fragment);
+      // Return the first header unchanged if requested header is good.
+      return reinterpret_cast<dune::WIBHeader const*>(
+          static_cast<uint8_t const*>(artdaq_Fragment_) + header_start);
     }
   }
 
-  ~FelixFragment() { delete flxfrag; }
+  dune::ColdataHeader const* blockhead_(const unsigned int frame_num,
+                                        const uint8_t block_num) const {
+    if (header_is_faulty(frame_num)) {
+      // Return faulty header.
+      return reinterpret_cast<dune::ColdataHeader const*>(
+                 static_cast<uint8_t const*>(artdaq_Fragment_) + header_start +
+                 sizeof(dune::WIBHeader) +
+                 bad_header_num[frame_num] * header_set_size) +
+             block_num;
+    } else {
+      // Return the first header unchanged if the requested header is good.
+      return reinterpret_cast<dune::ColdataHeader const*>(
+                 static_cast<uint8_t const*>(artdaq_Fragment_) + header_start +
+                 sizeof(dune::WIBHeader)) +
+             block_num;
+    }
+  }
+
+  dune::adc_t channel_(const unsigned int frame_num,
+                       const uint8_t ch_num) const {
+    return *(reinterpret_cast<dune::adc_t const*>(
+                 static_cast<uint8_t const*>(artdaq_Fragment_) + adc_start) +
+             frame_num + ch_num * meta_.num_frames);
+  }
+};  // class dune::FelixFragmentReordered
+
+//=======================================
+// FELIX fragment for compressed frames.
+//=======================================
+class dune::FelixFragmentCompressed : public FelixFragmentBase {
+ private:
+  int decompress_copy(const artdaq::Fragment& src, artdaq::Fragment& dst) {
+    // Determine and reserve new fragment size.
+    long unsigned int uncompSizeBytes;
+    if (meta_.reordered) {
+      uncompSizeBytes = meta_.num_frames * (sizeof(dune::WIBHeader) +
+                                            4 * sizeof(dune::ColdataHeader) +
+                                            256 * sizeof(dune::adc_t));
+      // Account for bitfields
+      uncompSizeBytes += (meta_.num_frames + 7) / 8;
+    } else {
+      uncompSizeBytes = meta_.num_frames * sizeof(dune::FelixFrame);
+    }
+    dst.resizeBytes(uncompSizeBytes);
+
+    int num_bytes = internal_inflate(src.dataBeginBytes(), src.dataSizeBytes(),
+                                     dst.dataBeginBytes(), dst.dataSizeBytes());
+
+    return num_bytes;
+  }
+
+  int internal_inflate(const void* src, uint srcLen, void* dst, uint dstLen) {
+    z_stream strm = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    strm.total_in = strm.avail_in = srcLen;
+    strm.total_out = strm.avail_out = dstLen;
+    strm.next_in = (Bytef*)src;
+    strm.next_out = (Bytef*)dst;
+
+    strm.zalloc = Z_NULL;
+    strm.zfree = Z_NULL;
+    strm.opaque = Z_NULL;
+
+    unsigned read = 0;
+    unsigned write = 0;
+    int err = 0;
+
+    while (read < srcLen && write < dstLen) {
+      strm.next_in = (Bytef*)src + read;
+      strm.next_out = (Bytef*)dst + write;
+
+      unsigned to_read = srcLen - read;
+      unsigned to_write = dstLen - write;
+
+      if (to_read < 20) {
+        // This cant possibly be a frag
+        break;
+      }
+
+      strm.total_in = strm.avail_in = to_read;
+      strm.total_out = strm.avail_out = to_write;
+
+      inflateInit2(&strm, MAX_WBITS | 16);
+      err = inflate(&strm, Z_FINISH);
+      // Just return the source if data error.
+      if (err == Z_DATA_ERROR) {
+        std::cout << "Warning: decompression data error. Returning compressed "
+                     "fragment.\n";
+        memcpy(dst, src, srcLen);
+        return srcLen;
+      }
+      inflateEnd(&strm);
+
+      read += to_read - strm.avail_in;
+      write += to_write - strm.avail_out;
+
+      if (err < 0) {
+        break;
+      }
+    }
+
+    return write;
+  }
+
+ public:
+  FelixFragmentCompressed(const artdaq::Fragment& fragment)
+      : FelixFragmentBase(fragment) {
+    // Decompress.
+    decompress_copy(fragment, uncompfrag_);
+    // std::cout << decompress_copy(fragment, uncompfrag_) << " returned from
+    // decompress_copy\n";
+
+    // Update metadata.
+    meta_.compressed = 0;
+    uncompfrag_.setMetadata(meta_);
+    if (meta_.reordered) {
+      flxfrag = new FelixFragmentReordered(uncompfrag_);
+    } else {
+      flxfrag = new FelixFragmentUnordered(uncompfrag_);
+    }
+  }
+
+  ~FelixFragmentCompressed() { delete flxfrag; }
 
   /* Frame field and accessors. */
   uint8_t sof(const unsigned& frame_ID = 0) const {
@@ -541,31 +649,160 @@ class dune::FelixFragment: public FelixFragmentBase {
     return flxfrag->hdr(frame_ID, block_num, hdr_num);
   }
 
-  /* CRC */
-  word_t CRC(const unsigned& frame_ID = 0) const {
-    return flxfrag->CRC(frame_ID);
-  }
-
-  // Functions to return a certain ADC value.
-  adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
-                const uint8_t channel_ID) const {
-    return flxfrag->get_ADC(frame_ID, block_ID, channel_ID);
-  }
+  // Function to return a certain ADC value.
   adc_t get_ADC(const unsigned& frame_ID, const uint8_t channel_ID) const {
     return flxfrag->get_ADC(frame_ID, channel_ID);
   }
 
+  // Function to print all timestamps.
+  void print_timestamps() const { return flxfrag->print_timestamps(); }
+
+  void print(const unsigned i) const { return flxfrag->print(i); }
+
+  void print_frames() const { return flxfrag->print_frames(); }
+
+  // The number of words in the current event minus the header.
+  size_t total_words() const { return flxfrag->total_words(); }
+  // The number of frames in the current event.
+  size_t total_frames() const { return flxfrag->total_frames(); }
+  // The number of ADC values describing data beyond the header
+  size_t total_adc_values() const { return flxfrag->total_adc_values(); }
+
+  // Const function to return the uncompressed fragment.
+  const artdaq::Fragment uncompressed_fragment() const { return uncompfrag_; }
+
+ protected:
+  // Uncompressed data fragment.
+  artdaq::Fragment uncompfrag_;
+  // Member pointer to access uncompressed data.
+  const FelixFragmentBase* flxfrag;
+};  // class dune::FelixFragmentCompressed
+
+//======================
+// FELIX fragment class
+//======================
+class dune::FelixFragment : public FelixFragmentBase {
+ public:
+  FelixFragment(const artdaq::Fragment& fragment)
+      : FelixFragmentBase(fragment) {
+    if (meta_.compressed) {
+      flxfrag = new FelixFragmentCompressed(fragment);
+    } else if (meta_.reordered) {
+      flxfrag = new FelixFragmentReordered(fragment);
+    } else {
+      flxfrag = new FelixFragmentUnordered(fragment);
+    }
+
+    // Try to set the timestamp offset to the metadata offset.
+    bool shift_good = true;
+    // Is the first requested frame in the data?
+    shift_good &=
+        fragment.timestamp() - meta_.offset_frames * 25 >= flxfrag->timestamp();
+    // Is the data big enough to accommodate the window size?
+    shift_good &= fragment.timestamp() -
+                      (meta_.offset_frames + meta_.window_frames) * 25 <=
+                  flxfrag->timestamp() + meta_.num_frames * 25;
+
+    if (shift_good) {
+      trig_offset = (fragment.timestamp() - flxfrag->timestamp()) / 25 - meta_.offset_frames;
+    } else {
+      mf::LogWarning("dune::FelixFragment")
+          << "Can't find the trigger window in FELIX fragment "
+          << fragment.fragmentID() << ".\nFragment TS: " << fragment.timestamp()
+          << " first frame TS: " << flxfrag->timestamp() << '\n';
+    }
+  }
+
+  ~FelixFragment() { delete flxfrag; }
+
+  /* Frame field and accessors. */
+  uint8_t sof(const unsigned& frame_ID = 0) const {
+    return flxfrag->sof(frame_ID + trig_offset);
+  }
+  uint8_t version(const unsigned& frame_ID = 0) const {
+    return flxfrag->version(frame_ID + trig_offset);
+  }
+  uint8_t fiber_no(const unsigned& frame_ID = 0) const {
+    return flxfrag->fiber_no(frame_ID + trig_offset);
+  }
+  uint8_t slot_no(const unsigned& frame_ID = 0) const {
+    return flxfrag->slot_no(frame_ID + trig_offset);
+  }
+  uint8_t crate_no(const unsigned& frame_ID = 0) const {
+    return flxfrag->crate_no(frame_ID + trig_offset);
+  }
+  uint8_t mm(const unsigned& frame_ID = 0) const {
+    return flxfrag->mm(frame_ID + trig_offset);
+  }
+  uint8_t oos(const unsigned& frame_ID = 0) const {
+    return flxfrag->oos(frame_ID + trig_offset);
+  }
+  uint16_t wib_errors(const unsigned& frame_ID = 0) const {
+    return flxfrag->wib_errors(frame_ID + trig_offset);
+  }
+  uint64_t timestamp(const unsigned& frame_ID = 0) const {
+    return flxfrag->timestamp(frame_ID + trig_offset);
+  }
+  uint16_t wib_counter(const unsigned& frame_ID = 0) const {
+    return flxfrag->wib_counter(frame_ID + trig_offset);
+  }
+
+  /* Coldata block accessors. */
+  uint8_t s1_error(const unsigned& frame_ID, const uint8_t& block_num) const {
+    return flxfrag->s1_error(frame_ID + trig_offset, block_num);
+  }
+  uint8_t s2_error(const unsigned& frame_ID, const uint8_t& block_num) const {
+    return flxfrag->s2_error(frame_ID + trig_offset, block_num);
+  }
+  uint16_t checksum_a(const unsigned& frame_ID,
+                      const uint8_t& block_num) const {
+    return flxfrag->checksum_a(frame_ID + trig_offset, block_num);
+  }
+  uint16_t checksum_b(const unsigned& frame_ID,
+                      const uint8_t& block_num) const {
+    return flxfrag->checksum_b(frame_ID + trig_offset, block_num);
+  }
+  uint16_t coldata_convert_count(const unsigned& frame_ID,
+                                 const uint8_t& block_num) const {
+    return flxfrag->coldata_convert_count(frame_ID + trig_offset, block_num);
+  }
+  uint16_t error_register(const unsigned& frame_ID,
+                          const uint8_t& block_num) const {
+    return flxfrag->error_register(frame_ID + trig_offset, block_num);
+  }
+  uint8_t hdr(const unsigned& frame_ID, const uint8_t& block_num,
+              const uint8_t& hdr_num) const {
+    return flxfrag->hdr(frame_ID + trig_offset, block_num, hdr_num);
+  }
+
+  // Functions to return a certain ADC value.
+  adc_t get_ADC(const unsigned& frame_ID, const uint8_t channel_ID) const {
+    return flxfrag->get_ADC(frame_ID + trig_offset, channel_ID);
+  }
+  adc_t get_ADC(const unsigned& frame_ID, const uint8_t block_ID,
+                const uint8_t channel_ID) const {
+    return get_ADC(frame_ID, channel_ID + block_ID * 64);
+  }
+
   // Function to return all ADC values for a single channel.
+  adc_v get_ADCs_by_channel(const uint8_t channel_ID) const {
+    adc_v output(total_frames());
+    for (size_t i = 0; i < total_frames(); i++) {
+      output[i] = get_ADC(i, channel_ID);
+    }
+    return output;
+  }
   adc_v get_ADCs_by_channel(const uint8_t block_ID,
                             const uint8_t channel_ID) const {
-    return flxfrag->get_ADCs_by_channel(block_ID, channel_ID);
+    return get_ADCs_by_channel(channel_ID + block_ID * 64);
   }
-  adc_v get_ADCs_by_channel(const uint8_t channel_ID) const {
-    return flxfrag->get_ADCs_by_channel(channel_ID);
-  }
+
   // Function to return all ADC values for all channels in a map.
   std::map<uint8_t, adc_v> get_all_ADCs() const {
-    return flxfrag->get_all_ADCs();
+    std::map<uint8_t, adc_v> output;
+    for (int i = 0; i < 256; i++)
+      output.insert(std::pair<uint8_t, adc_v>(i, get_ADCs_by_channel(i)));
+    return output;
   }
 
   // Function to print all timestamps.
@@ -583,7 +820,8 @@ class dune::FelixFragment: public FelixFragmentBase {
   size_t total_adc_values() const { return flxfrag->total_adc_values(); }
 
  private:
+  size_t trig_offset = 0;
   const FelixFragmentBase* flxfrag;
-};
+};  // class dune::FelixFragment
 
 #endif /* artdaq_dune_Overlays_FelixFragment_hh */

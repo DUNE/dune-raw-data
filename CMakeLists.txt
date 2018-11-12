@@ -36,27 +36,28 @@ cet_cmake_env()
 
 if( DEFINED ENV{CANVAS_DIR} )
 cet_set_compiler_flags(DIAGS VIGILANT
-  WERROR
-  NO_UNDEFINED
+#  WERROR
+# NO_UNDEFINED
   EXTRA_FLAGS -pedantic
-  EXTRA_DEFINITIONS -DHAVE_CANVAS -D_GLIBCXX_USE_NANOSLEEP
+  EXTRA_DEFINITIONS -DHAVE_CANVAS -D_GLIBCXX_USE_NANOSLEEP #-march=native
 )
 else()
 cet_set_compiler_flags(DIAGS VIGILANT
- WERROR
- NO_UNDEFINED
+# WERROR
+# NO_UNDEFINED
  EXTRA_FLAGS -pedantic
- EXTRA_CXX_FLAGS -D_GLIBCXX_USE_NANOSLEEP
+ EXTRA_CXX_FLAGS -D_GLIBCXX_USE_NANOSLEEP #-march=native
  )
 endif()
 
 cet_report_compiler_flags()
 
 # these are minimum required versions, not the actual product versions
-find_ups_product( cetbuildtools v5_06_06 )
+find_ups_product( cetbuildtools v7_03_02 )
 find_ups_product( artdaq_core v1_06_01 )
 find_ups_product( art v2_03_00 )
 find_ups_product( cetlib v1_03_00 )
+find_ups_product( gallery v1_08_02 )
 find_ups_boost( v1_50_0 filesystem
                         program_options
                         unit_test_framework
@@ -77,6 +78,9 @@ add_subdirectory(dune-raw-data)
 
 # testing
 add_subdirectory(test)
+
+# running
+add_subdirectory(run)
 
 # # tools
 # add_subdirectory(tools)

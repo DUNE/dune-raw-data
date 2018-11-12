@@ -3,7 +3,7 @@
 #include "dune-raw-data/Overlays/Utilities.hh"
 
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "cetlib/exception.h"
+#include "cetlib_except/exception.h"
 
 #include <bitset>
 #include <iostream>
@@ -779,9 +779,9 @@ uint8_t* dune::PennMicroSlice::sampleTimeSplitAndCountTwice(uint64_t boundary_ti
         switch(wh->warning_type) {
           /// Issue the warning HERE:
           case dune::PennMicroSlice::WarnTimeout:
-            mf::LogWarning("PennMicroSlice") << "The DMA timed out. Possible data loss after this point.";
+            mf::LogWarning("PennMicroSlice") << "The DMA timed out. Possible data loss after this point."; break;
           case dune::PennMicroSlice::WarnUnknownDataType:
-            mf::LogWarning("PennMicroSlice") << "Unknown data type received.";
+            mf::LogWarning("PennMicroSlice") << "Unknown data type received."; break;
           case dune::PennMicroSlice::WarnFIFOHalfFull:
             mf::LogWarning("PennMicroSlice") << "FIFO reached half full state. Stop run recommended.";
             break;

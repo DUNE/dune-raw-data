@@ -1,2 +1,8 @@
-This is the top level of the dune-raw-data repository.
+The dune-raw0data repository in Fermilab's Redmine system is the active version of this software.
+
+https://cdcvs.fnal.gov/redmine/projects/dune-raw-data
+
+This link requires login.
+
+This software is maintained to read in ProtoDUNE-SP Run 1 data collected from 2018 to 2020.
 
